@@ -17,7 +17,7 @@
 //! Image geometry/bit depth/CFA are NOT in the stream (same as the production LISA accounting).
 
 use crate::lisa::*;
-use crate::pkon2x::{BinDec, BinEnc, Bit, BitIo};
+use crate::rangecoder::{BinDec, BinEnc, Bit, BitIo};
 
 pub const MAGIC: [u8; 4] = *b"PCLD";
 pub const VERSION: u8 = 1;

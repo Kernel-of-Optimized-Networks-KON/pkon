@@ -37,7 +37,7 @@ Compatibility rules (normative):
 | 0 | 4 | `magic` | `89 50 4B 32`; else `BadMagic` |
 | 4 | 1 | `version` | `2` |
 | 5 | 1 | `flags` | `0` |
-| 6 | 1 | `codec` | `1`, `2`, `3` (PKON2-X4) or `4` (LISA) |
+| 6 | 1 | `codec` | `1`, `2`, `3` (ELLIE-X4) or `4` (LISA) |
 | 7 | 1 | `meta_version` | `1` |
 | 8 | 1 | `bit_depth` | X4: `8`. LISA: `1..=16` |
 | 9 | 1 | `channels` | X4: `1..=4` (layout). LISA: `1` |
@@ -62,16 +62,16 @@ counts vs. the limit (`TooLarge`) -> payload bounds (`InvalidPayloadLength`) -> 
 
 | Codec id | Algorithm | Produces | Notes |
 |---:|---|---|---|
-| 1 | PKON2-X4 | decoded 8-bit standard image | frozen config of v1 codec 1 |
-| 2 | PKON2-X4P | same | v1 codec 2 |
-| 3 | PKON2-X4PJ (REL6) | same | v1 codec 3, default writer for standard images |
+| 1 | ELLIE-X4 | decoded 8-bit standard image | frozen config of v1 codec 1 |
+| 2 | ELLIE-X4P | same | v1 codec 2 |
+| 3 | ELLIE-X4PJ (REL6) | same | v1 codec 3, default writer for standard images |
 | 4 | LISA RAW, production | `u16` samples + `ImageMetadata` | OR-128 rule 2, Stage 4 coding 1 |
 | 0, 5..=255 | unassigned | | rejected (`UnsupportedCodec`) |
 
 The codec ids 1..=3 are the same ids, with the same meaning and **byte-identical payloads**, as container v1. The payload
 is the headerless range-coder stream defined in `docs/pkon2-format-v1.md` section 3 and produced by `pkonfile`; it does not
 depend on the container version. Entropy coding is internal to each codec: both families use the shared binary range coder
-(`pkon2x::BinEnc` / `BinDec`) with their own models, and the container neither names nor configures it.
+(`elliex::BinEnc` / `BinDec`) with their own models, and the container neither names nor configures it.
 
 ### 2.1 Standard images (codec 1..=3)
 

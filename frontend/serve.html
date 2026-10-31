@@ -13,7 +13,7 @@ button.copy{font-size:11px;margin-left:6px}
 </style>
 <body style="font-family:sans-serif;max-width:48em;margin:2em auto">
 <h2>PKON converter (local)</h2>
-<p><b>Image → .pkon</b> (PNG or JPEG, 8-bit &rarr; PKON2-X4; DNG RAW &rarr; LISA)</p>
+<p><b>Image → .pkon</b> (PNG or JPEG, 8-bit &rarr; ELLIE-X4; DNG RAW &rarr; LISA)</p>
 <input type="file" id="img" accept=".png,.jpg,.jpeg,.dng,image/png,image/jpeg,image/x-adobe-dng" onchange="codecHint()">
 <button onclick="go('convert','img','.pkon')">Convert to PKON</button>
 <div id="hint" class="na"></div>
@@ -37,7 +37,7 @@ function codecHint() {
   const f = $('img').files[0];
   $('hint').textContent = !f ? '' : isDng(f)
     ? 'RAW input: the stored sensor samples are compressed losslessly with LISA (no demosaic, white balance or black-level change).'
-    : 'Standard image: decoded to pixels and compressed with PKON2-X4 (original file bytes, EXIF and ICC are not kept).';
+    : 'Standard image: decoded to pixels and compressed with ELLIE-X4 (original file bytes, EXIF and ICC are not kept).';
 }
 
 function esc(t) { return String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -125,7 +125,7 @@ async function go(op, id, ext) {
   $('result').innerHTML = '';
   if (!f) { st.textContent = 'Choose a file first.'; return; }
   const raw = op === 'convert' && isDng(f);
-  const stage = (op === 'convert' ? (raw ? 'Reading DNG, compressing with LISA and verifying the round trip' : 'Compressing with PKON2-X4 and verifying the round trip') : 'Decoding and verifying') + ' ' + f.name + ' (' + f.size.toLocaleString() + ' bytes)';
+  const stage = (op === 'convert' ? (raw ? 'Reading DNG, compressing with LISA and verifying the round trip' : 'Compressing with ELLIE-X4 and verifying the round trip') : 'Decoding and verifying') + ' ' + f.name + ' (' + f.size.toLocaleString() + ' bytes)';
   const t0 = Date.now(), tick = setInterval(() => st.textContent = stage + '... ' + Math.round((Date.now() - t0) / 1000) + ' s (large images can take a while)', 500);
   st.textContent = stage + '...'; pr.style.display = 'block'; pr.removeAttribute('value');
   const done = () => { clearInterval(tick); pr.style.display = 'none'; };

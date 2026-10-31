@@ -4,22 +4,22 @@
 //! codec-specific reconstruction-metadata block, the payload, and the integrity checks. A codec id selects the
 //! compression algorithm and therefore how the metadata block and the payload are interpreted:
 //!
-//! * ids 1..=3: PKON2-X4 variants for decoded 8-bit standard images (payload produced by `pkonfile`, unchanged);
 //! * id 4: LISA RAW (payload produced by the unchanged LISA Stage 1..4 pipeline).
 //!
-//! Version 1 files (`.pkon2`, `pkonfile`) share magic and version-byte position with version 2, so `decode` reads both.
+//! Ids 1..=3 belonged to the retired PKON2 coder and are no longer supported; no standard-image codec is registered yet.
+//! Version 1 files (`.pkon2`, `pkonfile`) share magic and version-byte position with version 2, so `decode` recognises both.
 //! All integers are little-endian and read/written byte by byte; nothing depends on struct layout or host endianness.
-use crate::canon::{Canonical, Layout, Spec};
+use crate::canon::Canonical;
 use crate::lisa::{self, CfaPattern, ColorFilter, ImageMetadata, LisaError, ReconstructionRecord, SampleLayout, Stage3Rule, Stage4Output};
 use crate::lisa_bayer_plane::{self as bayer, Stage1Mode};
 use crate::pkonfile::{self, PkonError};
 use std::fmt;
 
-pub use crate::pkonfile::{CODEC_CURRENT, CODEC_X4, CODEC_X4P, CODEC_X4PJ, DEFAULT_MAX_DECODED_BYTES, MAGIC};
+pub use crate::pkonfile::{DEFAULT_MAX_DECODED_BYTES, MAGIC};
 
 /// Container version written by this module.
 pub const VERSION: u8 = 2;
-/// Legacy container version (`pkonfile`), still readable through [`decode`].
+/// Legacy container version (`pkonfile`): its header is still parsed by [`decode`], but it has no registered codec.
 pub const VERSION_V1: u8 = 1;
 pub const FIXED_HEADER_LEN: usize = 32;
 /// Codec id 4: LISA RAW, production configuration (Stage 3 rule version 2 = OR-128, Stage 4 coding version 1).
@@ -32,10 +32,9 @@ pub const LISA_STAGE3_RULE_OR128: u8 = lisa::STAGE3_RULE_VERSION;
 pub const LISA_STAGE4_CODING_COUNTED: u8 = lisa::STAGE4_CODING_VERSION;
 
 /// Upper bound on samples per payload byte, per codec. Every sample costs at least one binary decision, and a decision
-/// costs at least -log2(p_max) bits where the probability clamp is [32, 65503]/65536 (`pkon2x::Bit::update`, both
-/// codecs): >= 7.3e-4 bits, i.e. <= ~11,000 samples per byte in theory. LISA uses a 16,384 bound (power-of-two margin); the X4
-/// bound is the v1 value (32,768) kept as is. Measured: a flat 2048x2048 image reaches 11,245 samples/byte (12-bit LISA).
-const X4_MAX_SAMPLES_PER_PAYLOAD_BYTE: u64 = 32_768;
+/// costs at least -log2(p_max) bits where the probability clamp is [32, 65503]/65536 (`rangecoder::Bit::update`):
+/// >= 7.3e-4 bits, i.e. <= ~11,000 samples per byte in theory. LISA uses a 16,384 bound (power-of-two margin).
+/// Measured: a flat 2048x2048 image reaches 11,245 samples/byte (12-bit LISA).
 const LISA_MAX_SAMPLES_PER_PAYLOAD_BYTE: u64 = 16_384;
 
 // ---------------------------------------------------------------- errors
@@ -193,8 +192,6 @@ fn crc_of(parts: &[&[u8]]) -> u32 {
 /// Codec-specific parameters, parsed and validated from the metadata block before any payload work.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CodecParams {
-    /// PKON2-X4 (codec ids 1..=3): no metadata block; the layout follows from the channel count.
-    Standard { layout: Layout },
     Lisa(LisaParams),
 }
 
@@ -238,16 +235,6 @@ fn rd32(b: &[u8], at: usize) -> u32 {
     u32::from_le_bytes([b[at], b[at + 1], b[at + 2], b[at + 3]])
 }
 
-fn layout_of_channels(channels: u8) -> Option<Layout> {
-    Some(match channels {
-        1 => Layout::Gray,
-        2 => Layout::GrayAlpha,
-        3 => Layout::Rgb,
-        4 => Layout::Rgba,
-        _ => return None,
-    })
-}
-
 pub fn parse_header(bytes: &[u8]) -> Result<Header, ContainerError> {
     parse_header_with_limit(bytes, DEFAULT_MAX_DECODED_BYTES)
 }
@@ -282,31 +269,19 @@ pub fn parse_header_with_limit(bytes: &[u8], max_decoded_bytes: u64) -> Result<H
 
     let (codec, meta_version, bit_depth, channels) = (bytes[6], bytes[7], bytes[8], bytes[9]);
     let (width, height, payload_len, pixel_crc32) = (rd32(bytes, 12), rd32(bytes, 16), rd32(bytes, 20), rd32(bytes, 24));
-    let standard = matches!(codec, CODEC_X4 | CODEC_X4P | CODEC_X4PJ);
-    if !standard && codec != CODEC_LISA {
+    if codec != CODEC_LISA {
         return Err(ContainerError::UnsupportedCodec(codec));
     }
     if meta_version != META_VERSION_1 {
         return Err(ContainerError::UnsupportedMetaVersion { codec, version: meta_version });
     }
-    let max_per_byte = if standard {
-        if bit_depth != 8 {
-            return Err(ContainerError::UnsupportedBitDepth { codec, bit_depth });
-        }
-        X4_MAX_SAMPLES_PER_PAYLOAD_BYTE
-    } else {
-        if !(1..=16).contains(&bit_depth) {
-            return Err(ContainerError::UnsupportedBitDepth { codec, bit_depth });
-        }
-        if channels != 1 {
-            return Err(ContainerError::InvalidChannels { codec, channels });
-        }
-        LISA_MAX_SAMPLES_PER_PAYLOAD_BYTE
-    };
-    let layout = layout_of_channels(channels);
-    if standard && layout.is_none() {
+    if !(1..=16).contains(&bit_depth) {
+        return Err(ContainerError::UnsupportedBitDepth { codec, bit_depth });
+    }
+    if channels != 1 {
         return Err(ContainerError::InvalidChannels { codec, channels });
     }
+    let max_per_byte = LISA_MAX_SAMPLES_PER_PAYLOAD_BYTE;
     if width == 0 || height == 0 {
         return Err(ContainerError::InvalidDimensions { width, height });
     }
@@ -320,14 +295,7 @@ pub fn parse_header_with_limit(bytes: &[u8], max_decoded_bytes: u64) -> Result<H
         return Err(ContainerError::InvalidPayloadLength { payload_len });
     }
 
-    let params = if standard {
-        if !meta.is_empty() {
-            return Err(ContainerError::InvalidMetaLength { codec, meta_len: meta.len() });
-        }
-        CodecParams::Standard { layout: layout.expect("checked above") }
-    } else {
-        CodecParams::Lisa(parse_lisa_meta(meta, width, height, bit_depth)?)
-    };
+    let params = CodecParams::Lisa(parse_lisa_meta(meta, width, height, bit_depth)?);
     Ok(Header { codec, meta_version, bit_depth, channels, width, height, meta_len, payload_len, pixel_crc32, header_crc32: expected, params })
 }
 
@@ -471,36 +439,10 @@ fn write_file(p: FileParts) -> Result<Vec<u8>, ContainerError> {
     Ok(out)
 }
 
-/// Encode a standard (decoded-pixel) image with the current PKON2-X4 codec (id 3). Only 8-bit gray / gray+alpha / RGB /
-/// RGBA is representable. The payload is byte-identical to the one `pkonfile::encode` writes.
-pub fn encode_standard(img: &Canonical) -> Result<Vec<u8>, ContainerError> {
-    encode_standard_with_codec(img, CODEC_CURRENT)
-}
-
-/// [`encode_standard`] with an explicit X4 codec id (1, 2 or 3).
-pub fn encode_standard_with_codec(img: &Canonical, codec: u8) -> Result<Vec<u8>, ContainerError> {
-    if !matches!(codec, CODEC_X4 | CODEC_X4P | CODEC_X4PJ) {
-        return Err(ContainerError::UnsupportedCodec(codec));
-    }
-    if img.spec.bit_depth != 8 {
-        return Err(ContainerError::UnsupportedImage(format!("{}-bit samples (PKON2-X4 is 8-bit only)", img.spec.bit_depth)));
-    }
-    if img.spec.width == 0 || img.spec.height == 0 || img.data.len() != img.spec.byte_len() {
-        return Err(ContainerError::UnsupportedImage("inconsistent image buffer".into()));
-    }
-    let payload = pkonfile::try_encode_payload_codec(img, codec)?;
-    let mut crc = Crc32::new();
-    crc.update(&img.data);
-    write_file(FileParts {
-        codec,
-        bit_depth: 8,
-        channels: img.spec.layout.channels() as u8,
-        width: img.spec.width,
-        height: img.spec.height,
-        meta: &[],
-        payload: &payload,
-        pixel_crc32: crc.finish(),
-    })
+/// Integration point for the standard (decoded-pixel) image codec. No standard-image codec is registered (the PKON2
+/// codecs 1..=3 were removed), so this always fails; the ELLIE encoder will be wired in here.
+pub fn encode_standard(_img: &Canonical) -> Result<Vec<u8>, ContainerError> {
+    Err(ContainerError::UnsupportedImage("no standard-image codec is registered".into()))
 }
 
 /// Encode a RAW mosaic or plane with LISA (production path: per-plane Stage 1 for Bayer CFA, OR-128, Stage 4 counted).
@@ -564,7 +506,7 @@ pub struct RawImage {
 /// Result of decoding any supported `.pkon` / `.pkon2` file.
 #[derive(Clone, Debug)]
 pub enum Decoded {
-    /// Decoded-pixel standard image (PKON2-X4, container v1 or v2).
+    /// Decoded-pixel standard image. No codec produces one at present; kept for the incoming standard-image codec.
     Standard(Canonical),
     /// LISA RAW image (container v2, codec 4).
     Raw(RawImage),
@@ -583,12 +525,17 @@ pub fn decode(bytes: &[u8]) -> Result<Decoded, ContainerError> {
     decode_with_limit(bytes, DEFAULT_MAX_DECODED_BYTES)
 }
 
-/// Decode any supported file. Version 1 goes through the unchanged `pkonfile` reader; version 2 is read here.
+/// Decode any supported file. Version 1 is recognised but has no registered codec; version 2 is read here.
 /// `max_decoded_bytes` caps the reconstructed sample buffer. LISA's transient working set is about 16 bytes per sample on
 /// top of that, so raise the limit with the available memory in mind.
 pub fn decode_with_limit(bytes: &[u8], max_decoded_bytes: u64) -> Result<Decoded, ContainerError> {
     match container_version(bytes)? {
-        VERSION_V1 => Ok(Decoded::Standard(pkonfile::decode_with_limit(bytes, max_decoded_bytes)?)),
+        // Version 1 defined only the retired PKON2 codecs: a well-formed header is reported as an unsupported codec.
+        VERSION_V1 => Err(match pkonfile::parse_header_with_limit(bytes, max_decoded_bytes) {
+            Err(e) => e,
+            Ok(h) => PkonError::UnsupportedCodec(h.codec),
+        }
+        .into()),
         VERSION => decode_v2(bytes, max_decoded_bytes),
         v => Err(ContainerError::UnsupportedVersion(v)),
     }
@@ -608,17 +555,6 @@ fn decode_v2(bytes: &[u8], max_decoded_bytes: u64) -> Result<Decoded, ContainerE
         if actual == hdr.pixel_crc32 { Ok(()) } else { Err(ContainerError::ChecksumMismatch { expected: hdr.pixel_crc32, actual }) }
     };
     match &hdr.params {
-        CodecParams::Standard { layout } => {
-            let spec = Spec { width: hdr.width, height: hdr.height, layout: *layout, bit_depth: 8 };
-            let data = pkonfile::decode_payload_codec(payload, &spec, hdr.codec).map_err(|e| match e {
-                PkonError::CorruptPayload => ContainerError::CorruptPayload("range decoder did not end at payload end".into()),
-                e => ContainerError::V1(e),
-            })?;
-            let mut crc = Crc32::new();
-            crc.update(&data);
-            check(crc.finish())?;
-            Ok(Decoded::Standard(Canonical::new(spec, data).map_err(ContainerError::UnsupportedImage)?))
-        }
         CodecParams::Lisa(p) => {
             let s4 = Stage4Output::from_parts(
                 payload.to_vec(),

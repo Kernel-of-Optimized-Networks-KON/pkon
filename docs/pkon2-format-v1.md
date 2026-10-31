@@ -1,3 +1,5 @@
+> **Note:** ELLIE is the current name of the engine formerly called PKON2. This document describes the legacy `.pkon2` container (v1) and keeps its original name; the format is unchanged.
+
 # PKON2 file format, version 1 (`.pkon2`)
 
 > Legacy container version. New files use the shared `.pkon` container, version 2: `docs/pkon-format-v2.md`. This document stays normative for v1 files, which `pkon::decode` still reads.

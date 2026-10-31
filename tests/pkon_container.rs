@@ -1,5 +1,5 @@
-//! Focused gate for the shared `.pkon` container (version 2): both codec families round-trip exactly, v1 `.pkon2` files stay
-//! readable, versions/codecs/features are rejected explicitly, and malformed input never panics.
+//! Focused gate for the shared `.pkon` container (version 2): LISA round-trips exactly, retired PKON2 codecs and v1 files are
+//! rejected explicitly, versions/codecs/features are rejected explicitly, and malformed input never panics.
 use nanoscope::canon::{Canonical, Layout, Spec};
 use nanoscope::lisa::{CfaPattern, ColorFilter, ImageMetadata, SampleLayout};
 use nanoscope::lisa_bayer_plane::Stage1Mode;
@@ -46,12 +46,6 @@ fn xtrans_like(w: usize, h: usize) -> ImageMetadata {
     ImageMetadata::with_cfa(w, h, SampleLayout::OtherCfa, cfa)
 }
 
-fn std(d: Decoded) -> Canonical {
-    match d {
-        Decoded::Standard(c) => c,
-        Decoded::Raw(_) => panic!("expected a standard image"),
-    }
-}
 fn raw(d: Decoded) -> RawImage {
     match d {
         Decoded::Raw(r) => r,
@@ -85,62 +79,11 @@ fn err(b: &[u8]) -> ContainerError {
     decode(b).expect_err("decode should fail")
 }
 
-// ---------------------------------------------------------------- standard images and v1 compatibility
+// ---------------------------------------------------------------- standard images (no codec registered)
 
 #[test]
-fn standard_round_trips_all_layouts_and_codecs() {
-    for layout in [Layout::Gray, Layout::GrayAlpha, Layout::Rgb, Layout::Rgba] {
-        for (w, h) in [(1, 1), (1, 9), (9, 1), (33, 17)] {
-            let img = std_img(w, h, layout, w * 31 + h);
-            for codec in [CODEC_X4, CODEC_X4P, CODEC_X4PJ] {
-                let f = encode_standard_with_codec(&img, codec).unwrap();
-                let hdr = parse_header(&f).unwrap();
-                assert_eq!((hdr.codec, hdr.bit_depth, hdr.channels, hdr.meta_len), (codec, 8, layout.channels() as u8, 0));
-                let d = std(decode(&f).unwrap());
-                assert_eq!((d.spec, &d.data), (img.spec, &img.data), "{layout:?} {w}x{h} codec {codec}");
-                assert_eq!(f, encode_standard_with_codec(&img, codec).unwrap(), "deterministic");
-            }
-        }
-    }
-}
-
-#[test]
-fn standard_payload_is_byte_identical_to_the_v1_payload() {
-    let img = std_img(40, 21, Layout::Rgb, 9);
-    for codec in [CODEC_X4, CODEC_X4P, CODEC_X4PJ] {
-        let v1 = pkonfile::encode_with_codec(&img, codec).unwrap();
-        let v2 = encode_standard_with_codec(&img, codec).unwrap();
-        assert_eq!(v1[pkonfile::HEADER_LEN..], v2[FIXED_HEADER_LEN..], "codec {codec}");
-        assert_eq!(parse_header(&v2).unwrap().pixel_crc32, pkonfile::crc32(&img.data));
-    }
-}
-
-#[test]
-fn v1_files_and_the_golden_corpus_decode_through_the_dispatcher() {
-    let mut n = 0;
-    for e in std::fs::read_dir("tests/golden_codec1").unwrap() {
-        let p = e.unwrap().path();
-        if p.extension().and_then(|s| s.to_str()) != Some("pkon2") {
-            continue;
-        }
-        let bytes = std::fs::read(&p).unwrap();
-        assert_eq!(container_version(&bytes).unwrap(), VERSION_V1);
-        let via_v1 = pkonfile::decode(&bytes).unwrap();
-        let via_dispatch = std(decode(&bytes).unwrap());
-        assert_eq!((via_v1.spec, &via_v1.data), (via_dispatch.spec, &via_dispatch.data), "{p:?}");
-        n += 1;
-    }
-    assert_eq!(n, 44);
-    // Current v1 writer output also stays readable.
-    let img = std_img(20, 11, Layout::Rgba, 5);
-    assert_eq!(std(decode(&pkonfile::encode(&img).unwrap()).unwrap()).data, img.data);
-}
-
-#[test]
-fn standard_encoder_rejects_what_x4_cannot_hold() {
-    let img16 = Canonical::new(Spec { width: 2, height: 2, layout: Layout::Gray, bit_depth: 16 }, vec![0; 8]).unwrap();
-    assert!(matches!(encode_standard(&img16), Err(ContainerError::UnsupportedImage(_))));
-    assert_eq!(encode_standard_with_codec(&std_img(2, 2, Layout::Gray, 1), CODEC_LISA).unwrap_err(), ContainerError::UnsupportedCodec(CODEC_LISA));
+fn standard_encoder_is_not_registered_until_ellie_is_wired_in() {
+    assert!(matches!(encode_standard(&std_img(4, 4, Layout::Rgb, 1)), Err(ContainerError::UnsupportedImage(_))));
 }
 
 // ---------------------------------------------------------------- LISA RAW
@@ -285,19 +228,15 @@ fn corrupt_codec_metadata_is_rejected() {
     short[10..12].copy_from_slice(&3u16.to_le_bytes());
     reseal(&mut short);
     assert!(matches!(err(&short), ContainerError::InvalidMetaLength { .. }));
-    // X4 files must carry no metadata block; LISA must be single-channel and within 1..=16 bits.
+    // LISA must be single-channel and within 1..=16 bits.
     assert!(matches!(err(&patched_sealed(&f, 9, &[3])), ContainerError::InvalidChannels { .. }));
     assert!(matches!(err(&patched_sealed(&f, 8, &[0])), ContainerError::UnsupportedBitDepth { .. }));
     assert!(matches!(err(&patched_sealed(&f, 8, &[17])), ContainerError::UnsupportedBitDepth { .. }));
-    let sf = encode_standard(&std_img(5, 5, Layout::Rgb, 1)).unwrap();
-    assert!(matches!(err(&patched_sealed(&sf, 8, &[16])), ContainerError::UnsupportedBitDepth { .. }));
-    assert!(matches!(err(&patched_sealed(&sf, 9, &[5])), ContainerError::InvalidChannels { .. }));
-    assert!(matches!(err(&patched_sealed(&sf, 9, &[0])), ContainerError::InvalidChannels { .. }));
 }
 
 #[test]
 fn header_checksum_covers_every_header_and_metadata_byte() {
-    for f in [lisa_file().2, encode_standard(&std_img(7, 5, Layout::Rgba, 2)).unwrap()] {
+    for f in [lisa_file().2] {
         let hdr = parse_header(&f).unwrap();
         let covered = FIXED_HEADER_LEN + hdr.meta_len as usize;
         for i in 0..covered {
@@ -315,7 +254,7 @@ fn header_checksum_covers_every_header_and_metadata_byte() {
 
 #[test]
 fn pixel_checksum_mismatch_is_reported() {
-    for f in [lisa_file().2, encode_standard(&std_img(7, 5, Layout::Rgb, 2)).unwrap()] {
+    for f in [lisa_file().2] {
         let crc = u32::from_le_bytes(f[24..28].try_into().unwrap());
         let b = patched_sealed(&f, 24, &(crc ^ 1).to_le_bytes());
         assert_eq!(err(&b), ContainerError::ChecksumMismatch { expected: crc ^ 1, actual: crc });
@@ -324,7 +263,7 @@ fn pixel_checksum_mismatch_is_reported() {
 
 #[test]
 fn truncated_trailing_and_inconsistent_lengths_are_rejected() {
-    for f in [lisa_file().2, encode_standard(&std_img(9, 6, Layout::Gray, 4)).unwrap()] {
+    for f in [lisa_file().2] {
         for cut in 0..f.len() {
             assert!(decode(&f[..cut]).is_err(), "prefix of {cut} bytes accepted");
         }
@@ -385,24 +324,14 @@ fn damaged_payloads_never_panic_and_never_decode_to_other_pixels() {
             }
         }
     }
-    let sf = encode_standard(&std_img(13, 7, Layout::Rgba, 3)).unwrap();
-    let img = std_img(13, 7, Layout::Rgba, 3);
-    for i in FIXED_HEADER_LEN..sf.len() {
-        let mut b = sf.clone();
-        b[i] ^= 0x04;
-        if let Ok(d) = decode(&b) {
-            assert_eq!(std(d).data, img.data);
-        }
-    }
 }
 
 // ---------------------------------------------------------------- golden v2 files (spec examples)
 
 fn golden_sources() -> Vec<(&'static str, Vec<u8>)> {
-    let std_f = encode_standard(&std_img(5, 3, Layout::Rgb, 21)).unwrap();
     let bayer = encode_raw(&raw_samples(16, 10, 12, 4), 16, 10, 12, bayer_meta(16, 10, [ColorFilter::Green, ColorFilter::Red, ColorFilter::Blue, ColorFilter::Green])).unwrap();
     let xt = encode_raw(&raw_samples(14, 9, 14, 6), 14, 9, 14, xtrans_like(14, 9)).unwrap();
-    vec![("std_rgb_5x3.pkon", std_f), ("lisa_grbg_16x10_12bit.pkon", bayer), ("lisa_othercfa_14x9_14bit.pkon", xt)]
+    vec![("lisa_grbg_16x10_12bit.pkon", bayer), ("lisa_othercfa_14x9_14bit.pkon", xt)]
 }
 
 #[test]
@@ -470,11 +399,27 @@ fn real_dng_corpus_crops_round_trip() {
 }
 
 #[test]
-fn raw_and_standard_files_dispatch_to_the_right_variant() {
+fn raw_files_dispatch_to_the_raw_variant() {
     let (_, _, lf) = lisa_file();
-    let sf = encode_standard(&std_img(4, 4, Layout::Gray, 1)).unwrap();
     assert!(matches!(decode(&lf).unwrap(), Decoded::Raw(_)));
-    assert!(matches!(decode(&sf).unwrap(), Decoded::Standard(_)));
-    assert_eq!((lf[4], sf[4]), (VERSION, VERSION));
-    assert_eq!((lf[6], sf[6]), (CODEC_LISA, CODEC_CURRENT));
+    assert_eq!((lf[4], lf[6]), (VERSION, CODEC_LISA));
+}
+
+/// The retired PKON2 codec ids (1..=3) are rejected, in a version-2 header and for version-1 files.
+#[test]
+fn retired_pkon2_codecs_are_unsupported() {
+    let (_, _, lf) = lisa_file();
+    for codec in 1..=3u8 {
+        assert_eq!(err(&patched_sealed(&lf, 6, &[codec])), ContainerError::UnsupportedCodec(codec));
+        let mut v1 = [0u8; pkonfile::HEADER_LEN];
+        v1[..4].copy_from_slice(&MAGIC);
+        v1[4] = VERSION_V1;
+        v1[6] = codec;
+        v1[7] = 2; // RGB
+        v1[8..12].copy_from_slice(&4u32.to_le_bytes());
+        v1[12..16].copy_from_slice(&4u32.to_le_bytes());
+        v1[16..20].copy_from_slice(&8u32.to_le_bytes());
+        assert_eq!(container_version(&v1).unwrap(), VERSION_V1);
+        assert_eq!(err(&v1), ContainerError::V1(pkonfile::PkonError::UnsupportedCodec(codec)));
+    }
 }

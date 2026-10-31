@@ -37,7 +37,7 @@
 //! Stream: 26-byte header (magic, version, mode, eta in 1/1000, rho denominator, residual count, payload length) +
 //! range-coder payload. Geometry/bit depth/CFA are not in the stream (same accounting as the cloud and production LISA).
 
-use crate::pkon2x::{BinDec, BinEnc, BitIo};
+use crate::rangecoder::{BinDec, BinEnc, BitIo};
 use crate::lisa::*;
 
 pub const MAGIC: [u8; 4] = *b"PMIX";

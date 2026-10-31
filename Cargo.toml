@@ -19,23 +19,11 @@ codegen-units = 1
 debug = false
 
 # Experiment and benchmark binaries live outside src/bin; targets keep their original names (cargo run --bin <name>).
-# serve, verify_pkon2_file and verify_x4_promotion stay in src/bin and are auto-discovered.
+# serve stays in src/bin and is auto-discovered.
 
 [[bin]]
 name = "bench"
 path = "experiments/bin/bench.rs"
-
-[[bin]]
-name = "bench25"
-path = "benchmarks/pkon2/bench25.rs"
-
-[[bin]]
-name = "bench50"
-path = "benchmarks/pkon2/bench50.rs"
-
-[[bin]]
-name = "bench_external"
-path = "benchmarks/pkon2/bench_external.rs"
 
 [[bin]]
 name = "bench_lisa1"
@@ -46,24 +34,8 @@ name = "bench_lisa_stage1"
 path = "experiments/bin/bench_lisa_stage1.rs"
 
 [[bin]]
-name = "bench_p"
-path = "benchmarks/pkon2/bench_p.rs"
-
-[[bin]]
-name = "bitprof"
-path = "experiments/bin/bitprof.rs"
-
-[[bin]]
-name = "diag1"
-path = "experiments/bin/diag1.rs"
-
-[[bin]]
 name = "diag_or128_signal"
 path = "experiments/bin/diag_or128_signal.rs"
-
-[[bin]]
-name = "entmap_export"
-path = "experiments/bin/entmap_export.rs"
 
 [[bin]]
 name = "exp_bayer_small_tree"
@@ -106,14 +78,6 @@ name = "exp_lisa_vs_jxl_png"
 path = "benchmarks/lisa-vs-jxl-png/exp_lisa_vs_jxl_png.rs"
 
 [[bin]]
-name = "exp_n3_full"
-path = "experiments/bin/exp_n3_full.rs"
-
-[[bin]]
-name = "exp_n3_med_branch"
-path = "experiments/bin/exp_n3_med_branch.rs"
-
-[[bin]]
 name = "exp_or128_tree"
 path = "experiments/bin/exp_or128_tree.rs"
 
@@ -122,92 +86,8 @@ name = "exp_residual_entropy"
 path = "experiments/bin/exp_residual_entropy.rs"
 
 [[bin]]
-name = "gblend"
-path = "experiments/bin/gblend.rs"
-
-[[bin]]
-name = "gdir"
-path = "experiments/bin/gdir.rs"
-
-[[bin]]
-name = "gramp"
-path = "experiments/bin/gramp.rs"
-
-[[bin]]
-name = "learn1"
-path = "experiments/bin/learn1.rs"
-
-[[bin]]
 name = "lisa_dejavu"
 path = "experiments/bin/lisa_dejavu.rs"
-
-[[bin]]
-name = "probe"
-path = "experiments/bin/probe.rs"
-
-[[bin]]
-name = "probe_m2"
-path = "experiments/bin/probe_m2.rs"
-
-[[bin]]
-name = "probe_m3"
-path = "experiments/bin/probe_m3.rs"
-
-[[bin]]
-name = "probe_m3_diag"
-path = "experiments/bin/probe_m3_diag.rs"
-
-[[bin]]
-name = "probe_m4"
-path = "experiments/bin/probe_m4.rs"
-
-[[bin]]
-name = "probe_m5"
-path = "experiments/bin/probe_m5.rs"
-
-[[bin]]
-name = "probe_m5_cuts"
-path = "experiments/bin/probe_m5_cuts.rs"
-
-[[bin]]
-name = "probe_m6"
-path = "experiments/bin/probe_m6.rs"
-
-[[bin]]
-name = "probe_m7"
-path = "experiments/bin/probe_m7.rs"
-
-[[bin]]
-name = "probe_m8"
-path = "experiments/bin/probe_m8.rs"
-
-[[bin]]
-name = "prod_ab"
-path = "experiments/bin/prod_ab.rs"
-
-[[bin]]
-name = "rel1"
-path = "experiments/bin/rel1.rs"
-
-[[bin]]
-name = "rel2"
-path = "experiments/bin/rel2.rs"
-
-[[bin]]
-name = "rel3"
-path = "experiments/bin/rel3.rs"
-
-[[bin]]
-name = "rel4"
-path = "experiments/bin/rel4.rs"
-
-[[bin]]
-name = "rel5"
-path = "experiments/bin/rel5.rs"
-
-[[bin]]
-name = "rel6"
-path = "experiments/bin/rel6.rs"
 
 [[bin]]
 name = "t0_or128"

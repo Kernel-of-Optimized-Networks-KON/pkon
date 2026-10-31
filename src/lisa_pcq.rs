@@ -9,7 +9,7 @@
 //! neighbor is imputed with the rounded mean of the available ones (all-missing => 0). The ordered level triple is the
 //! pattern key. An offline-trained, frozen table maps every key to a context id (see `agglomerate`).
 use crate::lisa::*;
-use crate::pkon2x::{BinDec, BinEnc, Bit, BitIo};
+use crate::rangecoder::{BinDec, BinEnc, Bit, BitIo};
 
 pub const LEVELS: usize = 22;
 pub const KEYS: usize = LEVELS * LEVELS * LEVELS;

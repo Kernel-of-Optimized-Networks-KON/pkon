@@ -2,7 +2,7 @@
 use nanoscope::lisa::*;
 use nanoscope::lisa_bayer_plane::encode_stage2;
 use nanoscope::lisa_or128_tree::{self as tree, FEATURE_NAMES, NF};
-use nanoscope::pkon2x::{BinEnc, BitIo};
+use nanoscope::rangecoder::{BinEnc, BitIo};
 use serde_json::{json, Value};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::time::Instant;

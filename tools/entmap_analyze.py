@@ -3,7 +3,7 @@ Usage: python -I tools/entmap_analyze.py <bench25 results dir> <crop dir written
 
 Every number is computed on the exact 1024x1024 crop buffers the bench25 codecs received (SHA-256 re-checked here).
 PKON2 features (neighbours, MED, GAP, activity, err-energy, prev-plane buckets, sign classes, P) are re-derived from
-src/pkon2.rs and src/pkonrel.rs; MED is cross-checked against the harness descriptors in the bench25 manifest.
+src/ellie.rs and src/pkonrel.rs; MED is cross-checked against the harness descriptors in the bench25 manifest.
 
 Estimators (all in bits; per-image totals are reported as bits per pixel = all planes of one pixel):
   plug-in   -sum n(c,s) log2(n(c,s)/n(c))           in-sample conditional entropy, parameters free (biased low: overfits)
@@ -92,7 +92,7 @@ def hash_ctx(k, shape, card):
 
 
 def nbrs(p):
-    """W, N, NW, NE exactly as pkon2::neighbors (border substitutions included)."""
+    """W, N, NW, NE exactly as ellie::neighbors (border substitutions included)."""
     w = np.empty_like(p)
     w[:, 1:] = p[:, :-1]
     w[1:, 0] = p[:-1, 0]

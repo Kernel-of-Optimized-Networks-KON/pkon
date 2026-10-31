@@ -2,72 +2,74 @@
 
 **I'm building the best lossless compressor in the world.**
 
-PKON is a lossless compression platform that I'm building independently in Rust. It has two complementary engines in one container format: **PKON2** for fast, practical everyday image compression, and **LISA** for high-efficiency lossless RAW/DNG compression. Every file decodes back to exactly the samples that went in.
+PKON is a lossless compression platform that I'm building independently in Rust. It has two complementary engines in one container format: **ELLIE** for fast, practical everyday image compression, and **LISA** for high-efficiency lossless RAW/DNG compression. Every file decodes back to exactly the samples that went in.
 
-### PKON2 Weissman score: 1.78
+### ELLIE Weissman score: 1.78
 
-> **Richard Hendricks had Pied Piper. We built PKON.** On this setup PKON2 scores a Weissman **1.78** against JPEG XL effort 7. Weissman score didn't get Richard Hendricks funded.
+> **Richard Hendricks had Pied Piper. We built PKON.** On this setup ELLIE scores a Weissman **1.78** against JPEG XL effort 7. Weissman score didn't get Richard Hendricks funded.
 
 <sub><i>Not peer-reviewed by Stanford. Richard Hendricks was unavailable for comment. See actual micro-benchmarks below.</i></sub>
 
 Using the formula W = (R<sub>c</sub> / R<sub>r</sub>) × √(T<sub>c</sub> / T<sub>r</sub>), with R as compression ratio and T as compression throughput:
 
-| Metric | PKON2 (X4) | JPEG XL e7 (reference) | Ratio |
+| Metric | ELLIE (X4) | JPEG XL e7 (reference) | Ratio |
 | :--- | :--- | :--- | :--- |
 | Compression ratio | 4.545 (16,610,254 B) | 4.582 (16,476,961 B) | 0.992 |
 | Encode throughput (net, single-thread) | 3.58 MP/s (6,735 ms) | 1.11 MP/s (21,793 ms) | 3.24 → √ = 1.80 |
 | **Weissman score** | | | **0.992 × 1.799 = 1.78** |
 
-- **Reference codec:** JPEG XL effort 7, one thread. It is the practical JPEG XL setting and the like-for-like single-thread comparison for PKON2.
+- **Reference codec:** JPEG XL effort 7, one thread. It is the practical JPEG XL setting and the like-for-like single-thread comparison for ELLIE.
 - **Corpus:** the 23-image [external benchmark](benchmarks/pkon2/20261027-143537Z-ext-benchmark/report.md) (all combined, 75,497,472 raw bytes), exact lossless on every image.
 - **Other references, same data:** JPEG XL e9 scores 3.47 and WebP lossless 5.96, because they encode much more slowly. PNG scores 2.20. They are not the headline because e7 is the closest competitor.
 - **Caveats:** this run measured the experimental X4 configuration, not the production codec. JPEG XL timings include ffmpeg process spawn, minus a calibrated floor. Against multi-threaded JPEG XL e7 (3.16 MP/s) the score would be about 1.06.
 
-> **PKON2 is built for speed. LISA is built to push compression further.**
+> **ELLIE is built for speed. LISA is built to push compression further.**
 
 ## The two engines
 
-| | **PKON2: Consumer** | **LISA: Pro** |
+| | **ELLIE: Consumer** | **LISA: Pro** |
 | :--- | :--- | :--- |
 | Built for | Everyday image workflows | Demanding RAW/DNG imaging workflows |
 | Formats | PNG and JPEG (a JPEG is encoded from its decoded pixels) | Lossless RAW/DNG |
 | Priorities | Fast, practical compression and decompression; lightweight operation (about 63 MB peak working set, single thread, in the production benchmark); efficient storage | Maximum compression efficiency; exact preservation of every RAW sample; specialized prediction and adaptive entropy coding |
 | Trade-off | Not the fastest decoder (PNG and WebP decode much faster) | Much slower than the codecs I compare it to; the extra computation buys smaller files |
 
+**Naming:** ELLIE was previously called PKON2. Historical benchmark reports, the `benchmarks/pkon2/` directory, and the legacy `.pkon2` file format (container v1, still readable) keep the old name because those are frozen records and a compatibility surface. Code identifiers are `ellie` / `elliex`.
+
 They share the PKON container, local tooling and the same exact-reconstruction guarantee. They have different priorities and are not competing algorithms.
 
 ## Strongest measured results
 
-PKON2 and LISA are benchmarked separately, on different data and against different baselines. Don't compare numbers across the two.
+ELLIE and LISA are benchmarked separately, on different data and against different baselines. Don't compare numbers across the two.
 
-### PKON2: JPEG XL-class compression, with substantially faster encoding
+### ELLIE: JPEG XL-class compression, with substantially faster encoding
 
-On the 25-image benchmark, PKON2 stores 18,804,922 bytes: **2.60% smaller than JPEG XL effort 9**, with encoding **about 8.5× faster** than effort 9 and **about 2× faster** than effort 7, and **exact lossless reconstruction** of every image. These are the original JPEG/PNG-to-`.pkon2` converter benchmarks. The input is each photo's **decoded 8-bit pixels**, centre-cropped to at
+On the 25-image benchmark, ELLIE stores 18,804,922 bytes: **2.60% smaller than JPEG XL effort 9**, with encoding **about 8.5× faster** than effort 9 and **about 2× faster** than effort 7, and **exact lossless reconstruction** of every image. These are the original JPEG/PNG-to-`.pkon2` converter benchmarks. The input is each photo's **decoded 8-bit pixels**, centre-cropped to at
 most 1024×1024. It is not the original JPEG file bytes. Sizes are complete files (24-byte header plus payload), and every output was decoded and compared
 byte-for-byte with the source pixels. All outputs were exact in every run below.
 
 **25 diverse images** ([report](benchmarks/pkon2/20261028-015857Z-bench25-diversity/report.md); production default, codec 3):
 
-| Codec | Total bytes | Size vs PKON2 | Encode (MB/s of raw pixels) | Decode (MB/s) |
+| Codec | Total bytes | Size vs ELLIE | Encode (MB/s of raw pixels) | Decode (MB/s) |
 |---|---:|---:|---:|---:|
-| **PKON2** | **18,804,922** | | **5.58** | 5.38 |
+| **ELLIE** | **18,804,922** | | **5.58** | 5.38 |
 | JPEG XL (effort 9) | 19,293,200 | +2.60% | 0.66 | 7.21 |
 | JPEG XL (effort 7) | 19,464,716 | +3.51% | 2.86 | 6.63 |
 | WebP lossless | 21,705,408 | +15.42% | 0.32 | 27.22 |
 | PNG | 31,661,761 | +68.37% | 4.67 | 206.19 |
 
-**50 images** ([report](benchmarks/pkon2/20261027-155433Z-bench50/report.md)): 38,914,941 bytes for PKON2 against 39,118,943 for
+**50 images** ([report](benchmarks/pkon2/20261027-155433Z-bench50/report.md)): 38,914,941 bytes for ELLIE against 39,118,943 for
 JPEG XL e9 (0.52% larger), 39,519,208 for e7 (1.55% larger), 44,695,086 for WebP (14.85% larger) and 65,492,478 for PNG
-(68.30% larger). PKON2's biggest per-image wins over JPEG XL e9 were `skyline_n0` (−26.6%) and `beach_n0` (−22.3%).
-In a later production run of the improved PKON2P coding mode (codec 2), 50 of 50 images came out smaller than the previous production
+(68.30% larger). ELLIE's biggest per-image wins over JPEG XL e9 were `skyline_n0` (−26.6%) and `beach_n0` (−22.3%).
+In a later production run of the improved ELLIEP coding mode (codec 2), 50 of 50 images came out smaller than the previous production
 codec, 1.63% smaller in total ([report](benchmarks/pkon2/20261027-pkon2p-production/report_benchmark.md)).
 
 How I read these honestly:
 
-- The margin over JPEG XL is **thin**. In the 50-image run JPEG XL e9 produced the smallest file on 28 of 50 images and PKON2 on 20. PKON2's real advantage over JPEG XL is **speed at the same ballpark of size**: in the 25-image run it encoded about 8.5× faster than JPEG XL e9 and about 2× faster than e7, and in the 50-image run about 12× faster than e9.
-- PKON2 is not the fastest at decoding. PNG and WebP decode much faster, and JPEG XL decoded somewhat faster than PKON2 in the 25-image run.
+- The margin over JPEG XL is **thin**. In the 50-image run JPEG XL e9 produced the smallest file on 28 of 50 images and ELLIE on 20. ELLIE's real advantage over JPEG XL is **speed at the same ballpark of size**: in the 25-image run it encoded about 8.5× faster than JPEG XL e9 and about 2× faster than e7, and in the 50-image run about 12× faster than e9.
+- ELLIE is not the fastest at decoding. PNG and WebP decode much faster, and JPEG XL decoded somewhat faster than ELLIE in the 25-image run.
 - Timings include ffmpeg process spawn for JPEG XL and WebP (calibrated and subtracted in the reports where noted). They come from one laptop (i7-1185G7); the reports describe the exact procedure.
-- These benchmarks do not compare against the size of the original lossy JPEG file, because PKON2 stores the decoded pixels losslessly. That is a different job.
+- These benchmarks do not compare against the size of the original lossy JPEG file, because ELLIE stores the decoded pixels losslessly. That is a different job.
 
 ### LISA: 11.03% fewer bytes than JPEG XL on real RAW files
 
@@ -108,8 +110,8 @@ How I read these honestly:
 
 ## Why PKON
 
-- **Smaller lossless storage.** PKON2 is ahead of JPEG XL, WebP and PNG in total size on the 25-image and 50-image photo benchmarks; LISA is ahead of JPEG XL and PNG in total size on the RAW benchmark.
-- **Faster encoding for everyday images.** PKON2 encodes several times faster than JPEG XL at comparable size.
+- **Smaller lossless storage.** ELLIE is ahead of JPEG XL, WebP and PNG in total size on the 25-image and 50-image photo benchmarks; LISA is ahead of JPEG XL and PNG in total size on the RAW benchmark.
+- **Faster encoding for everyday images.** ELLIE encodes several times faster than JPEG XL at comparable size.
 - **Specialized RAW compression.** LISA works on the sensor's own samples, per colour plane for Bayer sensors, with no demosaic or other processing.
 - **Exact sample reconstruction.** Every benchmark output was decoded and compared with its source, and the tooling reports integrity hashes on every conversion.
 - **One container, local tooling.** A single `.pkon` format carries both engines, with a local converter UI and a Windows decoder. Nothing leaves your machine.
@@ -130,7 +132,7 @@ What the page does:
 
 | You provide | The page produces |
 |---|---|
-| PNG, JPEG (8-bit) | `.pkon` using PKON2 |
+| PNG, JPEG (8-bit) | `.pkon` using ELLIE |
 | DNG | `.pkon` using LISA |
 | `.pkon` / `.pkon2` (standard image) | PNG |
 | `.pkon` (LISA RAW) | lossless `.u16` or `.u8` sample export, plus a `.json` metadata file |
@@ -141,8 +143,8 @@ There is also a viewer for opening a standard-image `.pkon` directly in a new ta
 
 | Input | Engine | Notes |
 |---|---|---|
-| PNG | PKON2 | 8-bit gray, gray+alpha, RGB, RGBA; lossless |
-| JPEG | PKON2 | Encoded from decoded pixels; original JPEG bytes are not preserved |
+| PNG | ELLIE | 8-bit gray, gray+alpha, RGB, RGBA; lossless |
+| JPEG | ELLIE | Encoded from decoded pixels; original JPEG bytes are not preserved |
 | DNG (RAW) | LISA | 1–16 bit single-channel raster with CFA metadata; exact sample preservation; Bayer-plane prediction, with a fallback for other layouts such as X-Trans |
 
 Output: `.pkon` (v2 container) and legacy `.pkon2`, decodable back to PNG or raw u16/u8 samples.
@@ -177,7 +179,7 @@ Output: `.pkon` (v2 container) and legacy `.pkon2`, decodable back to PNG or raw
         |                                |
         v                                v
 +----------------------+      +-----------------------------+
-| PKON2                |      | LISA RAW                    |
+| ELLIE                |      | LISA RAW                    |
 | codec ids 1, 2, 3    |      | codec id 4                  |
 |                      |      |                             |
 | plane split / colour |      | 1. OR predictor residuals   |
@@ -216,14 +218,14 @@ Output: `.pkon` (v2 container) and legacy `.pkon2`, decodable back to PNG or raw
 
 The Stage 1 mode, Stage 3 rule and Stage 4 coding version are recorded in the stream, so the decoder needs no out-of-band information and rejects versions it doesn't implement.
 
-### PKON2 and the PKON container
+### ELLIE and the PKON container
 
-PKON2 (codec "X4" and its production variants) codes 8-bit gray, gray+alpha, RGB and RGBA images with an adaptive, context-mixing coder. The PKON v2 container
+ELLIE (codec "X4" and its production variants) codes 8-bit gray, gray+alpha, RGB and RGBA images with an adaptive, context-mixing coder. The PKON v2 container
 ([docs/pkon-format-v2.md](docs/pkon-format-v2.md)) has a 32-byte header, codec metadata and a payload:
 
 | Codec id | Payload |
 |---|---|
-| 1, 2, 3 | PKON2 for standard images (payloads identical to `.pkon2` v1; codec 3 is the default writer) |
+| 1, 2, 3 | ELLIE for standard images (payloads identical to `.pkon2` v1; codec 3 is the default writer) |
 | 4 | LISA RAW (1–16 bit, single channel, with CFA metadata) |
 
 `pkon::decode` returns `Decoded::Standard` or `Decoded::Raw` and still reads legacy `.pkon2` v1 files ([docs/pkon2-format-v1.md](docs/pkon2-format-v1.md)).
@@ -253,10 +255,10 @@ Windows Imaging Component decoder for Photos and Explorer thumbnails (`wic/insta
 | Resource | What it is |
 |---|---|
 | [benchmarks/lisa-vs-jxl-png/report.md](benchmarks/lisa-vs-jxl-png/report.md) | **LISA RAW**: 25 DNGs, payload bytes vs JPEG XL and PNG, 16-bit samples |
-| [benchmarks/pkon2/20261028-015857Z-bench25-diversity/report.md](benchmarks/pkon2/20261028-015857Z-bench25-diversity/report.md) | **PKON2**: 25 diverse images, production codec 3, size and speed vs JPEG XL, WebP, PNG |
-| [benchmarks/pkon2/20261027-155433Z-bench50/report.md](benchmarks/pkon2/20261027-155433Z-bench50/report.md) | **PKON2**: 50 images, per-image wins and losses |
-| [benchmarks/pkon2/20261027-143537Z-ext-benchmark/report.md](benchmarks/pkon2/20261027-143537Z-ext-benchmark/report.md) | **PKON2**: earlier 23-image external comparison (JPEG XL was smaller here) |
-| [benchmarks/pkon2/20261027-pkon2p-production/report_benchmark.md](benchmarks/pkon2/20261027-pkon2p-production/report_benchmark.md) | **PKON2P** (codec 2) vs previous production codec |
+| [benchmarks/pkon2/20261028-015857Z-bench25-diversity/report.md](benchmarks/pkon2/20261028-015857Z-bench25-diversity/report.md) | **ELLIE**: 25 diverse images, production codec 3, size and speed vs JPEG XL, WebP, PNG |
+| [benchmarks/pkon2/20261027-155433Z-bench50/report.md](benchmarks/pkon2/20261027-155433Z-bench50/report.md) | **ELLIE**: 50 images, per-image wins and losses |
+| [benchmarks/pkon2/20261027-143537Z-ext-benchmark/report.md](benchmarks/pkon2/20261027-143537Z-ext-benchmark/report.md) | **ELLIE**: earlier 23-image external comparison (JPEG XL was smaller here) |
+| [benchmarks/pkon2/20261027-pkon2p-production/report_benchmark.md](benchmarks/pkon2/20261027-pkon2p-production/report_benchmark.md) | **ELLIEP** (codec 2) vs previous production codec |
 | [docs/pkon-format-v2.md](docs/pkon-format-v2.md), [docs/pkon2-format-v1.md](docs/pkon2-format-v1.md) | Container format specifications |
 | [historical/](historical/) | The development history, including failed and superseded experiments |
 
@@ -270,7 +272,7 @@ Run everything from the repo root, in release mode. The crate is named `nanoscop
 - Python 3 for the report scripts. `build_manifest50.py` also needs Pillow, and the LISA script needs `numpy`.
 - `data/` is gitignored and holds the inputs. It is populated locally (`python tools/fetch_dataset.py`, `python tools/fetch_dataset50.py`; they download CC0 images from Wikimedia Commons).
 
-**PKON2 (JPEG/PNG to `.pkon2`)**: sources in [benchmarks/pkon2/](benchmarks/pkon2/). Each run writes a new `benchmarks/pkon2/<stamp>-<name>/` directory, so a rerun does not overwrite the published reports.
+**ELLIE (JPEG/PNG to `.pkon2`)**: sources in [benchmarks/pkon2/](benchmarks/pkon2/). Each run writes a new `benchmarks/pkon2/<stamp>-<name>/` directory, so a rerun does not overwrite the published reports.
 
 | Binary | Input | Output directory |
 |---|---|---|
@@ -292,7 +294,7 @@ cargo run --release --bin bench_external
 python -I benchmarks/pkon2/report25.py benchmarks/pkon2/<stamp>-bench25-diversity
 python benchmarks/pkon2/report50.py benchmarks/pkon2/<stamp>-bench50
 
-# Production .pkon2 file path, one codec per process (the PKON2P report used codec 2)
+# Production .pkon2 file path, one codec per process (the ELLIEP report used codec 2)
 cargo run --release --bin bench_p -- --codec 2 --out <scratch>/run_c2.csv
 ```
 
@@ -378,7 +380,7 @@ cargo test --release --test lisa_or128     # OR-128 (reads historical/20261029-l
 cargo test --release --test pkon_container
 ```
 
-Other test targets: `lisa_bayer_plane`, `lisa_or128_tree`, `lisa_pcq`, `lisa_stage4`, `pkon2`, `pkonfile`, `pkonfile_codec3`, `roundtrip`.
+Other test targets: `lisa_bayer_plane`, `lisa_or128_tree`, `lisa_pcq`, `lisa_stage4`, `ellie`, `pkonfile`, `pkonfile_codec3`, `roundtrip`.
 Verification binaries: `verify_pkon2_file`, `verify_x4_promotion`.
 
 Requirements:
@@ -396,13 +398,13 @@ src/                 production library (lisa*, pkon*, dng, canon, integrity, ..
   bin/               production binaries: serve, verify_pkon2_file, verify_x4_promotion
 frontend/            serve.html, viewer.html (embedded by src/bin/serve.rs)
 benchmarks/
-  pkon2/             JPEG/PNG -> PKON2 benchmarks: sources, manifest/report scripts, reports and results
+  pkon2/             JPEG/PNG -> ELLIE benchmarks: sources, manifest/report scripts, reports and results
   lisa-vs-jxl-png/   LISA vs JPEG XL vs PNG: runner, script, report and raw results
 experiments/bin/     experiment, probe and diagnostic binaries
 historical/          development history, including failed and superseded experiments
 tests/  tools/  docs/  wic/  data/
 ```
 
-Reports in `historical/` are byte-for-byte as written and may still say `results/<name>`; read that as `historical/<name>`, or `benchmarks/pkon2/<name>` for the four PKON2 benchmark directories.
+Reports in `historical/` are byte-for-byte as written and may still say `results/<name>`; read that as `historical/<name>`, or `benchmarks/pkon2/<name>` for the four ELLIE benchmark directories.
 
-> **Notice to Hooli Engineers:** If compiling on Nucleus hardware, PKON2 may cause an unhandled panic due to excessive efficiency. Do not file an issue.
+> **Notice to Hooli Engineers:** If compiling on Nucleus hardware, ELLIE may cause an unhandled panic due to excessive efficiency. Do not file an issue.

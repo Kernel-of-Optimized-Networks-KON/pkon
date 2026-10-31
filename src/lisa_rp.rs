@@ -2,7 +2,7 @@
 //! estimator. Replays the exact Stage 4 binarization/model selection (see `S4Model::code` in lisa.rs) over the Stage 3
 //! output and sums prequential ideal costs. Nothing here is used by production LISA; no coding or decoding happens.
 use crate::lisa::*;
-use crate::pkon2x::{BinDec, BinEnc, Bit, BitIo};
+use crate::rangecoder::{BinDec, BinEnc, Bit, BitIo};
 
 const E_MAX: usize = 33; // = S4_E_MAX in lisa.rs
 const RHO: f64 = 31.0 / 32.0;

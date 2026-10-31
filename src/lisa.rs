@@ -15,7 +15,7 @@
 //!      is clamped to the sample range.
 
 use crate::lisa_rp::{Est, Rp};
-use crate::pkon2x::{BinDec, BinEnc, Bit, BitIo};
+use crate::rangecoder::{BinDec, BinEnc, Bit, BitIo};
 use std::fmt;
 
 pub const MAX_DIM: usize = 1 << 20;

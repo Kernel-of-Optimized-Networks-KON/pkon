@@ -7,7 +7,7 @@
 use nanoscope::lisa::*;
 use nanoscope::lisa_bayer_plane::{decode_stage1, encode_stage2, Stage1Mode};
 use nanoscope::lisa_or128 as or128;
-use nanoscope::pkon2x::{BinDec, BinEnc, BitIo};
+use nanoscope::rangecoder::{BinDec, BinEnc, BitIo};
 use serde_json::{json, Value};
 use std::time::Instant;
 

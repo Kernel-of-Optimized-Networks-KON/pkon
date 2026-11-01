@@ -124,3 +124,7 @@ path = "benchmarks/ellie-final-3img/bench_ellie_final_3img.rs"
 [[bin]]
 name = "bench_ellie_paeth_prod"
 path = "benchmarks/ellie-paeth/prod-3img-tools/bench_ellie_paeth_prod.rs"
+
+[[bin]]
+name = "bench_ellie_paeth_full"
+path = "benchmarks/ellie-full-bench/bench_ellie_paeth_full.rs"

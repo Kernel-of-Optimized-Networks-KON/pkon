@@ -100,9 +100,10 @@ fn paeth(a: i32, b: i32, c: i32) -> i32 {
     }
 }
 
-/// Mixed prediction from the eight-neighbour-derived quantities. Exact integer arithmetic, one division.
+/// Mixed prediction from the eight-neighbour-derived quantities. Exact integer arithmetic, one division. Each directional
+/// weight is also scaled by the adaptive factor `f` (see [`Shrub`]). Returns the prediction and the 4x H/V/D estimates.
 #[inline(always)]
-fn predict(m: i32, w: i32, ww: i32, n: i32, nn: i32, nw: i32, ne: i32, s_h: u32, s_v: u32, s45: u32, s135: u32) -> i32 {
+fn predict(m: i32, w: i32, ww: i32, n: i32, nn: i32, nw: i32, ne: i32, s_h: u32, s_v: u32, s45: u32, s135: u32, fa: [u64; 3]) -> (i32, [u64; 3]) {
     let mn = s45.min(s135);
     let s_d = mn + (mn >> 2);
     let smax = s_h.max(s_v).max(s_d);
@@ -112,7 +113,7 @@ fn predict(m: i32, w: i32, ww: i32, n: i32, nn: i32, nw: i32, ne: i32, s_h: u32,
         r * r
     };
     let (qh, qv, qd) = (sq(s_h), sq(s_v), sq(s_d));
-    let (ph, pv, pd) = (qv * qd, qh * qd, qh * qv);
+    let (ph, pv, pd) = ((qv * qd) as u128 * fa[0] as u128, (qh * qd) as u128 * fa[1] as u128, (qh * qv) as u128 * fa[2] as u128);
     let d = ph + pv + pd;
 
     let f = 2 + (s135 >= 2 * s45) as i32 - (s45 >= 2 * s135) as i32;
@@ -124,8 +125,33 @@ fn predict(m: i32, w: i32, ww: i32, n: i32, nn: i32, nw: i32, ne: i32, s_h: u32,
     // Refined by the Paeth pick of (W, N, NW): rounded average of the two estimates. Both are >= 0 (each carries `o`).
     let d4 = (((3 * ((4 - f) * nw + f * ne)) / 4 + (w + ne - n) + o + 4 * paeth(w, n, nw) + o + 1) >> 1) as u64;
 
-    let t = (ph * h4 + pv * v4 + pd * d4) / d;
-    (((t + 2) >> 2) as i64 - m as i64).clamp(0, m as i64) as i32
+    let t = ((ph * h4 as u128 + pv * v4 as u128 + pd * d4 as u128) / d) as u64;
+    ((((t + 2) >> 2) as i64 - m as i64).clamp(0, m as i64) as i32, [h4, v4, d4])
+}
+
+/// Adaptive H/V/D weighting: per-estimator running mean of |4x - 4*estimate| (fixed point x16, rate 1/8), updated only
+/// once the reconstructed sample is known to both sides. Factor f_i = 256 * (Emin + 16) / (E_i + 16), floored at 1.
+#[derive(Clone, Copy)]
+struct Shrub {
+    e: [i64; 3],
+}
+
+impl Shrub {
+    #[inline(always)]
+    fn factors(&self) -> [u64; 3] {
+        let mn = self.e[0].min(self.e[1]).min(self.e[2]);
+        let f = |e: i64| ((256 * (mn + 16)) / (e + 16)).max(1) as u64;
+        [f(self.e[0]), f(self.e[1]), f(self.e[2])]
+    }
+
+    #[inline(always)]
+    fn update(&mut self, x: i32, est4: [u64; 3], m: i32) {
+        let t = 4 * x as i64 + 4 * m as i64;
+        for k in 0..3 {
+            let err = (t - est4[k] as i64).abs() << 4;
+            self.e[k] += (err - self.e[k]) >> 3;
+        }
+    }
 }
 
 /// Reusable Stage 1 scanner for one plane geometry. All buffers are allocated once in [`Stage1::new`].
@@ -229,6 +255,7 @@ impl Stage1 {
             return;
         }
         let mid = 1u32 << (self.bits - 1);
+        let mut shrub = Shrub { e: [0; 3] };
         let mut cur: &mut [u16] = &mut self.ra[..];
         let mut p: &mut [u16] = &mut self.rb[..];
         let mut pp: &mut [u16] = &mut self.rc[..];
@@ -277,8 +304,9 @@ impl Stage1 {
                 let s_v = d0[1] as u32 + d1[1] as u32;
                 let s45 = d0[2] as u32;
                 let s135 = d1[3] as u32 + d0[3] as u32;
-                let pr = predict(m, n, n, n, nn, n, ne, s_h, s_v, s45, s135);
+                let (pr, est) = predict(m, n, n, n, nn, n, ne, s_h, s_v, s45, s135, shrub.factors());
                 let xv = resolve(base, pr as u32);
+                shrub.update(xv as i32, est, m);
                 let v = (xv as i32 - n).unsigned_abs() as u16;
                 cur[2] = xv as u16;
                 cur[0] = xv as u16;
@@ -302,8 +330,9 @@ impl Stage1 {
                 let s_v = v_c + d0[1] as u32 + d1[1] as u32;
                 let s45 = a_c + d0[2] as u32;
                 let s135 = d1[3] as u32 + d0[3] as u32;
-                let pr = predict(m, wv, wwv, n, nn, nw, ne, s_h, s_v, s45, s135);
+                let (pr, est) = predict(m, wv, wwv, n, nn, nw, ne, s_h, s_v, s45, s135, shrub.factors());
                 let xv = resolve(base + x, pr as u32) as i32;
+                shrub.update(xv, est, m);
                 let hh = (xv - wv).unsigned_abs();
                 let vv = (xv - n).unsigned_abs();
                 let gg = (xv - nw).unsigned_abs();
@@ -1188,6 +1217,7 @@ mod tests {
             };
             res[x] = src[x] as i32 - p;
         }
+        let mut shrub = Shrub { e: [0; 3] };
         for y in 1..h {
             for x in 0..w {
                 let px = |dx: i64, dy: i64| -> i32 {
@@ -1212,7 +1242,8 @@ mod tests {
                 let s_v = ad(wv, nw) + ad(n, nn) + ad(ne, nne);
                 let s45 = ad(wv, n) + ad(nw, nn);
                 let s135 = ad(ne, nn) + ad(n, nnw);
-                let p = predict(m, wv, wwv, n, nn, nw, ne, s_h, s_v, s45, s135);
+                let (p, est) = predict(m, wv, wwv, n, nn, nw, ne, s_h, s_v, s45, s135, shrub.factors());
+                shrub.update(src[y * w + x] as i32, est, m);
                 res[y * w + x] = src[y * w + x] as i32 - p;
             }
         }
@@ -1330,7 +1361,7 @@ mod tests {
         let nbs: Vec<[i32; 6]> = (0..64).map(|k| { let mut a = [0; 6]; for j in 0..6 { a[j] = if k >> j & 1 == 1 { m } else { 0 }; } a }).collect();
         for &a in &svals { for &b in &svals { for &c in &svals { for &d in &svals {
             for nb in &nbs {
-                let got = predict(m, nb[0], nb[1], nb[2], nb[3], nb[4], nb[5], a, b, c, d);
+                let got = predict(m, nb[0], nb[1], nb[2], nb[3], nb[4], nb[5], a, b, c, d, [256; 3]).0;
                 assert_eq!(got, reference(m, *nb, [a, b, c, d]));
                 assert!((0..=m).contains(&got));
             }
@@ -1344,7 +1375,7 @@ mod tests {
                 for v in nb.iter_mut() { *v = (rng.next() % (m as u64 + 1)) as i32; }
                 let sv = |r: &mut Rng| (r.next() % mx) as u32;
                 let s = [sv(&mut rng), sv(&mut rng), sv(&mut rng), sv(&mut rng)];
-                let got = predict(m, nb[0], nb[1], nb[2], nb[3], nb[4], nb[5], s[0], s[1], s[2], s[3]);
+                let got = predict(m, nb[0], nb[1], nb[2], nb[3], nb[4], nb[5], s[0], s[1], s[2], s[3], [256; 3]).0;
                 assert_eq!(got, reference(m, nb, s));
             }
         }
@@ -1356,11 +1387,11 @@ mod tests {
         for bits in [1u32, 8, 12, 16] {
             let m = (1i32 << bits) - 1;
             for v in [0, 1, m / 2, m - 1, m] {
-                assert_eq!(predict(m, v, v, v, v, v, v, 0, 0, 0, 0), v);
+                assert_eq!(predict(m, v, v, v, v, v, v, 0, 0, 0, 0, [256; 3]).0, v);
             }
         }
         // Equal weights (all S equal), predictors 3/4-valued: P4 mean = 4*value => exact.
-        assert_eq!(predict(255, 10, 10, 10, 10, 10, 10, 5, 5, 5, 5), 10);
+        assert_eq!(predict(255, 10, 10, 10, 10, 10, 10, 5, 5, 5, 5, [256; 3]).0, 10);
     }
 
     fn fnv(res: &[i32]) -> u64 {
@@ -1388,7 +1419,7 @@ mod tests {
         assert_eq!(a, b);
         assert_eq!(a, c);
         // Regression pin (generated by this implementation, not an independent oracle).
-        assert_eq!(fnv(&a), 9328963373863029115, "regression pin");
+        assert_eq!(fnv(&a), 17685256944121565769, "regression pin");
     }
 
     // ---------- Measurements (run with: cargo test --release --lib ellie -- --ignored --nocapture) ----------

@@ -1,0 +1,58 @@
+portrait_0: payload 499908 B, production payload 499908 B, byte-identical to production = true
+screen_0: payload 288947 B, production payload 288947 B, byte-identical to production = true
+night_0: payload 1937980 B, production payload 1937980 B, byte-identical to production = true
+
+pixels 10485760  model cost (node decisions only, excl. raw mantissa + sign) 1992682 B   payload total 2726835 B
+class cost bytes: zero 421143  unary 986873  mant_modelled 584666
+
+== Step 2: zero-flag by west/north corrected-residual zero state ==
+category                n   share%   P(zero)  H(static)b model cost b   cost/H
+W=0,N=0           5202072    49.61    0.9573     1323748       771424    0.583
+W=0,N!=0           786252     7.50    0.4763      784975       551514    0.703
+W!=0,N=0           791344     7.55    0.3106      707310       544208    0.769
+W!=0,N!=0         3706092    35.34    0.1048     1793509      1502000    0.837
+all              10485760             0.5711    10332242      3369147
+sum of per-category static entropies 4609542 b; model zero-flag cost 3369147 b (21.13% of total model cost)
+
+Adaptive (KT) code length of the zero flag under each partition [bytes] — how much information each key carries:
+  B        zero-flag KT     448968 B   unary KT    1011518 B   mant KT     590316 B
+  C        zero-flag KT     459153 B   unary KT    1034200 B   mant KT     590204 B
+  B_qs4    zero-flag KT     446160 B   unary KT    1006913 B   mant KT     589046 B
+  B_qd12   zero-flag KT     447797 B   unary KT    1009897 B   mant KT     590481 B
+  C_qe4    zero-flag KT     459252 B   unary KT    1034575 B   mant KT     591688 B
+  C_qw12   zero-flag KT     459055 B   unary KT    1029615 B   mant KT     590313 B
+  B+cat    zero-flag KT     433689 B   unary KT          0 B   mant KT          0 B
+  C+cat    zero-flag KT     441958 B   unary KT          0 B   mant KT          0 B
+  B+Nz     zero-flag KT     444720 B   unary KT          0 B   mant KT          0 B
+  C+Nz     zero-flag KT     441958 B   unary KT          0 B   mant KT          0 B
+  (model's actual mixed cost: zero 421143 B  unary 986873 B  mant 584666 B)
+  context B: 30.78% of zero-flag observations sit in contexts whose populated categories (>=200 obs) differ in P(zero) by >0.10 (max spread 0.591)
+  context C: 63.12% of zero-flag observations sit in contexts whose populated categories (>=200 obs) differ in P(zero) by >0.10 (max spread 0.732)
+
+== Step 3: adaptation ==
+  window  256 obs, zero-flag slots :   81290 windows, mean n*KL(window freq || mean slot p) = 1.618 bits/window (ideal stationary floor 0.721); excess 9114.8 B total = 2.164% of zero cost
+  window  256 obs, unary slots     :   86566 windows, mean n*KL(window freq || mean slot p) = 0.796 bits/window (ideal stationary floor 0.721); excess 811.6 B total = 0.082% of unary cost
+  window 1024 obs, zero-flag slots :   19928 windows, mean n*KL(window freq || mean slot p) = 0.750 bits/window (ideal stationary floor 0.721); excess 71.4 B total = 0.017% of zero cost
+  window 1024 obs, unary slots     :   20118 windows, mean n*KL(window freq || mean slot p) = 0.442 bits/window (ideal stationary floor 0.721); excess -702.8 B total = -0.071% of unary cost
+  midpoint change test (KT(all) - KT(first half) - KT(second half), all nodes; negative = no evidence of a regime change): B -1329 B, C -1713 B
+
+  transition windows: cost per pixel in a 16-px row segment whose previous segment had a different mean |r| bin
+  bin edges (mean |r|): <0.15,<0.5,<1,<2,<4,<8,<16,>=16
+  up  (>=2 bins higher):    27307 segments; excess vs steady segments of the same bin: segment -0.2811 b/px (-8.05%), first-4px -0.6402 b/px, of which zero flag +0.0866 b/px
+  down (>=2 bins lower):    28105 segments; excess vs steady segments of the same bin: segment +0.0896 b/px (+4.50%), first-4px +0.2579 b/px, of which zero flag +0.0223 b/px
+
+== Step 4: context tables ==
+  qs occupancy (pixels): 0:45.7% 1:2.3% 2:4.0% 3:2.4% 4:5.2% 5:3.8% 6:5.3% 7:4.4% 8:6.9% 9:4.6% 10:5.0% 11:2.5% 12:2.7% 13:1.5% 14:1.7% 15:0.9% 16:0.7% 17:0.2% 18:0.0% 19:0.0% 20:0.0%
+  qd occupancy:          0:56.0% 1:15.4% 2:7.1% 3:4.2% 4:5.1% 5:12.2%
+  qe occupancy:          0:56.8% 1:1.3% 2:1.1% 3:1.9% 4:3.8% 5:2.6% 6:4.9% 7:4.5% 8:6.4% 9:4.1% 10:5.1% 11:2.9% 12:3.0% 13:1.1% 14:0.5% 15:0.0% 16:0.0%
+  qw occupancy:          0:57.1% 1:12.9% 2:6.7% 3:4.3% 4:5.6% 5:3.3% 6:3.5% 7:6.6%
+
+  KT code length [B] of refined partitions vs current (positive gain = finer key would help, before any mixer interaction):
+  B: qs 4 levels/octave          gain zero    +2809  unary    +4605  mant    +1270  (total +8683 B = 0.436% of model cost)
+  B: qd extended to 12 levels    gain zero    +1172  unary    +1621  mant     -165  (total +2627 B = 0.132% of model cost)
+  C: qe 4 levels/octave          gain zero      -99  unary     -374  mant    -1483  (total -1956 B = -0.098% of model cost)
+  C: qw extended to 12 levels    gain zero      +98  unary    +4585  mant     -108  (total +4575 B = 0.230% of model cost)
+  B + 4-way W/N zero state       gain on zero flag   +15279 B (3.628% of zero-flag model cost)
+  C + 4-way W/N zero state       gain on zero flag   +17195 B (4.083% of zero-flag model cost)
+  B + N-zero flag                gain on zero flag    +4249 B (1.009% of zero-flag model cost)
+  C + N-zero flag                gain on zero flag   +17195 B (4.083% of zero-flag model cost)

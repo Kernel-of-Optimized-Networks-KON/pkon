@@ -1,0 +1,41 @@
+bin(bitlen dis4) | samples | share% | mean|e| | mean|r| | rms r | bias helps% | bias hurts% | sign-persist% | lag1 autocorr r
+ 0 | 32193490 | 20.33 | 0.071 | 0.079 | 0.595 | 0.1 | 0.9 | 83.42 | 0.1213
+ 1 | 9807103 | 6.19 | 0.309 | 0.324 | 0.862 | 0.9 | 2.2 | 72.96 | 0.2659
+ 2 | 22208126 | 14.03 | 0.579 | 0.598 | 1.174 | 1.6 | 3.2 | 62.33 | 0.2230
+ 3 | 34769555 | 21.96 | 0.912 | 0.931 | 1.605 | 2.8 | 4.3 | 61.59 | 0.2325
+ 4 | 27848214 | 17.59 | 1.580 | 1.602 | 2.569 | 6.3 | 7.8 | 61.00 | 0.2618
+ 5 | 16639052 | 10.51 | 2.717 | 2.748 | 4.384 | 12.4 | 14.4 | 60.55 | 0.2645
+ 6 | 8582918 | 5.42 | 4.819 | 4.847 | 7.591 | 20.7 | 22.1 | 61.64 | 0.2722
+ 7 | 4084070 | 2.58 | 8.394 | 8.399 | 12.734 | 28.3 | 28.5 | 61.28 | 0.2513
+ 8 | 1679222 | 1.06 | 14.100 | 14.029 | 20.437 | 35.3 | 32.7 | 60.21 | 0.2042
+ 9 | 480790 | 0.30 | 22.325 | 22.129 | 31.124 | 40.3 | 35.7 | 57.43 | 0.1300
+10 | 42416 | 0.03 | 36.791 | 36.460 | 49.941 | 43.8 | 40.4 | 53.42 | 0.0266
+11 | 20 | 0.00 | 61.500 | 61.000 | 74.963 | 55.0 | 40.0 | 60.00 | -0.1677
+
+Pearson corr(log2 disagreement, log2(1+|r|)) = 0.6749
+Pearson corr(log2 disagreement, neighbour residual activity [W,N]) = 0.7779
+Pearson corr(log2(1+|r|), neighbour residual activity) = 0.7075
+Partial corr(disagreement, |r| | neighbour residual activity) = 0.2805
+
+proxy cost = sum log2(1+|r|) (all images), per fixed shift:
+shift 4: 134543244  (+0.4675% vs shift 6)
+shift 5: 134230387  (+0.2339% vs shift 6)
+shift 6: 133917154  (+0.0000% vs shift 6)
+shift 7: 134292854  (+0.2805% vs shift 6)
+shift 8: 154302562  (+15.2224% vs shift 6)
+
+per-bin best shift (train = even-indexed images, test = odd-indexed); cost change vs shift 6 within bin
+bin  0: train best shift 6 (train +0.000%, test +0.000% vs 6)   per-shift test cost vs 6: 4:-3.799% 5:-0.666% 6:+0.000% 7:+4.970% 8:+491.731%
+bin  1: train best shift 6 (train +0.000%, test +0.000% vs 6)   per-shift test cost vs 6: 4:+0.102% 5:+0.493% 6:+0.000% 7:+1.344% 8:+90.019%
+bin  2: train best shift 6 (train +0.000%, test +0.000% vs 6)   per-shift test cost vs 6: 4:+0.704% 5:+0.456% 6:+0.000% 7:+1.017% 8:+35.542%
+bin  3: train best shift 6 (train +0.000%, test +0.000% vs 6)   per-shift test cost vs 6: 4:+0.573% 5:+0.329% 6:+0.000% 7:+0.496% 8:+14.954%
+bin  4: train best shift 6 (train +0.000%, test +0.000% vs 6)   per-shift test cost vs 6: 4:+0.340% 5:+0.226% 6:+0.000% 7:-0.001% 8:+4.064%
+bin  5: train best shift 6 (train +0.000%, test +0.000% vs 6)   per-shift test cost vs 6: 4:+0.962% 5:+0.396% 6:+0.000% 7:-0.067% 8:+1.544%
+bin  6: train best shift 7 (train -0.056%, test -0.126% vs 6)   per-shift test cost vs 6: 4:+0.692% 5:+0.272% 6:+0.000% 7:-0.126% 8:+0.385%
+bin  7: train best shift 7 (train -0.041%, test -0.050% vs 6)   per-shift test cost vs 6: 4:+0.374% 5:+0.125% 6:+0.000% 7:-0.050% 8:+0.149%
+bin  8: train best shift 6 (train +0.000%, test +0.000% vs 6)   per-shift test cost vs 6: 4:+0.102% 5:-0.017% 6:+0.000% 7:+0.038% 8:+0.143%
+bin  9: train best shift 5 (train -0.008%, test +0.017% vs 6)   per-shift test cost vs 6: 4:+0.105% 5:+0.017% 6:+0.000% 7:+0.033% 8:+0.116%
+
+table [6, 6, 6, 6, 6, 6, 7, 7, 6, 5, 6, 6, 6, 6, 6, 6]
+proxy change of table vs shift 6: train -0.0100%  test -0.0218%  (all -0.0161%)
+tab arg: 6,6,6,6,6,6,7,7,6,5,6,6,6,6,6,6

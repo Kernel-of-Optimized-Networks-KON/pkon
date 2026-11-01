@@ -144,3 +144,19 @@ path = "benchmarks/ellie-bc-integration/bench_ellie_profile_ab.rs"
 [[bin]]
 name = "bench_ellie_coder_slack"
 path = "benchmarks/ellie-coder-slack/bench_ellie_coder_slack.rs"
+
+[[bin]]
+name = "exp_ellie_s2_disagree"
+path = "benchmarks/ellie-s2-disagree/exp_ellie_s2_disagree.rs"
+
+[[bin]]
+name = "exp_ellie_s3_audit"
+path = "benchmarks/ellie-s3-audit/exp_ellie_s3_audit.rs"
+
+[[bin]]
+name = "exp_ellie_dvs"
+path = "benchmarks/ellie-deja-vu-shrub/exp_ellie_dvs.rs"
+
+[[bin]]
+name = "bench_ellie_shrub_prod"
+path = "benchmarks/ellie-shrub-prod/bench_ellie_shrub_prod.rs"

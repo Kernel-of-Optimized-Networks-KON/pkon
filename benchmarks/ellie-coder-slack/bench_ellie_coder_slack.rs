@@ -36,6 +36,10 @@ struct Totals {
     interval_bits: f64,
     payload_bytes: u64,
     raw_p_violations: u64,
+    /// Per plane stream: output bits minus the coder's interval bits (flush, byte alignment, dropped lead byte, trimmed zeros).
+    tails: Vec<f64>,
+    /// Per plane stream: output bits minus the interval bits rounded up to whole bytes.
+    tails_over: Vec<f64>,
 }
 
 struct Meter {
@@ -64,9 +68,12 @@ impl Meter {
         self.shifts = 0;
     }
     fn end_plane(&mut self) -> Vec<u8> {
-        self.t.interval_bits += 8.0 * self.shifts as f64 + (u32::MAX as f64 / self.range as f64).log2();
+        let interval = 8.0 * self.shifts as f64 + (u32::MAX as f64 / self.range as f64).log2();
+        self.t.interval_bits += interval;
         let bytes = self.enc.finish().to_vec();
         self.t.payload_bytes += bytes.len() as u64;
+        self.t.tails.push(8.0 * bytes.len() as f64 - interval);
+        self.t.tails_over.push(8.0 * bytes.len() as f64 - 8.0 * (interval / 8.0).ceil());
         bytes
     }
 }
@@ -197,6 +204,19 @@ fn encode_metered(planes: &[Vec<u16>], plane_bits: &[u8], w: usize, h: usize) ->
     (payload, m.t)
 }
 
+fn quantile(v: &[f64], q: f64) -> f64 {
+    let mut s = v.to_vec();
+    s.sort_by(|a, b| a.partial_cmp(b).unwrap());
+    let x = q * (s.len() - 1) as f64;
+    let (lo, hi) = (x.floor() as usize, x.ceil() as usize);
+    s[lo] + (s[hi] - s[lo]) * (x - lo as f64)
+}
+
+fn dist(v: &[f64]) -> serde_json::Value {
+    serde_json::json!({"min": quantile(v, 0.0), "p10": quantile(v, 0.1), "p25": quantile(v, 0.25), "median": quantile(v, 0.5),
+        "p75": quantile(v, 0.75), "p90": quantile(v, 0.9), "max": quantile(v, 1.0), "mean": v.iter().sum::<f64>() / v.len() as f64})
+}
+
 fn main() {
     if cfg!(debug_assertions) {
         eprintln!("use --release");
@@ -205,79 +225,64 @@ fn main() {
     let a: Vec<String> = std::env::args().collect();
     let arg = |k: &str| a.iter().position(|x| x == k).map(|i| a[i + 1].clone());
     let set = arg("--set").unwrap_or("50".into());
-    let reps: usize = arg("--reps").unwrap_or("3".into()).parse().unwrap();
+    let reps: usize = arg("--reps").unwrap_or("2".into()).parse().unwrap();
+    assert!(reps >= 2, "determinism needs at least two instrumented encodes");
     let out = PathBuf::from(arg("--out").unwrap());
+    let refdir = PathBuf::from(arg("--ref").unwrap_or("benchmarks/ellie-bc-integration/ab50/bc255s11".into()));
     std::fs::create_dir_all(&out).unwrap();
 
     let mut csv = String::from(
-        "image,w,h,planes,repr,pixels,file_bytes,container_bytes,payload_bytes,payload_bits,model_bits,interval_bits,arith_loss_bits,term_bits,slack_bits,slack_pct,payload_bpp,model_bpp,\
-         zero_bits,exp_bits,mant_model_bits,mant_raw_bits,sign_bits,decisions,roundtrip,deterministic,payload_identical,t_prod_s,t_instr_s\n",
+        "image,w,h,planes,repr,pixels,file_bytes,header_bytes,meta_bytes,payload_bytes,payload_bits,model_bits,interval_bits,arith_loss_bits,term_bits,slack_bits,slack_pct,payload_bpp,model_bpp,\
+         zero_bits,exp_bits,mant_model_bits,mant_raw_bits,sign_bits,decisions,deterministic,payload_identical\n",
     );
     let mut agg = Totals::default();
-    let (mut tot_file, mut tot_container, mut tot_px, mut tot_payload_bits, mut tot_tp, mut tot_ti) = (0u64, 0u64, 0u64, 0u64, 0f64, 0f64);
-    let (mut all_rt, mut all_det, mut all_ident) = (true, true, true);
-    let (mut tail_min, mut tail_max) = (f64::MAX, f64::MIN);
+    let (mut tot_file, mut tot_hdr, mut tot_meta, mut tot_px, mut tot_payload_bits) = (0u64, 0u64, 0u64, 0u64, 0u64);
+    let (mut all_det, mut all_ident) = (true, true);
     let mut per_image = vec![];
+    let (mut slack_bits_v, mut slack_pct_v, mut term_v, mut tail_v, mut tail_over_v) = (vec![], vec![], vec![], vec![], vec![]);
     for (name, img) in load(&set) {
         let (w, h) = (img.spec.width as usize, img.spec.height as usize);
         let px = (w * h) as u64;
-        // Production file (Auto representation choice), twice: determinism of the production path.
-        let prod = pkon::encode_standard_profile(&img, EllieRepr::Auto, PROFILE).unwrap();
-        let prod2 = pkon::encode_standard_profile(&img, EllieRepr::Auto, PROFILE).unwrap();
+        // The recovered production file: source of the representation, plane depths and the reference payload.
+        let prod = std::fs::read(refdir.join(format!("{name}.pkon"))).unwrap();
         let hdr = pkon::parse_header(&prod).unwrap();
         let CodecParams::Ellie(p) = &hdr.params else { panic!("not ELLIE") };
+        assert_eq!((hdr.width as usize, hdr.height as usize), (w, h), "{name}: recovered file dimensions differ from the corpus crop");
         let ycocg = p.representation == ELLIE_REPR_YCOCG_R;
         let plane_bits: Vec<u8> = p.planes.iter().map(|x| x.0).collect();
         let prod_payload = &prod[FIXED_HEADER_LEN + hdr.meta_len as usize..];
         assert_eq!(prod_payload.len() as u32, hdr.payload_len);
-        let rt = match pkon::decode(&prod).unwrap() {
-            pkon::Decoded::Standard(b) => b.data == img.data && b.spec == img.spec,
-            _ => false,
-        };
-        let planes = split_planes(&img, ycocg);
-        let (mut tp, mut ti) = (f64::MAX, f64::MAX);
         let mut first: Option<(Vec<u8>, Totals)> = None;
-        let (mut det, mut ident) = (prod == prod2, true);
-        let repr = if ycocg { EllieRepr::YCoCgR } else { EllieRepr::Untransformed };
-        for rep in 0..reps {
-            // Alternate order so neither side systematically benefits from cache state.
-            for j in 0..2 {
-                if (j + rep) % 2 == 0 {
-                    let t = Instant::now();
-                    let f = pkon::encode_standard_profile(&img, repr, PROFILE).unwrap();
-                    tp = tp.min(t.elapsed().as_secs_f64());
-                    ident &= f == prod;
-                } else {
-                    let t = Instant::now();
-                    let r = encode_metered(&split_planes(&img, ycocg), &plane_bits, w, h);
-                    ti = ti.min(t.elapsed().as_secs_f64());
-                    match &first {
-                        None => first = Some(r),
-                        Some((b, t0)) => {
-                            det &= *b == r.0 && t0.cost.iter().zip(&r.1.cost).all(|(x, y)| x.to_bits() == y.to_bits()) && t0.interval_bits.to_bits() == r.1.interval_bits.to_bits();
-                        }
-                    }
+        let mut det = true;
+        for _ in 0..reps {
+            let r = encode_metered(&split_planes(&img, ycocg), &plane_bits, w, h);
+            match &first {
+                None => first = Some(r),
+                Some((b, t0)) => {
+                    det &= *b == r.0 && t0.cost.iter().zip(&r.1.cost).all(|(x, y)| x.to_bits() == y.to_bits()) && t0.interval_bits.to_bits() == r.1.interval_bits.to_bits();
                 }
             }
         }
         let (payload, t) = first.unwrap();
-        ident &= payload == prod_payload;
+        let ident = payload == prod_payload;
         let model: f64 = t.cost.iter().sum();
         let actual = 8.0 * payload.len() as f64;
-        let container = prod.len() as u64 - payload.len() as u64;
-        let tail = actual - t.interval_bits;
-        tail_min = tail_min.min(tail);
-        tail_max = tail_max.max(tail);
+        let term = actual - t.interval_bits;
         let slack = actual - model;
-        println!("{name}: model {:.0} b  payload {} b  slack {:.0} b ({:.4}%)  ycocg={ycocg} rt={rt} det={det} ident={ident}", model, actual as u64, slack, slack / model * 100.0);
+        slack_bits_v.push(slack);
+        slack_pct_v.push(slack / model * 100.0);
+        term_v.push(term);
+        tail_v.extend(t.tails.iter().copied());
+        tail_over_v.extend(t.tails_over.iter().copied());
+        println!("{name}: model {:.0} b  payload {} b  slack {:.0} b ({:.4}%)  ycocg={ycocg} det={det} ident={ident}", model, actual as u64, slack, slack / model * 100.0);
         csv += &format!(
-            "{name},{w},{h},{},{},{px},{},{container},{},{},{:.3},{:.3},{:.3},{:.3},{:.3},{:.5},{:.5},{:.5},{:.3},{:.3},{:.3},{:.3},{:.3},{},{rt},{det},{ident},{tp:.4},{ti:.4}\n",
-            planes.len(), p.representation, prod.len(), payload.len(), actual as u64, model, t.interval_bits, t.interval_bits - model, tail, slack, slack / model * 100.0,
+            "{name},{w},{h},{},{},{px},{},{FIXED_HEADER_LEN},{},{},{},{:.3},{:.3},{:.3},{:.3},{:.3},{:.5},{:.5},{:.5},{:.3},{:.3},{:.3},{:.3},{:.3},{},{det},{ident}\n",
+            plane_bits.len(), p.representation, prod.len(), hdr.meta_len, payload.len(), actual as u64, model, t.interval_bits, t.interval_bits - model, term, slack, slack / model * 100.0,
             actual / px as f64, model / px as f64, t.cost[0], t.cost[1], t.cost[2], t.cost[3], t.cost[4], t.n.iter().sum::<u64>()
         );
-        per_image.push(serde_json::json!({"image": name, "repr": p.representation, "pixels": px, "file_bytes": prod.len(), "container_bytes": container,
-            "payload_bits": actual, "model_bits": model, "interval_bits": t.interval_bits, "slack_bits": slack, "slack_pct": slack / model * 100.0,
-            "payload_bpp": actual / px as f64, "model_bpp": model / px as f64, "roundtrip": rt, "deterministic": det, "payload_identical": ident}));
+        per_image.push(serde_json::json!({"image": name, "repr": p.representation, "pixels": px, "file_bytes": prod.len(), "meta_bytes": hdr.meta_len,
+            "payload_bits": actual, "model_bits": model, "interval_bits": t.interval_bits, "termination_bits": term, "slack_bits": slack, "slack_pct": slack / model * 100.0,
+            "payload_bpp": actual / px as f64, "model_bpp": model / px as f64, "deterministic": det, "payload_identical": ident}));
         for c in 0..5 {
             agg.cost[c] += t.cost[c];
             agg.n[c] += t.n[c];
@@ -287,12 +292,10 @@ fn main() {
         agg.payload_bytes += payload.len() as u64;
         agg.raw_p_violations += t.raw_p_violations;
         tot_file += prod.len() as u64;
-        tot_container += container;
+        tot_hdr += FIXED_HEADER_LEN as u64;
+        tot_meta += hdr.meta_len as u64;
         tot_px += px;
         tot_payload_bits += payload.len() as u64 * 8;
-        tot_tp += tp;
-        tot_ti += ti;
-        all_rt &= rt;
         all_det &= det;
         all_ident &= ident;
     }
@@ -302,21 +305,23 @@ fn main() {
         .map(|c| serde_json::json!({"class": CLASSES[c], "decisions": agg.n[c], "ones": agg.ones[c], "model_bits": agg.cost[c], "bits_per_decision": agg.cost[c] / agg.n[c] as f64}))
         .collect();
     let res = serde_json::json!({
-        "profile": "Bc255S11", "set": set, "images": per_image.len(), "pixels": tot_px, "reps": reps,
-        "file_bytes_total": tot_file, "container_bytes_total": tot_container,
+        "profile": "Bc255S11", "set": set, "images": per_image.len(), "streams": tail_v.len(), "pixels": tot_px, "reps": reps, "reference_dir": refdir.to_string_lossy(),
+        "file_bytes_total": tot_file, "header_bytes_total": tot_hdr, "meta_bytes_total": tot_meta, "container_bytes_total": tot_hdr + tot_meta,
         "payload_bytes_total": agg.payload_bytes, "payload_bits_total": tot_payload_bits,
         "model_bits_total": model, "model_bytes_total": model / 8.0,
         "interval_bits_total": agg.interval_bits, "arith_loss_bits": agg.interval_bits - model, "termination_bits": actual - agg.interval_bits,
-        "termination_bits_per_stream_min": tail_min, "termination_bits_per_stream_max": tail_max,
         "slack_bits": actual - model, "slack_bytes": (actual - model) / 8.0, "slack_pct": (actual - model) / model * 100.0,
+        "arith_loss_pct_of_model": (agg.interval_bits - model) / model * 100.0, "termination_pct_of_model": (actual - agg.interval_bits) / model * 100.0,
+        "container_pct_of_file": (tot_hdr + tot_meta) as f64 / tot_file as f64 * 100.0,
         "payload_bpp": actual / tot_px as f64, "model_bpp": model / tot_px as f64,
+        "dist_slack_bits_per_image": dist(&slack_bits_v), "dist_slack_pct_per_image": dist(&slack_pct_v), "dist_termination_bits_per_image": dist(&term_v),
+        "dist_termination_bits_per_stream": dist(&tail_v), "dist_termination_over_byte_aligned_interval_bits_per_stream": dist(&tail_over_v),
         "classes": classes, "raw_p_violations": agg.raw_p_violations,
-        "all_roundtrip": all_rt, "all_deterministic": all_det, "all_payload_identical": all_ident,
-        "t_prod_single_repr_encode_s": tot_tp, "t_instrumented_encode_s": tot_ti,
+        "all_deterministic": all_det, "all_payload_identical": all_ident,
         "per_image": per_image,
     });
     std::fs::write(out.join("per_image.csv"), csv).unwrap();
     std::fs::write(out.join("results.json"), serde_json::to_string_pretty(&res).unwrap()).unwrap();
-    println!("TOTAL files {tot_file} B  payload {} B  model {:.0} b ({:.0} B)  slack {:.0} b ({:.4}%)  rt={all_rt} det={all_det} ident={all_ident}", agg.payload_bytes, model, model / 8.0, actual - model, (actual - model) / model * 100.0);
+    println!("TOTAL files {tot_file} B  payload {} B  model {:.0} b ({:.0} B)  slack {:.0} b ({:.4}%)  det={all_det} ident={all_ident}", agg.payload_bytes, model, model / 8.0, actual - model, (actual - model) / model * 100.0);
     let _ = Layout::Rgb;
 }

@@ -1,0 +1,14 @@
+outdoor_0: prod 918990  ctrl 918990  exp 918765  (-0.024%)  ident=true exact=[true, true, true] det=true
+outdoor_1: prod 579596  ctrl 579596  exp 578919  (-0.117%)  ident=true exact=[true, true, true] det=true
+indoor_0: prod 434491  ctrl 434491  exp 435992  (+0.345%)  ident=true exact=[true, true, true] det=true
+indoor_1: prod 699297  ctrl 699297  exp 699053  (-0.035%)  ident=true exact=[true, true, true] det=true
+portrait_0: prod 499958  ctrl 499958  exp 499823  (-0.027%)  ident=true exact=[true, true, true] det=true
+pet_0: prod 861928  ctrl 861928  exp 861788  (-0.016%)  ident=true exact=[true, true, true] det=true
+pet_1: prod 925302  ctrl 925302  exp 925251  (-0.006%)  ident=true exact=[true, true, true] det=true
+pet2_0: prod 945220  ctrl 945220  exp 944992  (-0.024%)  ident=true exact=[true, true, true] det=true
+pet2_1: prod 608599  ctrl 608599  exp 608255  (-0.057%)  ident=true exact=[true, true, true] det=true
+food_0: prod 1313051  ctrl 1313051  exp 1312989  (-0.005%)  ident=true exact=[true, true, true] det=true
+food_1: prod 891425  ctrl 891425  exp 890818  (-0.068%)  ident=true exact=[true, true, true] det=true
+foliage_0: prod 1332791  ctrl 1332791  exp 1332664  (-0.010%)  ident=true exact=[true, true, true] det=true
+foliage_1: prod 771947  ctrl 771947  exp 771245  (-0.091%)  ident=true exact=[true, true, true] det=true
+night_0: prod 1938030  ctrl 1938030  exp 1946648  (+0.445%)  ident=true exact=[true, true, true] det=true

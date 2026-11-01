@@ -1,0 +1,5 @@
+image repr(base/dvs) base_B dvs_B delta_B delta% enc_base_s enc_dvs_s dec_base_s dec_dvs_s lossless deterministic prod_match
+portrait_0 ycocg/ycocg 499958 494182 -5776 -1.155 0.4439 0.4998 0.1989 0.2532 true true true
+screen_0 ycocg/ycocg 289002 283969 -5033 -1.742 0.4749 0.5762 0.2755 0.3528 true true true
+night_0 ycocg/ycocg 1938030 1933016 -5014 -0.259 0.7895 0.8519 0.4297 0.4804 true true true
+TOTAL base 2726990 dvs 2711167 delta -15823 (-0.580%)

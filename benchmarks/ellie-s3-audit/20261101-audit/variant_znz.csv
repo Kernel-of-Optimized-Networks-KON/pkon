@@ -1,0 +1,4 @@
+image,baseline_bytes,variant_bytes,delta_bytes,delta_pct,lossless,deterministic
+portrait_0,499908,499878,-30,-0.0060,true,true
+screen_0,288947,288684,-263,-0.0910,true,true
+night_0,1937980,1938028,48,0.0025,true,true

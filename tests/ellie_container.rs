@@ -173,13 +173,19 @@ fn damaged_and_truncated_files_fail_safely() {
         let mut t = f.clone();
         t.push(0);
         assert_eq!(decode(&t).unwrap_err(), ContainerError::TrailingBytes(1));
-        // A flipped payload bit anywhere (header checksum still valid) is caught by the pixel checksum or stream decode.
+        // A flipped payload bit anywhere (header checksum still valid) must be caught by the pixel checksum or stream
+        // decode, or else leave the pixels exactly as they were. The range coder's termination leaves a few low bits of
+        // each stream's final byte unread, so flipping one of those is harmless and decodes to identical pixels.
         let mut x = 5u32;
         for _ in 0..200 {
             let mut b = f.clone();
             let at = payload_at + lcg(&mut x) as usize % (f.len() - payload_at);
             b[at] ^= 1 << (lcg(&mut x) % 8);
-            assert!(decode(&b).is_err(), "bit flip at {at}");
+            match decode(&b) {
+                Err(_) => {}
+                Ok(Decoded::Standard(c)) => assert!(c.data == im.data && c.spec == im.spec, "bit flip at {at} changed pixels undetected"),
+                Ok(_) => panic!("bit flip at {at} changed the codec"),
+            }
         }
         // Whole-plane damage: zero or garble each plane's stream in turn.
         let CodecParams::Ellie(p) = h.params else { panic!() };

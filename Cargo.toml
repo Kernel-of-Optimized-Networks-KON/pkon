@@ -160,3 +160,15 @@ path = "benchmarks/ellie-deja-vu-shrub/exp_ellie_dvs.rs"
 [[bin]]
 name = "bench_ellie_shrub_prod"
 path = "benchmarks/ellie-shrub-prod/bench_ellie_shrub_prod.rs"
+
+[[bin]]
+name = "bench_ellie_dvs_adaptive"
+path = "benchmarks/ellie-dvs-adaptive/bench_ellie_dvs_adaptive.rs"
+
+[[bin]]
+name = "bench_ellie_shrub_pow"
+path = "benchmarks/ellie-shrub-pow/bench_ellie_shrub_pow.rs"
+
+[[bin]]
+name = "bench_ellie_pow_prod"
+path = "benchmarks/ellie-pow-prod/bench_ellie_pow_prod.rs"

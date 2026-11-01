@@ -450,6 +450,9 @@ impl Stage2 {
 
 const S3_LIMIT: u32 = 127;
 const S3_MIX_SHIFT: u32 = 10;
+// Profile `Bc255S11`: same model with only contexts B and C mixed (A and D contribute nothing), count cap 255, mixer shift 11.
+const S3_LIMIT_BC: u32 = 255;
+const S3_MIX_SHIFT_BC: u32 = 11;
 const S3_W_CLAMP: i32 = 1 << 20;
 const S3_IN: usize = 5;
 const NQ: usize = 32; // qS / qE levels
@@ -538,19 +541,28 @@ fn s3q(v: u32) -> usize {
 }
 
 #[inline(always)]
-fn s3_update_slot(s: &mut u32, bit: u32) {
+fn s3_update_slot(s: &mut u32, bit: u32, limit: u32) {
     let n = *s & 1023;
     let p = (*s >> 10) as i64;
     let target = if bit != 0 { (1i64 << 22) - 1 } else { 0 };
-    // n <= S3_LIMIT < 256, so the mask is a no-op that lets the compiler drop the bounds check.
+    // n <= limit <= 255, so the mask is a no-op that lets the compiler drop the bounds check.
     let p = p + (((target - p) * RECIP[(n & 255) as usize] as i64) >> 16);
-    *s = ((p as u32) << 10) | (n + (n < S3_LIMIT) as u32);
+    *s = ((p as u32) << 10) | (n + (n < limit) as u32);
 }
 
 #[inline(always)]
 fn s3_input(s: u32) -> i32 {
     let n = ((s & 1023) as usize).min(4);
     (STRETCH[(s >> 20) as usize] as i32 * CONF[n]) >> 3
+}
+
+/// Stage 3 configuration. Each profile is a distinct bitstream; the container records which one a file was written with.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Stage3Profile {
+    /// Original model: contexts A, B, C, D mixed; count cap 127; mixer shift 10. Used by files written before profiles existed.
+    Legacy4,
+    /// Contexts B and C only; count cap 255; mixer shift 11 (sign slots use the same cap). Same for every plane.
+    Bc255S11,
 }
 
 /// Stage 3 model for one plane of `width x height` residuals, coded in raster order.
@@ -571,10 +583,16 @@ pub struct Stage3 {
     t: Vec<u32>,
     sg: [u32; 9],
     wt: Vec<[i32; S3_IN]>,
+    profile: Stage3Profile,
 }
 
 impl Stage3 {
+    /// Model with the [`Stage3Profile::Legacy4`] profile.
     pub fn new(width: usize, height: usize, bits: u32) -> Result<Self, Stage3Error> {
+        Self::with_profile(width, height, bits, Stage3Profile::Legacy4)
+    }
+
+    pub fn with_profile(width: usize, height: usize, bits: u32, profile: Stage3Profile) -> Result<Self, Stage3Error> {
         if !(1..=MAX_BITS).contains(&bits) {
             return Err(Stage3Error::BadBits(bits));
         }
@@ -593,6 +611,7 @@ impl Stage3 {
             t: vec![SLOT_INIT; S3_SLOTS],
             sg: [SLOT_INIT; 9],
             wt: vec![[0; S3_IN]; 4 * 64],
+            profile,
         };
         s.reset();
         Ok(s)
@@ -630,8 +649,17 @@ impl Stage3 {
         if res.iter().any(|&r| r.unsigned_abs() > lim) {
             return Err(Stage3Error::ResidualOutOfRange);
         }
-        for &r in res {
-            self.code_sample(io, r);
+        match self.profile {
+            Stage3Profile::Legacy4 => {
+                for &r in res {
+                    self.code_sample_g::<I, false>(io, r);
+                }
+            }
+            Stage3Profile::Bc255S11 => {
+                for &r in res {
+                    self.code_sample_g::<I, true>(io, r);
+                }
+            }
         }
         Ok(())
     }
@@ -641,22 +669,39 @@ impl Stage3 {
         if out.len() != self.w * self.h {
             return Err(Stage3Error::BadLength);
         }
-        for o in out.iter_mut() {
-            *o = self.code_sample(io, 0);
+        match self.profile {
+            Stage3Profile::Legacy4 => {
+                for o in out.iter_mut() {
+                    *o = self.code_sample_g::<I, false>(io, 0);
+                }
+            }
+            Stage3Profile::Bc255S11 => {
+                for o in out.iter_mut() {
+                    *o = self.code_sample_g::<I, true>(io, 0);
+                }
+            }
         }
         Ok(())
     }
 
     #[inline(always)]
-    fn code_bit<I: BitIo>(&mut self, io: &mut I, idx: [usize; 3], wb: usize, node: usize, want: u32) -> u32 {
+    fn code_bit<I: BitIo, const BC: bool>(&mut self, io: &mut I, idx: [usize; 3], wb: usize, node: usize, want: u32) -> u32 {
         let (ia, ib, ic) = (idx[0] + node, idx[1] + node, idx[2] + node);
         let id = OFF_D + node;
         // Bounds: node <= 62; ia/ib/ic/id < S3_SLOTS by the qS/qd/qE/qW caps; wb + node < 256 (wb <= 192).
         debug_assert!(ia < S3_SLOTS && ib < S3_SLOTS && ic < S3_SLOTS && id < S3_SLOTS && wb + node < self.wt.len());
+        let (limit, shift) = if BC { (S3_LIMIT_BC, S3_MIX_SHIFT_BC) } else { (S3_LIMIT, S3_MIX_SHIFT) };
         let (t, wt) = (&mut self.t[..], &mut self.wt[..]);
-        // SAFETY: indices are within the allocations (see above).
-        let (sa, sb, sc, sd) = unsafe { (*t.get_unchecked(ia), *t.get_unchecked(ib), *t.get_unchecked(ic), *t.get_unchecked(id)) };
-        let inp = [s3_input(sa), s3_input(sb), s3_input(sc), s3_input(sd), 256];
+        // SAFETY: indices are within the allocations (see above). Under BC the A and D inputs are fixed at 0 and never read.
+        let (sa, sb, sc, sd) = unsafe {
+            (
+                if BC { SLOT_INIT } else { *t.get_unchecked(ia) },
+                *t.get_unchecked(ib),
+                *t.get_unchecked(ic),
+                if BC { SLOT_INIT } else { *t.get_unchecked(id) },
+            )
+        };
+        let inp = [if BC { 0 } else { s3_input(sa) }, s3_input(sb), s3_input(sc), if BC { 0 } else { s3_input(sd) }, 256];
         let ws = unsafe { wt.get_unchecked_mut(wb + node) };
         // |in| <= 2047 and |w| <= 2^20, so each product fits i32 exactly; the sum is taken in i64 as before.
         let dot = (inp[0] * ws[0]) as i64 + (inp[1] * ws[1]) as i64 + (inp[2] * ws[2]) as i64 + (inp[3] * ws[3]) as i64 + (inp[4] * ws[4]) as i64;
@@ -666,18 +711,30 @@ impl Stage3 {
         let bit = io.code(p16 as u32, want);
         let err = ((bit as i32) << 12) - p12;
         for i in 0..S3_IN {
-            ws[i] = (ws[i] + ((inp[i] * err) >> S3_MIX_SHIFT)).clamp(-S3_W_CLAMP, S3_W_CLAMP);
+            ws[i] = (ws[i] + ((inp[i] * err) >> shift)).clamp(-S3_W_CLAMP, S3_W_CLAMP);
         }
-        s3_update_slot(unsafe { t.get_unchecked_mut(ia) }, bit);
-        s3_update_slot(unsafe { t.get_unchecked_mut(ib) }, bit);
-        s3_update_slot(unsafe { t.get_unchecked_mut(ic) }, bit);
-        s3_update_slot(unsafe { t.get_unchecked_mut(id) }, bit);
+        if !BC {
+            s3_update_slot(unsafe { t.get_unchecked_mut(ia) }, bit, limit);
+        }
+        s3_update_slot(unsafe { t.get_unchecked_mut(ib) }, bit, limit);
+        s3_update_slot(unsafe { t.get_unchecked_mut(ic) }, bit, limit);
+        if !BC {
+            s3_update_slot(unsafe { t.get_unchecked_mut(id) }, bit, limit);
+        }
         bit
     }
 
     /// Code one residual. Encoder passes the true value; decoder passes anything (ignored) and gets the decoded value.
     #[inline(always)]
     pub fn code_sample<I: BitIo>(&mut self, io: &mut I, r: i32) -> i32 {
+        match self.profile {
+            Stage3Profile::Legacy4 => self.code_sample_g::<I, false>(io, r),
+            Stage3Profile::Bc255S11 => self.code_sample_g::<I, true>(io, r),
+        }
+    }
+
+    #[inline(always)]
+    fn code_sample_g<I: BitIo, const BC: bool>(&mut self, io: &mut I, r: i32) -> i32 {
         let x = self.x;
         let i = x + 1;
         if x == 0 {
@@ -697,23 +754,23 @@ impl Stage3 {
 
         let a_in = r.unsigned_abs();
         let k_in = 32 - a_in.leading_zeros();
-        let nz = self.code_bit(io, idx, wb, 0, (a_in != 0) as u32);
+        let nz = self.code_bit::<I, BC>(io, idx, wb, 0, (a_in != 0) as u32);
         let mut a = 0u32;
         let mut neg = 0u32;
         if nz != 0 {
             let mut k = 1u32;
             while k < self.kmax {
-                if self.code_bit(io, idx, wb, k as usize, (k_in > k) as u32) == 0 {
+                if self.code_bit::<I, BC>(io, idx, wb, k as usize, (k_in > k) as u32) == 0 {
                     break;
                 }
                 k += 1;
             }
             a = 1;
             if k >= 2 {
-                let t = self.code_bit(io, idx, wb, 15 + k as usize, (a_in >> (k - 2)) & 1);
+                let t = self.code_bit::<I, BC>(io, idx, wb, 15 + k as usize, (a_in >> (k - 2)) & 1);
                 a = 2 + t;
                 if k >= 3 {
-                    let u = self.code_bit(io, idx, wb, 33 + 2 * (k as usize - 3) + t as usize, (a_in >> (k - 3)) & 1);
+                    let u = self.code_bit::<I, BC>(io, idx, wb, 33 + 2 * (k as usize - 3) + t as usize, (a_in >> (k - 3)) & 1);
                     a = 2 * a + u;
                     for b in (0..k - 3).rev() {
                         a = 2 * a + io.code(32768, (a_in >> b) & 1);
@@ -722,7 +779,7 @@ impl Stage3 {
             }
             let ps = (self.sg[sgi] >> 16).clamp(32, 65535 - 32);
             neg = io.code(ps, (r < 0) as u32);
-            s3_update_slot(&mut self.sg[sgi], neg);
+            s3_update_slot(&mut self.sg[sgi], neg, if BC { S3_LIMIT_BC } else { S3_LIMIT });
         }
 
         self.cur_m[i] = a;
@@ -936,10 +993,15 @@ pub struct EllieCodec {
 }
 
 impl EllieCodec {
+    /// Codec with the [`Stage3Profile::Legacy4`] Stage 3 profile.
     pub fn new(width: usize, height: usize, bits: u32) -> Result<Self, EllieError> {
+        Self::with_profile(width, height, bits, Stage3Profile::Legacy4)
+    }
+
+    pub fn with_profile(width: usize, height: usize, bits: u32, profile: Stage3Profile) -> Result<Self, EllieError> {
         Ok(Self {
             s1: Stage1::new(width, height, bits)?,
-            s3: Stage3::new(width, height, bits)?,
+            s3: Stage3::with_profile(width, height, bits, profile)?,
             res: vec![0; width * height],
             n: width * height,
             carry_model: false,
@@ -2088,5 +2150,70 @@ mod tests {
             "ns/sample: model only {:.1}, model+stage4 enc {:.1}, +half-shift variant {:.1}, model+stage4 dec {:.1}",
             t_null / n * 1e9, t_s4 / n * 1e9, t_br / n * 1e9, t_dec / n * 1e9
         );
+    }
+
+    /// Bc255S11: encoder and decoder models agree on every coded probability and end in identical state; the profile
+    /// really differs from Legacy4; and reset() restores the exact initial state.
+    #[test]
+    fn stage3_bc_profile_lockstep_determinism_and_distinct_from_legacy() {
+        let mut rng = Rng(777);
+        for &(w, h, bits) in &[(61usize, 47usize, 12u32), (33, 20, 8), (17, 9, 9), (5, 40, 16)] {
+            let r: Vec<i32> = (0..w * h).map(|i| laplace(&mut rng, if (i / w / 8) % 2 == 0 { 1.5 } else { 40.0 }).clamp(-2 * ((1 << bits) - 1), 2 * ((1 << bits) - 1))).collect();
+            let run = |p| {
+                let mut m = Stage3::with_profile(w, h, bits, p).unwrap();
+                let mut io = RecIo { log: Vec::new(), bits: 0.0 };
+                m.encode_plane(&r, &mut io).unwrap();
+                (m, io.log)
+            };
+            let (m1, log1) = run(Stage3Profile::Bc255S11);
+            let (m2, log2) = run(Stage3Profile::Bc255S11);
+            assert_eq!(log1, log2);
+            assert!(m1 == m2);
+            let mut d = Stage3::with_profile(w, h, bits, Stage3Profile::Bc255S11).unwrap();
+            let mut rp = ReplayIo { log: &log1, i: 0 };
+            let mut out = vec![0i32; w * h];
+            d.decode_plane(&mut out, &mut rp).unwrap();
+            assert_eq!(out, r);
+            assert_eq!(rp.i, log1.len());
+            assert!(d == m1);
+            let mut m3 = m1.clone();
+            m3.reset();
+            assert!(m3 == Stage3::with_profile(w, h, bits, Stage3Profile::Bc255S11).unwrap());
+            assert_ne!(log1, run(Stage3Profile::Legacy4).1, "profiles must give different probability streams");
+        }
+    }
+
+    /// Bc255S11 only touches contexts B and C: slots of A and D stay at their initial value.
+    #[test]
+    fn stage3_bc_profile_leaves_contexts_a_and_d_untouched() {
+        let mut rng = Rng(5);
+        let (w, h) = (40, 30);
+        let r: Vec<i32> = (0..w * h).map(|_| laplace(&mut rng, 6.0)).collect();
+        let mut m = Stage3::with_profile(w, h, 8, Stage3Profile::Bc255S11).unwrap();
+        m.encode_plane(&r, &mut NullIo).unwrap();
+        assert!(m.t[OFF_A..OFF_B].iter().all(|&s| s == SLOT_INIT));
+        assert!(m.t[OFF_D..OFF_D + 64].iter().all(|&s| s == SLOT_INIT));
+        assert!(m.t[OFF_B..OFF_C].iter().any(|&s| s != SLOT_INIT));
+        assert!(m.t[OFF_C..OFF_D].iter().any(|&s| s != SLOT_INIT));
+        assert!(m.t.iter().all(|&s| s & 1023 <= 255));
+    }
+
+    /// Full Stage 1-4 chain with a real range coder under both profiles, across bit depths.
+    #[test]
+    fn ellie_codec_round_trips_under_both_profiles() {
+        for profile in [Stage3Profile::Legacy4, Stage3Profile::Bc255S11] {
+            for bits in [1u32, 8, 9, 12, 16] {
+                let (w, h) = (23, 17);
+                let mut rng = Rng(bits as u64 * 31 + 1);
+                let maxv = (1u64 << bits) - 1;
+                let plane: Vec<u16> = (0..w * h).map(|i| (((i * 7) as u64 + rng.next() % 9) % (maxv + 1)) as u16).collect();
+                let mut enc = Stage4Enc::new();
+                EllieCodec::with_profile(w, h, bits, profile).unwrap().encode_planes(&[&plane], &mut enc).unwrap();
+                let bytes = enc.finish().to_vec();
+                let mut out = vec![0u16; w * h];
+                EllieCodec::with_profile(w, h, bits, profile).unwrap().decode_planes(&bytes, &mut [out.as_mut_slice()]).unwrap();
+                assert_eq!(out, plane, "{profile:?} bits {bits}");
+            }
+        }
     }
 }

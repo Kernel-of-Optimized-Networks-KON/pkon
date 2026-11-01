@@ -12,7 +12,7 @@
 //! Version 1 files (`.pkon2`, `pkonfile`) share magic and version-byte position with version 2, so `decode` recognises both.
 //! All integers are little-endian and read/written byte by byte; nothing depends on struct layout or host endianness.
 use crate::canon::{Canonical, Layout, Spec};
-use crate::ellie::{self, EllieCodec, Stage4Enc};
+use crate::ellie::{self, EllieCodec, Stage3Profile, Stage4Enc};
 use crate::lisa::{self, CfaPattern, ColorFilter, ImageMetadata, LisaError, ReconstructionRecord, SampleLayout, Stage3Rule, Stage4Output};
 use crate::lisa_bayer_plane::{self as bayer, Stage1Mode};
 use crate::pkonfile::{self, PkonError};
@@ -35,6 +35,10 @@ pub const ELLIE_REPR_UNTRANSFORMED: u8 = 0;
 pub const ELLIE_REPR_YCOCG_R: u8 = 1;
 /// Reconstruction-metadata layout version understood for every assigned codec so far.
 pub const META_VERSION_1: u8 = 1;
+/// ELLIE only: version 1 metadata plus one trailing Stage 3 profile byte. Version 1 ELLIE files are `Stage3Profile::Legacy4`.
+pub const META_VERSION_2: u8 = 2;
+/// Stage 3 profile ids (last metadata byte of an ELLIE version 2 file).
+pub const ELLIE_PROFILE_BC255S11: u8 = 1;
 
 /// LISA codec-metadata values accepted on disk (everything else is rejected, never guessed).
 pub const LISA_STAGE3_RULE_OR128: u8 = lisa::STAGE3_RULE_VERSION;
@@ -205,11 +209,13 @@ pub enum CodecParams {
     Ellie(EllieParams),
 }
 
-/// ELLIE metadata, version 1: `layout u8, representation u8`, then per plane `bit_depth u8, stream_len u32`.
+/// ELLIE metadata: `layout u8, representation u8`, then per plane `bit_depth u8, stream_len u32`. Version 2 appends
+/// `stage3_profile u8`; version 1 has no such byte and means `Stage3Profile::Legacy4`.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct EllieParams {
     pub layout: Layout,
     pub representation: u8,
+    pub profile: Stage3Profile,
     /// `(coding bit depth, encoded stream length)` per plane, in channel order; lengths sum to the payload length.
     pub planes: Vec<(u8, u32)>,
 }
@@ -292,7 +298,7 @@ pub fn parse_header_with_limit(bytes: &[u8], max_decoded_bytes: u64) -> Result<H
         return Err(ContainerError::UnsupportedCodec(codec));
     }
     let ellie = codec == CODEC_ELLIE;
-    if meta_version != META_VERSION_1 {
+    if meta_version != META_VERSION_1 && !(ellie && meta_version == META_VERSION_2) {
         return Err(ContainerError::UnsupportedMetaVersion { codec, version: meta_version });
     }
     if !(if ellie { bit_depth == 8 || bit_depth == 16 } else { (1..=16).contains(&bit_depth) }) {
@@ -317,7 +323,7 @@ pub fn parse_header_with_limit(bytes: &[u8], max_decoded_bytes: u64) -> Result<H
     }
 
     let params = if ellie {
-        CodecParams::Ellie(parse_ellie_meta(meta, bit_depth, channels, payload_len)?)
+        CodecParams::Ellie(parse_ellie_meta(meta, meta_version, bit_depth, channels, payload_len)?)
     } else {
         CodecParams::Lisa(parse_lisa_meta(meta, width, height, bit_depth)?)
     };
@@ -431,7 +437,7 @@ fn serialize_lisa_meta(p: &LisaParams) -> Result<Vec<u8>, ContainerError> {
     Ok(m)
 }
 
-// ---------------------------------------------------------------- ELLIE metadata, version 1
+// ---------------------------------------------------------------- ELLIE metadata, versions 1 and 2
 
 const ELLIE_META_FIXED: usize = 2;
 const ELLIE_PLANE_META: usize = 5;
@@ -466,9 +472,10 @@ fn ellie_plane_bits(repr: u8, layout: Layout, bit_depth: u8, k: usize) -> Option
     }
 }
 
-fn parse_ellie_meta(meta: &[u8], bit_depth: u8, channels: u8, payload_len: u32) -> Result<EllieParams, ContainerError> {
+fn parse_ellie_meta(meta: &[u8], meta_version: u8, bit_depth: u8, channels: u8, payload_len: u32) -> Result<EllieParams, ContainerError> {
     let n = channels as usize;
-    if meta.len() != ELLIE_META_FIXED + ELLIE_PLANE_META * n {
+    let v2 = meta_version == META_VERSION_2;
+    if meta.len() != ELLIE_META_FIXED + ELLIE_PLANE_META * n + v2 as usize {
         return Err(ContainerError::InvalidMetaLength { codec: CODEC_ELLIE, meta_len: meta.len() });
     }
     let unsupported = |field, value| ContainerError::UnsupportedCodecVersion { codec: CODEC_ELLIE, field, value };
@@ -476,6 +483,14 @@ fn parse_ellie_meta(meta: &[u8], bit_depth: u8, channels: u8, payload_len: u32) 
     if layout.channels() != n {
         return Err(ContainerError::InvalidMetadata("layout disagrees with the channel count".into()));
     }
+    let profile = if v2 {
+        match meta[meta.len() - 1] {
+            ELLIE_PROFILE_BC255S11 => Stage3Profile::Bc255S11,
+            p => return Err(unsupported("stage3_profile", p)),
+        }
+    } else {
+        Stage3Profile::Legacy4
+    };
     let representation = meta[1];
     if !matches!(representation, ELLIE_REPR_UNTRANSFORMED | ELLIE_REPR_YCOCG_R) {
         return Err(unsupported("representation", representation));
@@ -499,7 +514,7 @@ fn parse_ellie_meta(meta: &[u8], bit_depth: u8, channels: u8, payload_len: u32) 
     if total != payload_len as u64 {
         return Err(ContainerError::InvalidMetadata("plane stream lengths do not sum to the payload length".into()));
     }
-    Ok(EllieParams { layout, representation, planes })
+    Ok(EllieParams { layout, representation, profile, planes })
 }
 
 fn serialize_ellie_meta(p: &EllieParams) -> Vec<u8> {
@@ -508,6 +523,10 @@ fn serialize_ellie_meta(p: &EllieParams) -> Vec<u8> {
         m.push(bits);
         m.extend_from_slice(&len.to_le_bytes());
     }
+    match p.profile {
+        Stage3Profile::Legacy4 => {}
+        Stage3Profile::Bc255S11 => m.push(ELLIE_PROFILE_BC255S11),
+    }
     m
 }
 
@@ -515,6 +534,7 @@ fn serialize_ellie_meta(p: &EllieParams) -> Vec<u8> {
 
 struct FileParts<'a> {
     codec: u8,
+    meta_version: u8,
     bit_depth: u8,
     channels: u8,
     width: u32,
@@ -529,7 +549,7 @@ fn write_file(p: FileParts) -> Result<Vec<u8>, ContainerError> {
     let payload_len = u32::try_from(p.payload.len()).map_err(|_| ContainerError::UnsupportedImage("payload exceeds 4 GiB".into()))?;
     let mut out = Vec::with_capacity(FIXED_HEADER_LEN + p.meta.len() + p.payload.len());
     out.extend_from_slice(&MAGIC);
-    out.extend_from_slice(&[VERSION, 0, p.codec, META_VERSION_1, p.bit_depth, p.channels]);
+    out.extend_from_slice(&[VERSION, 0, p.codec, p.meta_version, p.bit_depth, p.channels]);
     out.extend_from_slice(&meta_len.to_le_bytes());
     out.extend_from_slice(&p.width.to_le_bytes());
     out.extend_from_slice(&p.height.to_le_bytes());
@@ -562,17 +582,23 @@ pub fn encode_standard(img: &Canonical) -> Result<Vec<u8>, ContainerError> {
 }
 
 pub fn encode_standard_with(img: &Canonical, repr: EllieRepr) -> Result<Vec<u8>, ContainerError> {
+    encode_standard_profile(img, repr, Stage3Profile::Bc255S11)
+}
+
+/// [`encode_standard_with`] with an explicit Stage 3 profile. `Legacy4` writes the original version 1 metadata, so the
+/// file is byte-identical to what earlier releases produced; every other profile writes version 2 metadata naming it.
+pub fn encode_standard_profile(img: &Canonical, repr: EllieRepr, profile: Stage3Profile) -> Result<Vec<u8>, ContainerError> {
     let rgb8 = img.spec.bit_depth == 8 && matches!(img.spec.layout, Layout::Rgb | Layout::Rgba);
     match repr {
-        EllieRepr::Untransformed => encode_ellie(img, ELLIE_REPR_UNTRANSFORMED),
-        EllieRepr::YCoCgR if rgb8 => encode_ellie(img, ELLIE_REPR_YCOCG_R),
+        EllieRepr::Untransformed => encode_ellie(img, ELLIE_REPR_UNTRANSFORMED, profile),
+        EllieRepr::YCoCgR if rgb8 => encode_ellie(img, ELLIE_REPR_YCOCG_R, profile),
         EllieRepr::YCoCgR => Err(ContainerError::UnsupportedImage("YCoCg-R needs 8-bit RGB or RGBA input".into())),
         EllieRepr::Auto => {
-            let plain = encode_ellie(img, ELLIE_REPR_UNTRANSFORMED)?;
+            let plain = encode_ellie(img, ELLIE_REPR_UNTRANSFORMED, profile)?;
             if !rgb8 {
                 return Ok(plain);
             }
-            let ycocg = encode_ellie(img, ELLIE_REPR_YCOCG_R)?;
+            let ycocg = encode_ellie(img, ELLIE_REPR_YCOCG_R, profile)?;
             Ok(if ycocg.len() < plain.len() { ycocg } else { plain })
         }
     }
@@ -582,7 +608,7 @@ fn ellie_err(e: ellie::EllieError) -> ContainerError {
     ContainerError::CorruptPayload(format!("ELLIE: {e:?}"))
 }
 
-fn encode_ellie(img: &Canonical, repr: u8) -> Result<Vec<u8>, ContainerError> {
+fn encode_ellie(img: &Canonical, repr: u8, profile: Stage3Profile) -> Result<Vec<u8>, ContainerError> {
     let Spec { width, height, layout, bit_depth } = img.spec;
     let (w, h, ch) = (width as usize, height as usize, layout.channels());
     let n = w * h;
@@ -612,7 +638,7 @@ fn encode_ellie(img: &Canonical, repr: u8) -> Result<Vec<u8>, ContainerError> {
         let at = match codecs.iter().position(|c| c.0 == bits) {
             Some(i) => i,
             None => {
-                codecs.push((bits, EllieCodec::new(w, h, bits as u32).map_err(ellie_err)?));
+                codecs.push((bits, EllieCodec::with_profile(w, h, bits as u32, profile).map_err(ellie_err)?));
                 codecs.len() - 1
             }
         };
@@ -623,11 +649,12 @@ fn encode_ellie(img: &Canonical, repr: u8) -> Result<Vec<u8>, ContainerError> {
         payload.extend_from_slice(bytes);
         meta_planes.push((bits, len));
     }
-    let meta = serialize_ellie_meta(&EllieParams { layout, representation: repr, planes: meta_planes });
+    let meta = serialize_ellie_meta(&EllieParams { layout, representation: repr, profile, planes: meta_planes });
     let mut crc = Crc32::new();
     crc.update(&img.data);
     write_file(FileParts {
         codec: CODEC_ELLIE,
+        meta_version: if profile == Stage3Profile::Legacy4 { META_VERSION_1 } else { META_VERSION_2 },
         bit_depth,
         channels: ch as u8,
         width,
@@ -650,7 +677,7 @@ fn decode_ellie(hdr: &Header, p: &EllieParams, payload: &[u8]) -> Result<Canonic
         let i = match codecs.iter().position(|c| c.0 == bits) {
             Some(i) => i,
             None => {
-                codecs.push((bits, EllieCodec::new(w, h, bits as u32).map_err(ellie_err)?));
+                codecs.push((bits, EllieCodec::with_profile(w, h, bits as u32, p.profile).map_err(ellie_err)?));
                 codecs.len() - 1
             }
         };
@@ -705,6 +732,7 @@ pub fn encode_raw_with_mode(
     let meta = serialize_lisa_meta(&params)?;
     write_file(FileParts {
         codec: CODEC_LISA,
+        meta_version: META_VERSION_1,
         bit_depth,
         channels: 1,
         width: w32,

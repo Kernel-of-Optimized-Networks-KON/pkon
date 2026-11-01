@@ -1,0 +1,20 @@
+PROD | PROD
+scratch-default | m15b2l127s10 | m15b2l127s10 | m15b2l127s10
+U-BC | m6b2l127s10 | m6b2l127s10 | m6b2l127s10
+U-BC-l255s11 | m6b2l255s11 | m6b2l255s11 | m6b2l255s11
+U-BC-l255s12 | m6b2l255s12 | m6b2l255s12 | m6b2l255s12
+U-BC-l60s11 | m6b2l60s11 | m6b2l60s11 | m6b2l60s11
+U-BC-mb1-l255s11 | m6b1l255s11 | m6b1l255s11 | m6b1l255s11
+U-B | m2b2l127s10 | m2b2l127s10 | m2b2l127s10
+U-C | m4b2l127s10 | m4b2l127s10 | m4b2l127s10
+U-C-l255s11 | m4b2l255s11 | m4b2l255s11 | m4b2l255s11
+U-noD-l255s11 | m7b2l255s11 | m7b2l255s11 | m7b2l255s11
+B-YnoD-CBC | m7b2l255s11 | m6b2l255s11 | m6b2l255s11
+B-YnoD-CAC | m7b2l255s11 | m5b2l255s11 | m5b2l255s11
+B-YBC-CC | m6b2l255s11 | m4b2l255s11 | m4b2l255s11
+B-YBC-CAC | m6b2l255s11 | m5b2l255s11 | m5b2l255s11
+B-YBC-CB | m6b2l255s11 | m2b2l255s11 | m2b2l255s11
+B-YAC-CBC | m5b2l255s11 | m6b2l255s11 | m6b2l255s11
+B-Yfull-CBC | m15b2l255s11 | m6b2l255s11 | m6b2l255s11
+B-YBC-Cfull | m6b2l255s11 | m15b2l255s11 | m15b2l255s11
+B-YnoD-CBCmb1 | m7b2l255s11 | m6b1l255s11 | m6b1l255s11

@@ -1,0 +1,6 @@
+portrait_0.jpg Y: stage1+2 22.0 ms | full encode_planes (incl. stage1/2/3/4) 82.6 ms -> stage3+4 ~60.6 ms | EllieCodec::new 0.06 ms | one res pass 0.17 ms (0.20% of encode) | res buffer 4096 KiB
+portrait_0.jpg Co: stage1+2 16.2 ms | full encode_planes (incl. stage1/2/3/4) 56.0 ms -> stage3+4 ~39.8 ms | EllieCodec::new 0.03 ms | one res pass 0.16 ms (0.29% of encode) | res buffer 4096 KiB
+screen_0.png Y: stage1+2 19.0 ms | full encode_planes (incl. stage1/2/3/4) 71.3 ms -> stage3+4 ~52.3 ms | EllieCodec::new 0.03 ms | one res pass 0.15 ms (0.21% of encode) | res buffer 4096 KiB
+screen_0.png Co: stage1+2 15.8 ms | full encode_planes (incl. stage1/2/3/4) 50.1 ms -> stage3+4 ~34.4 ms | EllieCodec::new 0.03 ms | one res pass 0.15 ms (0.29% of encode) | res buffer 4096 KiB
+night_0.jpg Y: stage1+2 17.7 ms | full encode_planes (incl. stage1/2/3/4) 123.9 ms -> stage3+4 ~106.2 ms | EllieCodec::new 0.05 ms | one res pass 0.15 ms (0.12% of encode) | res buffer 4096 KiB
+night_0.jpg Co: stage1+2 17.4 ms | full encode_planes (incl. stage1/2/3/4) 133.0 ms -> stage3+4 ~115.5 ms | EllieCodec::new 0.06 ms | one res pass 0.15 ms (0.11% of encode) | res buffer 4096 KiB

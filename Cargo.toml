@@ -128,3 +128,15 @@ path = "benchmarks/ellie-paeth/prod-3img-tools/bench_ellie_paeth_prod.rs"
 [[bin]]
 name = "bench_ellie_paeth_full"
 path = "benchmarks/ellie-full-bench/bench_ellie_paeth_full.rs"
+
+[[bin]]
+name = "exp_ellie_pareto"
+path = "benchmarks/ellie-pareto-game3/exp_ellie_pareto.rs"
+
+[[bin]]
+name = "exp_ellie_axisc"
+path = "benchmarks/ellie-pareto-game3/exp_ellie_axisc.rs"
+
+[[bin]]
+name = "bench_ellie_profile_ab"
+path = "benchmarks/ellie-bc-integration/bench_ellie_profile_ab.rs"

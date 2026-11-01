@@ -1,0 +1,7 @@
+image,profile,raw_bytes,file_bytes,enc_min_s,dec_min_s,exact,det,repr
+portrait_0,legacy4,3145728,500597,0.637162,0.349318,true,true,1
+portrait_0,bc255s11,3145728,499958,0.604993,0.285297,true,true,1
+screen_0,legacy4,4194304,285917,0.597203,0.309719,true,true,1
+screen_0,bc255s11,4194304,289002,0.503684,0.254327,true,true,1
+night_0,legacy4,3145728,1947077,1.002458,0.572117,true,true,1
+night_0,bc255s11,3145728,1938030,0.830919,0.462206,true,true,1

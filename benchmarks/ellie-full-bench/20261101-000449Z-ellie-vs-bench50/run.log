@@ -1,0 +1,300 @@
+[1/50] outdoor_0      ellie       1687020 B enc     840 ms dec     871 ms valid true
+[1/50] outdoor_0      jxl-e7-t1    824676 B enc     945 ms dec     481 ms valid true
+[1/50] outdoor_0      jxl-e9-t1    821091 B enc    7381 ms dec     637 ms valid true
+[1/50] outdoor_0      webp-m6-t1   989404 B enc   11079 ms dec     126 ms valid true
+[1/50] outdoor_0      png-rs      1417416 B enc     438 ms dec      10 ms valid true
+== 1/50 images done, elapsed 52s, ETA 2571s ==
+[2/50] outdoor_1      ellie       1046539 B enc     449 ms dec     432 ms valid true
+[2/50] outdoor_1      jxl-e7-t1    520781 B enc     764 ms dec     417 ms valid true
+[2/50] outdoor_1      jxl-e9-t1    510641 B enc    4400 ms dec     362 ms valid true
+[2/50] outdoor_1      webp-m6-t1   594604 B enc    8822 ms dec     104 ms valid true
+[2/50] outdoor_1      png-rs       932530 B enc     390 ms dec      12 ms valid true
+== 2/50 images done, elapsed 90s, ETA 2171s ==
+[3/50] indoor_0       ellie        904861 B enc     284 ms dec     385 ms valid true
+[3/50] indoor_0       jxl-e7-t1    365779 B enc     650 ms dec     353 ms valid true
+[3/50] indoor_0       jxl-e9-t1    359179 B enc    4058 ms dec     358 ms valid true
+[3/50] indoor_0       webp-m6-t1   447900 B enc    9428 ms dec     100 ms valid true
+[3/50] indoor_0       png-rs       775015 B enc     509 ms dec       9 ms valid true
+== 3/50 images done, elapsed 126s, ETA 1969s ==
+[4/50] indoor_1       ellie       1398528 B enc     319 ms dec     419 ms valid true
+[4/50] indoor_1       jxl-e7-t1    612689 B enc     992 ms dec     496 ms valid true
+[4/50] indoor_1       jxl-e9-t1    605142 B enc    4823 ms dec     416 ms valid true
+[4/50] indoor_1       webp-m6-t1   721894 B enc   16650 ms dec     103 ms valid true
+[4/50] indoor_1       png-rs      1168705 B enc     875 ms dec      13 ms valid true
+== 4/50 images done, elapsed 183s, ETA 2103s ==
+[5/50] portrait_0     ellie       1005362 B enc     272 ms dec     486 ms valid true
+[5/50] portrait_0     jxl-e7-t1    398485 B enc     762 ms dec     449 ms valid true
+[5/50] portrait_0     jxl-e9-t1    390589 B enc    3366 ms dec     377 ms valid true
+[5/50] portrait_0     webp-m6-t1   483336 B enc   11173 ms dec      89 ms valid true
+[5/50] portrait_0     png-rs       880271 B enc     898 ms dec      11 ms valid true
+== 5/50 images done, elapsed 226s, ETA 2035s ==
+[6/50] pet_0          ellie       1347844 B enc     351 ms dec     452 ms valid true
+[6/50] pet_0          jxl-e7-t1    709641 B enc     766 ms dec     337 ms valid true
+[6/50] pet_0          jxl-e9-t1    698480 B enc    2861 ms dec     387 ms valid true
+[6/50] pet_0          webp-m6-t1   911822 B enc    9548 ms dec     112 ms valid true
+[6/50] pet_0          png-rs      1279408 B enc     727 ms dec      14 ms valid true
+== 6/50 images done, elapsed 261s, ETA 1916s ==
+[7/50] pet_1          ellie       1489756 B enc     410 ms dec     519 ms valid true
+[7/50] pet_1          jxl-e7-t1    770192 B enc     786 ms dec     330 ms valid true
+[7/50] pet_1          jxl-e9-t1    765105 B enc    2919 ms dec     364 ms valid true
+[7/50] pet_1          webp-m6-t1   955806 B enc   11287 ms dec     107 ms valid true
+[7/50] pet_1          png-rs      1332222 B enc     631 ms dec      11 ms valid true
+== 7/50 images done, elapsed 301s, ETA 1849s ==
+[8/50] pet2_0         ellie       1520676 B enc     385 ms dec     517 ms valid true
+[8/50] pet2_0         jxl-e7-t1    780721 B enc     864 ms dec     369 ms valid true
+[8/50] pet2_0         jxl-e9-t1    773313 B enc    3045 ms dec     406 ms valid true
+[8/50] pet2_0         webp-m6-t1   980572 B enc   10921 ms dec     108 ms valid true
+[8/50] pet2_0         png-rs      1479400 B enc     622 ms dec      15 ms valid true
+== 8/50 images done, elapsed 340s, ETA 1785s ==
+[9/50] pet2_1         ellie       1118736 B enc     300 ms dec     397 ms valid true
+[9/50] pet2_1         jxl-e7-t1    495526 B enc     707 ms dec     342 ms valid true
+[9/50] pet2_1         jxl-e9-t1    488803 B enc    2873 ms dec     390 ms valid true
+[9/50] pet2_1         webp-m6-t1   603644 B enc   11252 ms dec     100 ms valid true
+[9/50] pet2_1         png-rs       983672 B enc     777 ms dec      12 ms valid true
+== 9/50 images done, elapsed 379s, ETA 1724s ==
+[10/50] food_0         ellie       1837679 B enc     469 ms dec     554 ms valid true
+[10/50] food_0         jxl-e7-t1   1264540 B enc    1059 ms dec     420 ms valid true
+[10/50] food_0         jxl-e9-t1   1255067 B enc    4869 ms dec     541 ms valid true
+[10/50] food_0         webp-m6-t1  1400906 B enc    7684 ms dec     140 ms valid true
+[10/50] food_0         png-rs      1996090 B enc     197 ms dec      15 ms valid true
+== 10/50 images done, elapsed 414s, ETA 1655s ==
+[11/50] food_1         ellie       1477428 B enc     330 ms dec     397 ms valid true
+[11/50] food_1         jxl-e7-t1    740780 B enc    1024 ms dec     441 ms valid true
+[11/50] food_1         jxl-e9-t1    734683 B enc    3742 ms dec     467 ms valid true
+[11/50] food_1         webp-m6-t1   941478 B enc    7863 ms dec     126 ms valid true
+[11/50] food_1         png-rs      1450115 B enc     514 ms dec      12 ms valid true
+== 11/50 images done, elapsed 446s, ETA 1580s ==
+[12/50] foliage_0      ellie       1956832 B enc     422 ms dec     512 ms valid true
+[12/50] foliage_0      jxl-e7-t1   1184936 B enc    1328 ms dec     507 ms valid true
+[12/50] foliage_0      jxl-e9-t1   1180499 B enc    4729 ms dec     539 ms valid true
+[12/50] foliage_0      webp-m6-t1  1357336 B enc    7795 ms dec     128 ms valid true
+[12/50] foliage_0      png-rs      2016330 B enc     203 ms dec      15 ms valid true
+== 12/50 images done, elapsed 481s, ETA 1522s ==
+[13/50] foliage_1      ellie       1395732 B enc     306 ms dec     375 ms valid true
+[13/50] foliage_1      jxl-e7-t1    630027 B enc     919 ms dec     418 ms valid true
+[13/50] foliage_1      jxl-e9-t1    622554 B enc    3532 ms dec     454 ms valid true
+[13/50] foliage_1      webp-m6-t1   759766 B enc   10694 ms dec     114 ms valid true
+[13/50] foliage_1      png-rs      1237201 B enc     593 ms dec      11 ms valid true
+== 13/50 images done, elapsed 517s, ETA 1473s ==
+[14/50] night_0        ellie       2069060 B enc     426 ms dec     533 ms valid true
+[14/50] night_0        jxl-e7-t1   1881297 B enc    1652 ms dec     585 ms valid true
+[14/50] night_0        jxl-e9-t1   1891057 B enc    6447 ms dec     645 ms valid true
+[14/50] night_0        webp-m6-t1  1933568 B enc   10233 ms dec     128 ms valid true
+[14/50] night_0        png-rs      2290163 B enc     124 ms dec      16 ms valid true
+== 14/50 images done, elapsed 562s, ETA 1444s ==
+[15/50] night_1        ellie       1353098 B enc     291 ms dec     359 ms valid true
+[15/50] night_1        jxl-e7-t1    712137 B enc     902 ms dec     389 ms valid true
+[15/50] night_1        jxl-e9-t1    701535 B enc    3432 ms dec     408 ms valid true
+[15/50] night_1        webp-m6-t1   705974 B enc    6207 ms dec     101 ms valid true
+[15/50] night_1        png-rs      1046156 B enc     626 ms dec       8 ms valid true
+== 15/50 images done, elapsed 589s, ETA 1374s ==
+[16/50] blurry_0       ellie       1440567 B enc     304 ms dec     378 ms valid true
+[16/50] blurry_0       jxl-e7-t1   1063542 B enc    1112 ms dec     464 ms valid true
+[16/50] blurry_0       jxl-e9-t1   1050998 B enc    3541 ms dec     517 ms valid true
+[16/50] blurry_0       webp-m6-t1  1193420 B enc    7580 ms dec     126 ms valid true
+[16/50] blurry_0       png-rs      1554190 B enc     295 ms dec      11 ms valid true
+== 16/50 images done, elapsed 620s, ETA 1317s ==
+[17/50] blurry_1       ellie       1165398 B enc     316 ms dec     379 ms valid true
+[17/50] blurry_1       jxl-e7-t1    667721 B enc    1050 ms dec     481 ms valid true
+[17/50] blurry_1       jxl-e9-t1    655667 B enc    3886 ms dec     514 ms valid true
+[17/50] blurry_1       webp-m6-t1   828564 B enc    8258 ms dec     163 ms valid true
+[17/50] blurry_1       png-rs      1280963 B enc    1098 ms dec      13 ms valid true
+== 17/50 images done, elapsed 657s, ETA 1275s ==
+[18/50] text_0         ellie       1159258 B enc     273 ms dec     332 ms valid true
+[18/50] text_0         jxl-e7-t1    586370 B enc     887 ms dec     429 ms valid true
+[18/50] text_0         jxl-e9-t1    578009 B enc    3497 ms dec     452 ms valid true
+[18/50] text_0         webp-m6-t1   675746 B enc    7755 ms dec     109 ms valid true
+[18/50] text_0         png-rs      1046410 B enc     734 ms dec      10 ms valid true
+== 18/50 images done, elapsed 688s, ETA 1222s ==
+[19/50] text_1         ellie       1838577 B enc     407 ms dec     494 ms valid true
+[19/50] text_1         jxl-e7-t1   1008865 B enc    1156 ms dec     482 ms valid true
+[19/50] text_1         jxl-e9-t1    998577 B enc    4118 ms dec     507 ms valid true
+[19/50] text_1         webp-m6-t1  1239866 B enc    6873 ms dec     126 ms valid true
+[19/50] text_1         png-rs      1716246 B enc     283 ms dec      14 ms valid true
+== 19/50 images done, elapsed 719s, ETA 1173s ==
+[20/50] document_0     ellie       1543210 B enc     328 ms dec     405 ms valid true
+[20/50] document_0     jxl-e7-t1    533453 B enc     845 ms dec     386 ms valid true
+[20/50] document_0     jxl-e9-t1    529789 B enc    3081 ms dec     397 ms valid true
+[20/50] document_0     webp-m6-t1   584044 B enc    7308 ms dec     100 ms valid true
+[20/50] document_0     png-rs       957594 B enc     597 ms dec       9 ms valid true
+== 20/50 images done, elapsed 748s, ETA 1122s ==
+[21/50] document_1     ellie       1085240 B enc     244 ms dec     304 ms valid true
+[21/50] document_1     jxl-e7-t1    426214 B enc     822 ms dec     391 ms valid true
+[21/50] document_1     jxl-e9-t1    413808 B enc    3040 ms dec     387 ms valid true
+[21/50] document_1     webp-m6-t1   485044 B enc    5969 ms dec     102 ms valid true
+[21/50] document_1     png-rs       796743 B enc     693 ms dec       9 ms valid true
+== 21/50 images done, elapsed 774s, ETA 1069s ==
+[22/50] beach_n0       ellie       1511692 B enc     319 ms dec     398 ms valid true
+[22/50] beach_n0       jxl-e7-t1    752301 B enc     888 ms dec     342 ms valid true
+[22/50] beach_n0       jxl-e9-t1    730930 B enc    3027 ms dec     374 ms valid true
+[22/50] beach_n0       webp-m6-t1   622632 B enc    7848 ms dec     140 ms valid true
+[22/50] beach_n0       png-rs       959418 B enc     568 ms dec       7 ms valid true
+== 22/50 images done, elapsed 804s, ETA 1023s ==
+[23/50] street_n0      ellie       1503382 B enc     311 ms dec     396 ms valid true
+[23/50] street_n0      jxl-e7-t1    908644 B enc    1099 ms dec     466 ms valid true
+[23/50] street_n0      jxl-e9-t1    902117 B enc    3775 ms dec     489 ms valid true
+[23/50] street_n0      webp-m6-t1  1079950 B enc   11010 ms dec     124 ms valid true
+[23/50] street_n0      png-rs      1522031 B enc     417 ms dec      13 ms valid true
+== 23/50 images done, elapsed 842s, ETA 989s ==
+[24/50] building_n0    ellie       1111133 B enc     253 ms dec     309 ms valid true
+[24/50] building_n0    jxl-e7-t1    717273 B enc     977 ms dec     453 ms valid true
+[24/50] building_n0    jxl-e9-t1    708820 B enc    3736 ms dec     486 ms valid true
+[24/50] building_n0    webp-m6-t1   820972 B enc    8417 ms dec     113 ms valid true
+[24/50] building_n0    png-rs      1145058 B enc     700 ms dec      10 ms valid true
+== 24/50 images done, elapsed 875s, ETA 948s ==
+[25/50] forest_n0      ellie       1414453 B enc     314 ms dec     390 ms valid true
+[25/50] forest_n0      jxl-e7-t1    764239 B enc    1061 ms dec     455 ms valid true
+[25/50] forest_n0      jxl-e9-t1    756965 B enc    3743 ms dec     485 ms valid true
+[25/50] forest_n0      webp-m6-t1   968484 B enc    7386 ms dec     125 ms valid true
+[25/50] forest_n0      png-rs      1495690 B enc     464 ms dec      13 ms valid true
+== 25/50 images done, elapsed 907s, ETA 907s ==
+[26/50] flower_n0      ellie       1464069 B enc     320 ms dec     397 ms valid true
+[26/50] flower_n0      jxl-e7-t1    774581 B enc    1041 ms dec     459 ms valid true
+[26/50] flower_n0      jxl-e9-t1    767292 B enc    4174 ms dec     491 ms valid true
+[26/50] flower_n0      webp-m6-t1   914978 B enc   12593 ms dec     114 ms valid true
+[26/50] flower_n0      png-rs      1404606 B enc     464 ms dec      12 ms valid true
+== 26/50 images done, elapsed 949s, ETA 876s ==
+[27/50] sunset_n0      ellie       1157786 B enc     264 ms dec     321 ms valid true
+[27/50] sunset_n0      jxl-e7-t1    913743 B enc    1068 ms dec     460 ms valid true
+[27/50] sunset_n0      jxl-e9-t1    903717 B enc    3500 ms dec     477 ms valid true
+[27/50] sunset_n0      webp-m6-t1  1038204 B enc    6926 ms dec     117 ms valid true
+[27/50] sunset_n0      png-rs      1347491 B enc     487 ms dec      12 ms valid true
+== 27/50 images done, elapsed 978s, ETA 833s ==
+[28/50] snow_n0        ellie       1615552 B enc     351 ms dec     430 ms valid true
+[28/50] snow_n0        jxl-e7-t1   1252009 B enc    1200 ms dec     483 ms valid true
+[28/50] snow_n0        jxl-e9-t1   1248716 B enc    4380 ms dec     522 ms valid true
+[28/50] snow_n0        webp-m6-t1  1340534 B enc    8678 ms dec     128 ms valid true
+[28/50] snow_n0        png-rs      1776436 B enc     486 ms dec      12 ms valid true
+== 28/50 images done, elapsed 1014s, ETA 797s ==
+[29/50] bird_n0        ellie        782576 B enc     220 ms dec     264 ms valid true
+[29/50] bird_n0        jxl-e7-t1    344952 B enc     804 ms dec     407 ms valid true
+[29/50] bird_n0        jxl-e9-t1    334976 B enc    3227 ms dec     420 ms valid true
+[29/50] bird_n0        webp-m6-t1   406096 B enc    8994 ms dec      99 ms valid true
+[29/50] bird_n0        png-rs       752782 B enc     618 ms dec       9 ms valid true
+== 29/50 images done, elapsed 1046s, ETA 757s ==
+[30/50] bridge_n0      ellie       1164645 B enc     261 ms dec     325 ms valid true
+[30/50] bridge_n0      jxl-e7-t1    540970 B enc     813 ms dec     370 ms valid true
+[30/50] bridge_n0      jxl-e9-t1    530820 B enc    2976 ms dec     386 ms valid true
+[30/50] bridge_n0      webp-m6-t1   602420 B enc    7699 ms dec     104 ms valid true
+[30/50] bridge_n0      png-rs       967167 B enc     637 ms dec      10 ms valid true
+== 30/50 images done, elapsed 1074s, ETA 716s ==
+[31/50] child_n0       ellie        842079 B enc     199 ms dec     248 ms valid true
+[31/50] child_n0       jxl-e7-t1    416191 B enc     742 ms dec     421 ms valid true
+[31/50] child_n0       jxl-e9-t1    412043 B enc    3208 ms dec     442 ms valid true
+[31/50] child_n0       webp-m6-t1   509778 B enc    6405 ms dec     108 ms valid true
+[31/50] child_n0       png-rs       857943 B enc     910 ms dec       9 ms valid true
+== 31/50 images done, elapsed 1101s, ETA 675s ==
+[32/50] lake_n0        ellie       1501362 B enc     337 ms dec     412 ms valid true
+[32/50] lake_n0        jxl-e7-t1    852564 B enc    1021 ms dec     432 ms valid true
+[32/50] lake_n0        jxl-e9-t1    846434 B enc    4723 ms dec     466 ms valid true
+[32/50] lake_n0        webp-m6-t1   972500 B enc    8729 ms dec     121 ms valid true
+[32/50] lake_n0        png-rs      1491870 B enc     364 ms dec      13 ms valid true
+== 32/50 images done, elapsed 1137s, ETA 640s ==
+[33/50] macro_n0       ellie       1085885 B enc     246 ms dec     299 ms valid true
+[33/50] macro_n0       jxl-e7-t1    824244 B enc     997 ms dec     444 ms valid true
+[33/50] macro_n0       jxl-e9-t1    814185 B enc    3453 ms dec     477 ms valid true
+[33/50] macro_n0       webp-m6-t1   916848 B enc    9487 ms dec     131 ms valid true
+[33/50] macro_n0       png-rs      1210602 B enc     788 ms dec      11 ms valid true
+== 33/50 images done, elapsed 1171s, ETA 603s ==
+[34/50] church_n0      ellie       1703609 B enc     348 ms dec     443 ms valid true
+[34/50] church_n0      jxl-e7-t1    729588 B enc     998 ms dec     431 ms valid true
+[34/50] church_n0      jxl-e9-t1    724747 B enc    3892 ms dec     476 ms valid true
+[34/50] church_n0      webp-m6-t1   841722 B enc   10021 ms dec     111 ms valid true
+[34/50] church_n0      png-rs      1420194 B enc     472 ms dec      11 ms valid true
+== 34/50 images done, elapsed 1209s, ETA 569s ==
+[35/50] boat_n0        ellie       1440301 B enc     362 ms dec     403 ms valid true
+[35/50] boat_n0        jxl-e7-t1   1032017 B enc    1180 ms dec     496 ms valid true
+[35/50] boat_n0        jxl-e9-t1   1028975 B enc    4522 ms dec     550 ms valid true
+[35/50] boat_n0        webp-m6-t1  1166400 B enc   10706 ms dec     123 ms valid true
+[35/50] boat_n0        png-rs      1580787 B enc     575 ms dec      11 ms valid true
+== 35/50 images done, elapsed 1249s, ETA 535s ==
+[36/50] desert_n0      ellie       1361525 B enc     289 ms dec     360 ms valid true
+[36/50] desert_n0      jxl-e7-t1    727834 B enc     923 ms dec     351 ms valid true
+[36/50] desert_n0      jxl-e9-t1    721862 B enc    3517 ms dec     391 ms valid true
+[36/50] desert_n0      webp-m6-t1   683242 B enc    6406 ms dec     105 ms valid true
+[36/50] desert_n0      png-rs      1063023 B enc     616 ms dec       9 ms valid true
+== 36/50 images done, elapsed 1277s, ETA 497s ==
+[37/50] stairs_n0      ellie       1535417 B enc     350 ms dec     425 ms valid true
+[37/50] stairs_n0      jxl-e7-t1   1101662 B enc    1230 ms dec     478 ms valid true
+[37/50] stairs_n0      jxl-e9-t1   1083329 B enc    3864 ms dec     523 ms valid true
+[37/50] stairs_n0      webp-m6-t1  1253852 B enc    8138 ms dec     131 ms valid true
+[37/50] stairs_n0      png-rs      1728009 B enc     258 ms dec      14 ms valid true
+== 37/50 images done, elapsed 1310s, ETA 460s ==
+[38/50] woman_n0       ellie        608947 B enc     194 ms dec     232 ms valid true
+[38/50] woman_n0       jxl-e7-t1    367893 B enc     726 ms dec     403 ms valid true
+[38/50] woman_n0       jxl-e9-t1    361013 B enc    3231 ms dec     406 ms valid true
+[38/50] woman_n0       webp-m6-t1   393378 B enc    5537 ms dec     101 ms valid true
+[38/50] woman_n0       png-rs       597287 B enc     368 ms dec       9 ms valid true
+== 38/50 images done, elapsed 1334s, ETA 421s ==
+[39/50] waterfall_n0   ellie       1464823 B enc     387 ms dec     426 ms valid true
+[39/50] waterfall_n0   jxl-e7-t1   1061597 B enc    1191 ms dec     504 ms valid true
+[39/50] waterfall_n0   jxl-e9-t1   1055859 B enc    4479 ms dec     570 ms valid true
+[39/50] waterfall_n0   webp-m6-t1  1175322 B enc    8202 ms dec     123 ms valid true
+[39/50] waterfall_n0   png-rs      1518762 B enc     442 ms dec      12 ms valid true
+== 39/50 images done, elapsed 1370s, ETA 386s ==
+[40/50] peak_n0        ellie       1928652 B enc     422 ms dec     514 ms valid true
+[40/50] peak_n0        jxl-e7-t1   1224688 B enc    1326 ms dec     506 ms valid true
+[40/50] peak_n0        jxl-e9-t1   1216205 B enc    4796 ms dec     547 ms valid true
+[40/50] peak_n0        webp-m6-t1  1372922 B enc    9392 ms dec     134 ms valid true
+[40/50] peak_n0        png-rs      1985072 B enc     253 ms dec      15 ms valid true
+== 40/50 images done, elapsed 1408s, ETA 352s ==
+[41/50] restaurant_n0  ellie       1159772 B enc     271 ms dec     324 ms valid true
+[41/50] restaurant_n0  jxl-e7-t1    736167 B enc    1030 ms dec     446 ms valid true
+[41/50] restaurant_n0  jxl-e9-t1    724298 B enc    3723 ms dec     470 ms valid true
+[41/50] restaurant_n0  webp-m6-t1   902414 B enc    8554 ms dec     121 ms valid true
+[41/50] restaurant_n0  png-rs      1252548 B enc     646 ms dec      11 ms valid true
+== 41/50 images done, elapsed 1441s, ETA 316s ==
+[42/50] graffiti_n0    ellie       1476474 B enc     313 ms dec     388 ms valid true
+[42/50] graffiti_n0    jxl-e7-t1    829804 B enc    1041 ms dec     445 ms valid true
+[42/50] graffiti_n0    jxl-e9-t1    821745 B enc    3618 ms dec     475 ms valid true
+[42/50] graffiti_n0    webp-m6-t1  1018978 B enc   13379 ms dec     123 ms valid true
+[42/50] graffiti_n0    png-rs      1516070 B enc     428 ms dec      12 ms valid true
+== 42/50 images done, elapsed 1484s, ETA 283s ==
+[43/50] station_n0     ellie       1335636 B enc     286 ms dec     354 ms valid true
+[43/50] station_n0     jxl-e7-t1    566806 B enc     904 ms dec     404 ms valid true
+[43/50] station_n0     jxl-e9-t1    557920 B enc    3401 ms dec     428 ms valid true
+[43/50] station_n0     webp-m6-t1   636384 B enc   10134 ms dec     109 ms valid true
+[43/50] station_n0     png-rs      1028440 B enc     690 ms dec      10 ms valid true
+== 43/50 images done, elapsed 1519s, ETA 247s ==
+[44/50] clouds_n0      ellie       1158039 B enc     258 ms dec     320 ms valid true
+[44/50] clouds_n0      jxl-e7-t1    570294 B enc     838 ms dec     346 ms valid true
+[44/50] clouds_n0      jxl-e9-t1    557863 B enc    3150 ms dec     366 ms valid true
+[44/50] clouds_n0      webp-m6-t1   534082 B enc    7750 ms dec     105 ms valid true
+[44/50] clouds_n0      png-rs       915485 B enc     676 ms dec       9 ms valid true
+== 44/50 images done, elapsed 1548s, ETA 211s ==
+[45/50] coast_n0       ellie       1276303 B enc     291 ms dec     356 ms valid true
+[45/50] coast_n0       jxl-e7-t1    523100 B enc     778 ms dec     348 ms valid true
+[45/50] coast_n0       jxl-e9-t1    509527 B enc    3117 ms dec     356 ms valid true
+[45/50] coast_n0       webp-m6-t1   512628 B enc    6653 ms dec     104 ms valid true
+[45/50] coast_n0       png-rs       797532 B enc     537 ms dec       7 ms valid true
+== 45/50 images done, elapsed 1576s, ETA 175s ==
+[46/50] skyline_n0     ellie        956650 B enc     218 ms dec     271 ms valid true
+[46/50] skyline_n0     jxl-e7-t1    464276 B enc     802 ms dec     349 ms valid true
+[46/50] skyline_n0     jxl-e9-t1    454777 B enc    3267 ms dec     365 ms valid true
+[46/50] skyline_n0     webp-m6-t1   403066 B enc    6600 ms dec     101 ms valid true
+[46/50] skyline_n0     png-rs       691009 B enc     703 ms dec       8 ms valid true
+== 46/50 images done, elapsed 1602s, ETA 139s ==
+[47/50] path_n0        ellie       2389843 B enc     487 ms dec     600 ms valid true
+[47/50] path_n0        jxl-e7-t1   1713272 B enc    1465 ms dec     542 ms valid true
+[47/50] path_n0        jxl-e9-t1   1717184 B enc    5632 ms dec     588 ms valid true
+[47/50] path_n0        webp-m6-t1  1811926 B enc    7229 ms dec     138 ms valid true
+[47/50] path_n0        png-rs      2439490 B enc     115 ms dec      15 ms valid true
+== 47/50 images done, elapsed 1639s, ETA 105s ==
+[48/50] river_n0       ellie       1411524 B enc     325 ms dec     386 ms valid true
+[48/50] river_n0       jxl-e7-t1   1009270 B enc    1132 ms dec     462 ms valid true
+[48/50] river_n0       jxl-e9-t1   1002276 B enc    3367 ms dec     493 ms valid true
+[48/50] river_n0       webp-m6-t1  1165178 B enc    8923 ms dec     121 ms valid true
+[48/50] river_n0       png-rs      1600724 B enc     303 ms dec      13 ms valid true
+== 48/50 images done, elapsed 1672s, ETA 70s ==
+[49/50] bicycle_n0     ellie       1748274 B enc     376 ms dec     470 ms valid true
+[49/50] bicycle_n0     jxl-e7-t1   1102964 B enc    1174 ms dec     481 ms valid true
+[49/50] bicycle_n0     jxl-e9-t1   1097034 B enc    3951 ms dec     517 ms valid true
+[49/50] bicycle_n0     webp-m6-t1  1247610 B enc    9160 ms dec     127 ms valid true
+[49/50] bicycle_n0     png-rs      1757880 B enc     274 ms dec      14 ms valid true
+== 49/50 images done, elapsed 1708s, ETA 35s ==
+[50/50] lighthouse_n0  ellie       1234997 B enc     293 ms dec     351 ms valid true
+[50/50] lighthouse_n0  jxl-e7-t1    517893 B enc     853 ms dec     392 ms valid true
+[50/50] lighthouse_n0  jxl-e9-t1    502728 B enc    3408 ms dec     415 ms valid true
+[50/50] lighthouse_n0  webp-m6-t1   587892 B enc    9140 ms dec     106 ms valid true
+[50/50] lighthouse_n0  png-rs      1032232 B enc     594 ms dec      10 ms valid true
+== 50/50 images done, elapsed 1741s, ETA 0s ==

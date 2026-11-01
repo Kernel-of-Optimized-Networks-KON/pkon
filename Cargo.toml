@@ -42,6 +42,18 @@ name = "exp_bayer_small_tree"
 path = "experiments/bin/exp_bayer_small_tree.rs"
 
 [[bin]]
+name = "exp_ellie_paeth"
+path = "experiments/bin/exp_ellie_paeth.rs"
+
+[[bin]]
+name = "exp_ellie_stage4"
+path = "experiments/bin/exp_ellie_stage4.rs"
+
+[[bin]]
+name = "exp_ellie_ycocg"
+path = "experiments/bin/exp_ellie_ycocg.rs"
+
+[[bin]]
 name = "exp_lisa_cloud"
 path = "experiments/bin/exp_lisa_cloud.rs"
 
@@ -100,3 +112,11 @@ path = "experiments/bin/t1_or128.rs"
 [[bin]]
 name = "val_or128"
 path = "experiments/bin/val_or128.rs"
+
+[[bin]]
+name = "bench_ellie_full"
+path = "benchmarks/ellie-full-bench/bench_ellie_full.rs"
+
+[[bin]]
+name = "bench_ellie_final_3img"
+path = "benchmarks/ellie-final-3img/bench_ellie_final_3img.rs"

@@ -1,7 +1,8 @@
 //! ELLIE: lossless image compression, one source file for all four stages.
 //!
-//! Stage 1 (this file, so far): prediction and residual generation.
-//! Stages 2 (adaptive processing), 3 (probability modelling) and 4 (entropy coding) are not implemented yet.
+//! Stage 1: prediction and residual generation. Stage 2: adaptive bias tracking ([`Stage2`]).
+//! Stage 3: context-mixing probability model for the Stage 2 residuals ([`Stage3`]).
+//! Stage 4: binary range coder fed by the Stage 3 probability stream ([`Stage4Enc`], [`Stage4Dec`], [`EllieCodec`]).
 //!
 //! # Stage 1 specification (as approved)
 //!
@@ -29,6 +30,8 @@
 //! ```text
 //! sh   = max(0, bitlen(max(S_H,S_V,S_D)) - 10);   S'_i = (S_i >> sh) + 1;   q_i = S'_i^2
 //! w_H ~ q_V*q_D,  w_V ~ q_H*q_D,  w_D ~ q_H*q_V;  D = sum of the three products
+//! P_H4 = 4W + ((W-WW) + (N-NW) >> 1);  P_V4 = 4N + ((N-NN) + (W-NW) >> 1);
+//! P_D4 = 3*((4-f)NW + f*NE)/4 + (W + NE - N)       (f in 1..3 from s45 vs s135)
 //! N' = sum_i pair_i * (P_i4 + 4M);   t = N' / D;   P = clamp(((t + 2) >> 2) - M, 0, M)
 //! ```
 //! Residual: signed `e = x - P`; [`fold`]/[`unfold`] give the range-aware bijection onto `[0, M]`.
@@ -45,6 +48,8 @@
 
 /// Largest supported bit depth.
 pub const MAX_BITS: u32 = 16;
+
+use crate::rangecoder::BitIo;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Stage1Error {
@@ -98,9 +103,11 @@ fn predict(m: i32, w: i32, ww: i32, n: i32, nn: i32, nw: i32, ne: i32, s_h: u32,
 
     let f = 2 + (s135 >= 2 * s45) as i32 - (s45 >= 2 * s135) as i32;
     let o = 4 * m;
-    let h4 = (5 * w - ww + o) as u64;
-    let v4 = (5 * n - nn + o) as u64;
-    let d4 = ((4 - f) * nw + f * ne + o) as u64;
+    // Four times each directional estimate, plus the offset `o` that keeps the sum non-negative. H and V extrapolate
+    // by the mean of the gradient on this row and the one beside it; D blends the NW/NE mix with the W+NE-N plane.
+    let h4 = (4 * w + ((w - ww + n - nw) >> 1) + o) as u64;
+    let v4 = (4 * n + ((n - nn + w - nw) >> 1) + o) as u64;
+    let d4 = ((3 * ((4 - f) * nw + f * ne)) / 4 + (w + ne - n) + o) as u64;
 
     let t = (ph * h4 + pv * v4 + pd * d4) / d;
     (((t + 2) >> 2) as i64 - m as i64).clamp(0, m as i64) as i32
@@ -307,6 +314,750 @@ impl Stage1 {
     }
 }
 
+// ---------------------------------------------------------------------------------------------------
+// Stage 2: adaptive bias tracking
+//
+// One fixed-point (S2_FRAC fractional bits) running mean of the signed residual e. With x_i = e_i << F:
+//   B_i       = (S_i + 2^(F-1)) >> F                  (rounded integer bias)
+//   r_i       = e_i - B_i                             (corrected residual, passed to Stage 3)
+//   S_{i+1}   = S_i + ((x_i - S_i) >> K)              (K = 6)
+// S is a mean of e, so |S| <= M<<F and |B| <= M: no clamp is needed and r = e - B stays in [-2M, 2M].
+// Every update uses e_i, which the decoder recovers as r_i + B_i, so both sides evolve identically with no
+// side information. State: one i32 per plane, initialised to 0.
+// ---------------------------------------------------------------------------------------------------
+
+/// Fractional bits of the bias state.
+pub const S2_FRAC: u32 = 8;
+/// Adaptation rate: the bias moves by 1/2^S2_SHIFT of its error each sample.
+pub const S2_SHIFT: u32 = 6;
+
+/// Stage 2 adaptive bias state for one plane. Create one per plane (or call [`Stage2::reset`]).
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct Stage2 {
+    s: i32,
+}
+
+impl Stage2 {
+    pub const fn new() -> Self {
+        Self { s: 0 }
+    }
+
+    pub fn reset(&mut self) {
+        *self = Self::new();
+    }
+
+    /// Raw fixed-point bias state (for verification).
+    pub fn state(&self) -> i32 {
+        self.s
+    }
+
+    /// Current integer bias `B`.
+    #[inline(always)]
+    pub fn bias(&self) -> i32 {
+        (self.s + (1 << (S2_FRAC - 1))) >> S2_FRAC
+    }
+
+    #[inline(always)]
+    fn update(&mut self, e: i32) {
+        self.s += ((e << S2_FRAC) - self.s) >> S2_SHIFT;
+    }
+
+    /// Encode one residual: returns `r = e - B` and advances the state.
+    #[inline(always)]
+    pub fn encode_one(&mut self, e: i32) -> i32 {
+        let r = e - self.bias();
+        self.update(e);
+        r
+    }
+
+    /// Decode one residual: returns `e = r + B` and advances the state identically.
+    #[inline(always)]
+    pub fn decode_one(&mut self, r: i32) -> i32 {
+        let e = r + self.bias();
+        self.update(e);
+        e
+    }
+
+    // The in-place loops carry T = S + 2^(F-1) instead of S, so B = T >> F is a single shift and the update needs no
+    // separate rounding add. Exact rewrite of the definition above (|T| < 2^25, no overflow):
+    //   encode: S += ((e << F) - S) >> K            ==  T += (((e << F) + 2^(F-1)) - T) >> K
+    //   decode: (e << F) - S, with e = r + (T >> F), ==  (r << F) + 2^(F-1) - (T & (2^F - 1))
+    // because (T >> F) << F = T - (T & (2^F - 1)) for arithmetic shifts. The decode update therefore depends on r,
+    // not on the freshly decoded e, which shortens the loop-carried chain from 7 dependent ops to 4.
+
+    /// In-place encode of a residual plane (Stage 1 output -> Stage 3 input).
+    pub fn encode_in_place(&mut self, buf: &mut [i32]) {
+        const HALF: i32 = 1 << (S2_FRAC - 1);
+        let mut t = self.s + HALF;
+        for v in buf.iter_mut() {
+            let e = *v;
+            *v = e - (t >> S2_FRAC);
+            t += (((e << S2_FRAC) + HALF) - t) >> S2_SHIFT;
+        }
+        self.s = t - HALF;
+    }
+
+    /// In-place decode of a residual plane (Stage 3 output -> Stage 1 input).
+    pub fn decode_in_place(&mut self, buf: &mut [i32]) {
+        const HALF: i32 = 1 << (S2_FRAC - 1);
+        const MASK: i32 = (1 << S2_FRAC) - 1;
+        let mut t = self.s + HALF;
+        for v in buf.iter_mut() {
+            let r = *v;
+            *v = r + (t >> S2_FRAC);
+            t += (((r << S2_FRAC) + HALF) - (t & MASK)) >> S2_SHIFT;
+        }
+        self.s = t - HALF;
+    }
+}
+
+// ---------------------------------------------------------------------------------------------------
+// Stage 3: context-mixing probability model
+//
+// Symbol representation of r in [-2M, 2M] (a = |r|, k = bitlen(a), kmax = bitlen(2M)):
+//   node 0        : a != 0
+//   nodes 1..k    : unary exponent, node j codes (k > j), skipped at j = kmax
+//   nodes 17..32  : first mantissa bit below the leading one (k >= 2), node 15 + k
+//   nodes 33..62  : second mantissa bit (k >= 3), node 33 + 2(k-3) + first bit
+//   remaining k-3 mantissa bits: raw, p = 1/2 (not modelled; the density is nearly flat inside a bucket)
+//   sign (a != 0): own adaptive probability, context = (sign W, sign N) in {-,0,+}^2
+// Every modelled bit mixes four predictions, each an adaptive probability for the same node under:
+//   A: qS                        (coarse neighbourhood energy)
+//   B: qS x qd                   (energy x |aW - aN| disagreement)
+//   C: qE x qW                   (long-run energy x west magnitude)
+//   D: node only                 (order-0 root shared by everything)
+// with S = 2aW + 2aN + aNW + aNE, E += ((a<<4) - E) >> 4, q(v) = 2*bitlen(v) + next-bit - 2 for v >= 4 else v.
+// Slot (u32) = p22 << 10 | n; update p += (bit*(2^22-1) - p) * RECIP[n] >> 16, RECIP[n] = 2^17/(2n+3), n <= LIMIT.
+// Mixer: x = clamp(sum w_i * in_i >> 16, +-2047), p = squash(x) (12 bit); in_i = stretch(p_i) * CONF[min(n_i,4)] >> 3
+// (unseen slots contribute 0), bias input 256; w_i += (in_i * ((bit << 12) - p)) >> MIX_SHIFT; weight set =
+// (qS >> 3, node). Output to the coder: P(bit = 1) = 16*p + 8 clamped to [32, 65503] (the coder's 16-bit scale).
+// ---------------------------------------------------------------------------------------------------
+
+const S3_LIMIT: u32 = 127;
+const S3_MIX_SHIFT: u32 = 10;
+const S3_W_CLAMP: i32 = 1 << 20;
+const S3_IN: usize = 5;
+const NQ: usize = 32; // qS / qE levels
+const ND: usize = 6; // qd levels
+const NW: usize = 8; // qW levels
+const OFF_A: usize = 0;
+const OFF_B: usize = OFF_A + NQ * 64;
+const OFF_C: usize = OFF_B + NQ * ND * 64;
+const OFF_D: usize = OFF_C + NQ * NW * 64;
+const S3_SLOTS: usize = OFF_D + 64;
+const SLOT_INIT: u32 = 1 << 31; // p = 1/2, n = 0
+const CONF: [i32; 5] = [0, 4, 6, 7, 8];
+
+const RECIP: [u32; 256] = {
+    let mut t = [0u32; 256];
+    let mut n = 0;
+    while n < 256 {
+        t[n] = 131072 / (2 * n as u32 + 3);
+        n += 1;
+    }
+    t
+};
+
+const fn squash_fn(d: i32) -> i32 {
+    const T: [i32; 33] = [
+        1, 2, 3, 6, 10, 16, 27, 45, 73, 120, 194, 310, 488, 747, 1101, 1546, 2047, 2549, 2994, 3348, 3607, 3785, 3901, 3975, 4022, 4050,
+        4068, 4079, 4085, 4089, 4092, 4093, 4094,
+    ];
+    if d > 2047 {
+        return 4095;
+    }
+    if d < -2047 {
+        return 0;
+    }
+    let w = d & 127;
+    let i = ((d >> 7) + 16) as usize;
+    (T[i] * (128 - w) + T[i + 1] * w + 64) >> 7
+}
+
+/// squash over x in [-2048, 2047], index x + 2048.
+static SQUASH: [u16; 4096] = {
+    let mut t = [0u16; 4096];
+    let mut i = 0;
+    while i < 4096 {
+        t[i] = squash_fn(i as i32 - 2048) as u16;
+        i += 1;
+    }
+    t
+};
+
+/// Inverse of squash: stretch(p) for 12-bit p.
+static STRETCH: [i16; 4096] = {
+    let mut t = [2047i16; 4096];
+    let mut pi = 0usize;
+    let mut x = -2047i32;
+    while x <= 2047 {
+        let v = squash_fn(x) as usize;
+        while pi <= v {
+            t[pi] = x as i16;
+            pi += 1;
+        }
+        x += 1;
+    }
+    t
+};
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Stage3Error {
+    /// Bit depth outside `1..=MAX_BITS`.
+    BadBits(u32),
+    /// Slice length does not equal `width * height`.
+    BadLength,
+    /// `|r| > 2M`.
+    ResidualOutOfRange,
+}
+
+/// Quantiser: identity below 4, then two levels per octave.
+#[inline(always)]
+fn s3q(v: u32) -> usize {
+    if v < 4 {
+        v as usize
+    } else {
+        let bl = 32 - v.leading_zeros();
+        (2 * bl + ((v >> (bl - 2)) & 1) - 2) as usize
+    }
+}
+
+#[inline(always)]
+fn s3_update_slot(s: &mut u32, bit: u32) {
+    let n = *s & 1023;
+    let p = (*s >> 10) as i64;
+    let target = if bit != 0 { (1i64 << 22) - 1 } else { 0 };
+    // n <= S3_LIMIT < 256, so the mask is a no-op that lets the compiler drop the bounds check.
+    let p = p + (((target - p) * RECIP[(n & 255) as usize] as i64) >> 16);
+    *s = ((p as u32) << 10) | (n + (n < S3_LIMIT) as u32);
+}
+
+#[inline(always)]
+fn s3_input(s: u32) -> i32 {
+    let n = ((s & 1023) as usize).min(4);
+    (STRETCH[(s >> 20) as usize] as i32 * CONF[n]) >> 3
+}
+
+/// Stage 3 model for one plane of `width x height` residuals, coded in raster order.
+/// One generic path ([`Stage3::code_sample`]) serves encoder and decoder, so contexts, probabilities and updates
+/// cannot diverge. All storage is allocated in [`Stage3::new`].
+#[derive(Clone, PartialEq, Eq)]
+pub struct Stage3 {
+    w: usize,
+    h: usize,
+    kmax: u32,
+    rmax: u32,
+    x: usize,
+    e: i32,
+    prev_m: Vec<u32>,
+    cur_m: Vec<u32>,
+    prev_s: Vec<u8>,
+    cur_s: Vec<u8>,
+    t: Vec<u32>,
+    sg: [u32; 9],
+    wt: Vec<[i32; S3_IN]>,
+}
+
+impl Stage3 {
+    pub fn new(width: usize, height: usize, bits: u32) -> Result<Self, Stage3Error> {
+        if !(1..=MAX_BITS).contains(&bits) {
+            return Err(Stage3Error::BadBits(bits));
+        }
+        let rmax = 2 * ((1u32 << bits) - 1);
+        let mut s = Self {
+            w: width,
+            h: height,
+            kmax: 32 - rmax.leading_zeros(),
+            rmax,
+            x: 0,
+            e: 0,
+            prev_m: vec![0; width + 2],
+            cur_m: vec![0; width + 2],
+            prev_s: vec![1; width + 2],
+            cur_s: vec![1; width + 2],
+            t: vec![SLOT_INIT; S3_SLOTS],
+            sg: [SLOT_INIT; 9],
+            wt: vec![[0; S3_IN]; 4 * 64],
+        };
+        s.reset();
+        Ok(s)
+    }
+
+    /// Return to the initial state (reuse for the next plane of the same geometry).
+    pub fn reset(&mut self) {
+        self.x = 0;
+        self.e = 0;
+        self.prev_m.fill(0);
+        self.cur_m.fill(0);
+        self.prev_s.fill(1);
+        self.cur_s.fill(1);
+        self.t.fill(SLOT_INIT);
+        self.sg = [SLOT_INIT; 9];
+        self.wt.fill([20000, 20000, 20000, 20000, 0]);
+    }
+
+    /// Bytes of adaptive model state (probability slots + sign slots + mixer weights).
+    pub fn model_state_bytes(&self) -> usize {
+        self.t.len() * 4 + self.sg.len() * 4 + self.wt.len() * S3_IN * 4
+    }
+
+    /// Bytes of all heap storage owned by the model (model state + neighbour rows).
+    pub fn total_bytes(&self) -> usize {
+        self.model_state_bytes() + (self.prev_m.len() + self.cur_m.len()) * 4 + self.prev_s.len() + self.cur_s.len()
+    }
+
+    /// Encode a whole plane of Stage 2 residuals through `io`.
+    pub fn encode_plane<I: BitIo>(&mut self, res: &[i32], io: &mut I) -> Result<(), Stage3Error> {
+        if res.len() != self.w * self.h {
+            return Err(Stage3Error::BadLength);
+        }
+        let lim = self.rmax;
+        if res.iter().any(|&r| r.unsigned_abs() > lim) {
+            return Err(Stage3Error::ResidualOutOfRange);
+        }
+        for &r in res {
+            self.code_sample(io, r);
+        }
+        Ok(())
+    }
+
+    /// Decode a whole plane. Values are bounded by `2^kmax - 1` (>= 2M); callers validate via Stage 1.
+    pub fn decode_plane<I: BitIo>(&mut self, out: &mut [i32], io: &mut I) -> Result<(), Stage3Error> {
+        if out.len() != self.w * self.h {
+            return Err(Stage3Error::BadLength);
+        }
+        for o in out.iter_mut() {
+            *o = self.code_sample(io, 0);
+        }
+        Ok(())
+    }
+
+    #[inline(always)]
+    fn code_bit<I: BitIo>(&mut self, io: &mut I, idx: [usize; 3], wb: usize, node: usize, want: u32) -> u32 {
+        let (ia, ib, ic) = (idx[0] + node, idx[1] + node, idx[2] + node);
+        let id = OFF_D + node;
+        // Bounds: node <= 62; ia/ib/ic/id < S3_SLOTS by the qS/qd/qE/qW caps; wb + node < 256 (wb <= 192).
+        debug_assert!(ia < S3_SLOTS && ib < S3_SLOTS && ic < S3_SLOTS && id < S3_SLOTS && wb + node < self.wt.len());
+        let (t, wt) = (&mut self.t[..], &mut self.wt[..]);
+        // SAFETY: indices are within the allocations (see above).
+        let (sa, sb, sc, sd) = unsafe { (*t.get_unchecked(ia), *t.get_unchecked(ib), *t.get_unchecked(ic), *t.get_unchecked(id)) };
+        let inp = [s3_input(sa), s3_input(sb), s3_input(sc), s3_input(sd), 256];
+        let ws = unsafe { wt.get_unchecked_mut(wb + node) };
+        // |in| <= 2047 and |w| <= 2^20, so each product fits i32 exactly; the sum is taken in i64 as before.
+        let dot = (inp[0] * ws[0]) as i64 + (inp[1] * ws[1]) as i64 + (inp[2] * ws[2]) as i64 + (inp[3] * ws[3]) as i64 + (inp[4] * ws[4]) as i64;
+        let x = (dot >> 16).clamp(-2047, 2047) as i32;
+        let p12 = SQUASH[(x + 2048) as usize] as i32;
+        let p16 = (p12 * 16 + 8).clamp(32, 65535 - 32);
+        let bit = io.code(p16 as u32, want);
+        let err = ((bit as i32) << 12) - p12;
+        for i in 0..S3_IN {
+            ws[i] = (ws[i] + ((inp[i] * err) >> S3_MIX_SHIFT)).clamp(-S3_W_CLAMP, S3_W_CLAMP);
+        }
+        s3_update_slot(unsafe { t.get_unchecked_mut(ia) }, bit);
+        s3_update_slot(unsafe { t.get_unchecked_mut(ib) }, bit);
+        s3_update_slot(unsafe { t.get_unchecked_mut(ic) }, bit);
+        s3_update_slot(unsafe { t.get_unchecked_mut(id) }, bit);
+        bit
+    }
+
+    /// Code one residual. Encoder passes the true value; decoder passes anything (ignored) and gets the decoded value.
+    #[inline(always)]
+    pub fn code_sample<I: BitIo>(&mut self, io: &mut I, r: i32) -> i32 {
+        let x = self.x;
+        let i = x + 1;
+        if x == 0 {
+            // Left pad of a new row = magnitude of N (zero in row 0, where prev is all zero).
+            self.cur_m[0] = self.prev_m[1];
+            self.cur_s[0] = 1;
+        }
+        let (aw, an, anw, ane) = (self.cur_m[i - 1], self.prev_m[i], self.prev_m[i - 1], self.prev_m[i + 1]);
+        let sum = 2 * aw + 2 * an + anw + ane;
+        let qs = s3q(sum).min(NQ - 1);
+        let qd = s3q(aw.abs_diff(an)).min(ND - 1);
+        let qe = s3q((self.e >> 2) as u32).min(NQ - 1);
+        let qw = s3q(aw).min(NW - 1);
+        let idx = [OFF_A + qs * 64, OFF_B + (qs * ND + qd) * 64, OFF_C + (qe * NW + qw) * 64];
+        let wb = (qs >> 3) * 64;
+        let sgi = self.cur_s[i - 1] as usize * 3 + self.prev_s[i] as usize;
+
+        let a_in = r.unsigned_abs();
+        let k_in = 32 - a_in.leading_zeros();
+        let nz = self.code_bit(io, idx, wb, 0, (a_in != 0) as u32);
+        let mut a = 0u32;
+        let mut neg = 0u32;
+        if nz != 0 {
+            let mut k = 1u32;
+            while k < self.kmax {
+                if self.code_bit(io, idx, wb, k as usize, (k_in > k) as u32) == 0 {
+                    break;
+                }
+                k += 1;
+            }
+            a = 1;
+            if k >= 2 {
+                let t = self.code_bit(io, idx, wb, 15 + k as usize, (a_in >> (k - 2)) & 1);
+                a = 2 + t;
+                if k >= 3 {
+                    let u = self.code_bit(io, idx, wb, 33 + 2 * (k as usize - 3) + t as usize, (a_in >> (k - 3)) & 1);
+                    a = 2 * a + u;
+                    for b in (0..k - 3).rev() {
+                        a = 2 * a + io.code(32768, (a_in >> b) & 1);
+                    }
+                }
+            }
+            let ps = (self.sg[sgi] >> 16).clamp(32, 65535 - 32);
+            neg = io.code(ps, (r < 0) as u32);
+            s3_update_slot(&mut self.sg[sgi], neg);
+        }
+
+        self.cur_m[i] = a;
+        self.cur_s[i] = if a == 0 { 1 } else { 2 - 2 * neg as u8 };
+        self.e += (((a as i32) << 4) - self.e) >> 4;
+        self.x += 1;
+        if self.x == self.w {
+            self.x = 0;
+            std::mem::swap(&mut self.cur_m, &mut self.prev_m);
+            std::mem::swap(&mut self.cur_s, &mut self.prev_s);
+            let w = self.w;
+            self.prev_m[0] = self.prev_m[1];
+            self.prev_m[w + 1] = self.prev_m[w];
+            self.prev_s[0] = self.prev_s[1];
+            self.prev_s[w + 1] = self.prev_s[w];
+        }
+        if neg != 0 { -(a as i32) } else { a as i32 }
+    }
+}
+
+// ---------------------------------------------------------------------------------------------------
+// Stage 4: entropy coding
+//
+// Binary range coder driven directly by the Stage 3 probability stream (`BitIo::code(p1, bit)`, p1 = P(bit = 1) on
+// a 16-bit scale, 32..=65503; raw mantissa bits arrive as p1 = 32768).
+//   * 32-bit range kept in [2^24, 2^32); split `bound = (range * p1) >> 16` with one 32x16 multiply in u64 (no division,
+//     no precision loss from pre-shifting the range). bit 1 takes the lower part [0, bound).
+//   * Carry: 64-bit `low` plus a (cache byte, run of 0xFF) pair, so output bytes are written once and never revisited.
+//   * The always-zero leading byte of this carry scheme is never stored (the decoder starts by loading 4 bytes).
+//   * Termination: the final interval [low, low + range) is narrowed to the value with the most trailing zero bits, the
+//     low 5 bytes are flushed, then trailing zero bytes are dropped; the decoder reads implicit zeros past the end.
+//     Cost is 0..=4 bytes. The stream carries no length or header; geometry and plane count belong to the container.
+// ---------------------------------------------------------------------------------------------------
+
+const S4_TOP: u32 = 1 << 24;
+
+/// Stage 4 encoder. Reusable: [`Stage4Enc::reset`] keeps the output buffer's capacity.
+pub struct Stage4Enc {
+    low: u64,
+    range: u32,
+    cache: u8,
+    ff: usize,
+    lead: bool,
+    out: Vec<u8>,
+}
+
+impl Stage4Enc {
+    pub fn new() -> Self {
+        Self::with_capacity(0)
+    }
+
+    pub fn with_capacity(cap: usize) -> Self {
+        Self { low: 0, range: u32::MAX, cache: 0, ff: 0, lead: true, out: Vec::with_capacity(cap) }
+    }
+
+    pub fn reset(&mut self) {
+        self.low = 0;
+        self.range = u32::MAX;
+        self.cache = 0;
+        self.ff = 0;
+        self.lead = true;
+        self.out.clear();
+    }
+
+    /// Bytes already committed to the output (excludes the cached byte, pending 0xFF run and the final flush).
+    pub fn bytes_so_far(&self) -> usize {
+        self.out.len()
+    }
+
+    #[inline(always)]
+    fn shift_low(&mut self) {
+        let low = self.low;
+        if (low as u32) < 0xFF00_0000 || (low >> 32) != 0 {
+            let carry = (low >> 32) as u8;
+            if self.lead {
+                self.lead = false; // the first byte is always 0 (no carry can reach it)
+            } else {
+                self.out.push(self.cache.wrapping_add(carry));
+            }
+            if self.ff != 0 {
+                let n = self.out.len() + self.ff;
+                self.out.resize(n, 0xFFu8.wrapping_add(carry));
+                self.ff = 0;
+            }
+            self.cache = (low >> 24) as u8;
+        } else {
+            self.ff += 1;
+        }
+        self.low = (low & 0x00FF_FFFF) << 8;
+    }
+
+    /// Terminate the stream and return its bytes. After this call only [`Stage4Enc::reset`] is meaningful.
+    pub fn finish(&mut self) -> &[u8] {
+        // Pick the value in [low, low + range) with the most trailing zero bits.
+        let hi = self.low + self.range as u64; // exclusive
+        for k in (0..=32).rev() {
+            let m = (1u64 << k) - 1;
+            let v = (self.low + m) & !m;
+            if v < hi {
+                self.low = v;
+                break;
+            }
+        }
+        for _ in 0..5 {
+            self.shift_low();
+        }
+        while self.out.last() == Some(&0) {
+            self.out.pop();
+        }
+        &self.out
+    }
+}
+
+impl Default for Stage4Enc {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl BitIo for Stage4Enc {
+    #[inline(always)]
+    fn code(&mut self, p1: u32, bit: u32) -> u32 {
+        let bound = ((self.range as u64 * p1 as u64) >> 16) as u32;
+        if bit != 0 {
+            self.range = bound;
+        } else {
+            self.low += bound as u64;
+            self.range -= bound;
+        }
+        while self.range < S4_TOP {
+            self.range <<= 8;
+            self.shift_low();
+        }
+        bit
+    }
+}
+
+/// Stage 4 decoder over a borrowed buffer; bytes past the end read as zero (see termination above).
+pub struct Stage4Dec<'a> {
+    code: u32,
+    range: u32,
+    buf: &'a [u8],
+    pos: usize,
+}
+
+impl<'a> Stage4Dec<'a> {
+    pub fn new(buf: &'a [u8]) -> Self {
+        let mut code = 0u32;
+        for i in 0..4 {
+            code = (code << 8) | buf.get(i).copied().unwrap_or(0) as u32;
+        }
+        Self { code, range: u32::MAX, buf, pos: 4 }
+    }
+
+    /// Bytes consumed so far (counts the implicit zero bytes past the end of `buf`).
+    pub fn consumed(&self) -> usize {
+        self.pos
+    }
+}
+
+impl BitIo for Stage4Dec<'_> {
+    #[inline(always)]
+    fn code(&mut self, p1: u32, _bit: u32) -> u32 {
+        let bound = ((self.range as u64 * p1 as u64) >> 16) as u32;
+        let bit = if self.code < bound {
+            self.range = bound;
+            1
+        } else {
+            self.code -= bound;
+            self.range -= bound;
+            0
+        };
+        while self.range < S4_TOP {
+            self.code = (self.code << 8) | self.buf.get(self.pos).copied().unwrap_or(0) as u32;
+            self.pos += 1;
+            self.range <<= 8;
+        }
+        bit
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum EllieError {
+    Stage1(Stage1Error),
+    Stage3(Stage3Error),
+    /// Plane length does not match the codec geometry.
+    BadPlanes,
+}
+
+impl From<Stage1Error> for EllieError {
+    fn from(e: Stage1Error) -> Self {
+        Self::Stage1(e)
+    }
+}
+
+impl From<Stage3Error> for EllieError {
+    fn from(e: Stage3Error) -> Self {
+        Self::Stage3(e)
+    }
+}
+
+/// Stages 1-4 for a set of equally sized planes sharing one coder stream. Allocates once; planes are coded in order.
+/// Stage 2 always restarts per plane. Stage 3 restarts per plane unless `carry_model` is set, in which case its
+/// adaptive state (and neighbour rows) simply continue into the next plane; encoder and decoder do the same either way.
+pub struct EllieCodec {
+    s1: Stage1,
+    s3: Stage3,
+    res: Vec<i32>,
+    n: usize,
+    pub carry_model: bool,
+}
+
+impl EllieCodec {
+    pub fn new(width: usize, height: usize, bits: u32) -> Result<Self, EllieError> {
+        Ok(Self {
+            s1: Stage1::new(width, height, bits)?,
+            s3: Stage3::new(width, height, bits)?,
+            res: vec![0; width * height],
+            n: width * height,
+            carry_model: false,
+        })
+    }
+
+    /// Encode all planes through `enc` (normally a [`Stage4Enc`], whose caller then calls [`Stage4Enc::finish`]).
+    pub fn encode_planes<I: BitIo>(&mut self, planes: &[&[u16]], enc: &mut I) -> Result<(), EllieError> {
+        for (i, p) in planes.iter().enumerate() {
+            if p.len() != self.n {
+                return Err(EllieError::BadPlanes);
+            }
+            if i == 0 || !self.carry_model {
+                self.s3.reset();
+            }
+            self.s1.encode(p, &mut self.res)?;
+            Stage2::new().encode_in_place(&mut self.res);
+            self.s3.encode_plane(&self.res, enc)?;
+        }
+        Ok(())
+    }
+
+    /// Decode `planes.len()` planes from `bytes` (a finished Stage 4 stream) into the given buffers.
+    pub fn decode_planes(&mut self, bytes: &[u8], planes: &mut [&mut [u16]]) -> Result<(), EllieError> {
+        let mut dec = Stage4Dec::new(bytes);
+        for (i, p) in planes.iter_mut().enumerate() {
+            if p.len() != self.n {
+                return Err(EllieError::BadPlanes);
+            }
+            if i == 0 || !self.carry_model {
+                self.s3.reset();
+            }
+            self.s3.decode_plane(&mut self.res, &mut dec)?;
+            Stage2::new().decode_in_place(&mut self.res);
+            self.s1.decode(&self.res, p)?;
+        }
+        Ok(())
+    }
+}
+
+// ---------------------------------------------------------------- colour transform (before Stage 1)
+
+/// Offset that stores the signed chroma planes Co, Cg (each in `-255..=255` for 8-bit RGB) in the unsigned 9-bit domain.
+pub const YCOCG_OFFSET: i32 = 255;
+/// Bit depth of the Co and Cg planes for 8-bit RGB input (Y stays at 8 bits).
+pub const YCOCG_CHROMA_BITS: u32 = 9;
+
+/// Reversible YCoCg-R, forward. Signed integer intermediates and arithmetic shifts; exact for 8-bit R, G, B.
+#[inline(always)]
+pub fn ycocg_r_forward(r: i32, g: i32, b: i32) -> (i32, i32, i32) {
+    let co = r - b;
+    let t = b + (co >> 1);
+    let cg = g - t;
+    let y = t + (cg >> 1);
+    (y, co, cg)
+}
+
+/// Exact inverse of [`ycocg_r_forward`].
+#[inline(always)]
+pub fn ycocg_r_inverse(y: i32, co: i32, cg: i32) -> (i32, i32, i32) {
+    let t = y - (cg >> 1);
+    let g = cg + t;
+    let b = t - (co >> 1);
+    (co + b, g, b)
+}
+
+/// In place on three equally sized 8-bit planes `[R, G, B]` -> `[Y, Co + 255, Cg + 255]`. Returns `false` (and leaves the
+/// planes unspecified) if a sample exceeds 255.
+pub fn ycocg_r_forward_planes(p: &mut [Vec<u16>]) -> bool {
+    let [r, g, b] = p else { return false };
+    if r.len() != g.len() || r.len() != b.len() {
+        return false;
+    }
+    let mut over = 0u16;
+    for i in 0..r.len() {
+        over |= r[i] | g[i] | b[i];
+        let (y, co, cg) = ycocg_r_forward(r[i] as i32, g[i] as i32, b[i] as i32);
+        (r[i], g[i], b[i]) = (y as u16, (co + YCOCG_OFFSET) as u16, (cg + YCOCG_OFFSET) as u16);
+    }
+    over <= 255
+}
+
+/// In place `[Y, Co + 255, Cg + 255]` -> `[R, G, B]`. Returns `false` if any reconstructed sample leaves `0..=255` or an
+/// input is outside its domain, which only a corrupt stream can cause.
+pub fn ycocg_r_inverse_planes(p: &mut [Vec<u16>]) -> bool {
+    let [y, co, cg] = p else { return false };
+    if y.len() != co.len() || y.len() != cg.len() {
+        return false;
+    }
+    let mut bad = 0u32;
+    for i in 0..y.len() {
+        bad |= (y[i] as u32 > 255) as u32 | (co[i] as u32 > 2 * YCOCG_OFFSET as u32) as u32 | (cg[i] as u32 > 2 * YCOCG_OFFSET as u32) as u32;
+        let (r, g, b) = ycocg_r_inverse(y[i] as i32, co[i] as i32 - YCOCG_OFFSET, cg[i] as i32 - YCOCG_OFFSET);
+        bad |= ((r | g | b) as u32 > 255) as u32;
+        (y[i], co[i], cg[i]) = (r as u16, g as u16, b as u16);
+    }
+    bad == 0
+}
+
+#[cfg(test)]
+mod ycocg_tests {
+    use super::*;
+
+    /// Every 8-bit RGB triple round-trips, and the transformed values stay inside the documented domains (no clamping).
+    #[test]
+    fn ycocg_r_is_exact_over_all_2_pow_24_triples() {
+        for r in 0..256 {
+            for g in 0..256 {
+                for b in 0..256 {
+                    let (y, co, cg) = ycocg_r_forward(r, g, b);
+                    assert!((0..=255).contains(&y) && (-255..=255).contains(&co) && (-255..=255).contains(&cg));
+                    assert_eq!(ycocg_r_inverse(y, co, cg), (r, g, b));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn plane_transform_round_trips_and_rejects_bad_input() {
+        let n = 256 * 256;
+        let mut p = vec![(0..n).map(|i| (i >> 8) as u16).collect::<Vec<_>>(), (0..n).map(|i| (i & 255) as u16).collect(), (0..n).map(|i| (i * 7 & 255) as u16).collect()];
+        let orig = p.clone();
+        assert!(ycocg_r_forward_planes(&mut p));
+        assert!(p[1].iter().chain(&p[2]).all(|&v| v <= 510));
+        assert!(ycocg_r_inverse_planes(&mut p));
+        assert_eq!(p, orig);
+        let mut big = vec![vec![256u16], vec![0], vec![0]];
+        assert!(!ycocg_r_forward_planes(&mut big));
+        let mut corrupt = vec![vec![0u16], vec![511], vec![0]];
+        assert!(!ycocg_r_inverse_planes(&mut corrupt));
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -481,9 +1232,9 @@ mod tests {
             let (qh, qv, qd) = (q(s_h), q(s_v), q(s_d));
             let f: i128 = if s135 >= 2 * s45 && s45 >= 2 * s135 { 2 } else if s135 >= 2 * s45 { 3 } else if s45 >= 2 * s135 { 1 } else { 2 };
             let o = 4 * m as i128;
-            let h4 = (5 * w - ww) as i128 + o;
-            let v4 = (5 * n - nn) as i128 + o;
-            let d4 = (4 - f) * nw as i128 + f * ne as i128 + o;
+            let h4 = (4 * w + ((w - ww + n - nw) >> 1)) as i128 + o;
+            let v4 = (4 * n + ((n - nn + w - nw) >> 1)) as i128 + o;
+            let d4 = (3 * ((4 - f) * nw as i128 + f * ne as i128)) / 4 + (w + ne - n) as i128 + o;
             assert!(h4 >= 0 && v4 >= 0 && d4 >= 0 && h4.max(v4).max(d4) < 9 * (m as i128 + 1));
             let (ph, pv, pd) = (qv * qd, qh * qd, qh * qv);
             let d = ph + pv + pd;
@@ -557,7 +1308,7 @@ mod tests {
         assert_eq!(a, b);
         assert_eq!(a, c);
         // Regression pin (generated by this implementation, not an independent oracle).
-        assert_eq!(fnv(&a), 3390715494612369011, "regression pin");
+        assert_eq!(fnv(&a), 12616679426670300685, "regression pin");
     }
 
     // ---------- Measurements (run with: cargo test --release --lib ellie -- --ignored --nocapture) ----------
@@ -650,5 +1401,674 @@ mod tests {
                 println!("   (reference MED loop incl. its allocation: {:.2} ns/px, sink {acc})", t.elapsed().as_secs_f64() / 7.0 / n * 1e9);
             }
         }
+    }
+
+    // ---- Stage 2 ----
+
+    fn entropy_i32(v: &[i32]) -> f64 {
+        let mut h = std::collections::HashMap::new();
+        for &x in v { *h.entry(x).or_insert(0usize) += 1; }
+        let n = v.len() as f64;
+        -h.values().map(|&c| { let p = c as f64 / n; p * p.log2() }).sum::<f64>()
+    }
+
+    /// Q: does r invert exactly, and do encoder/decoder states match at every step, for all bit depths,
+    /// including worst-case +/-M alternation and saturated runs (overflow check)?
+    #[test]
+    fn stage2_inversion_and_state_lockstep() {
+        let mut rng = Rng(0x9e3779b97f4a7c15);
+        for bits in 1..=16u32 {
+            let m = (1i32 << bits) - 1;
+            for kind in 0..5 {
+                let e: Vec<i32> = (0..20000).map(|i| match kind {
+                    0 => (rng.next() % (2 * m as u64 + 1)) as i32 - m,
+                    1 => if i % 2 == 0 { m } else { -m },
+                    2 => m,
+                    3 => -m,
+                    _ => if (i / 700) % 2 == 0 { m } else { -m },
+                }).collect();
+                let (mut a, mut b) = (Stage2::new(), Stage2::new());
+                assert_eq!(a.state(), 0);
+                for &x in &e {
+                    let r = a.encode_one(x);
+                    assert!(r.abs() <= 2 * m && a.bias().abs() <= m);
+                    assert_eq!(b.decode_one(r), x);
+                    assert_eq!(a, b);
+                }
+                let mut buf = e.clone();
+                let mut c = Stage2::new();
+                c.encode_in_place(&mut buf);
+                let mut d = Stage2::new();
+                let mut buf2 = buf.clone();
+                d.decode_in_place(&mut buf2);
+                assert_eq!(buf2, e);
+                assert_eq!(c, d);
+                assert_eq!(c, a);
+            }
+        }
+    }
+
+    /// Q: does Stage 1 + Stage 2 reconstruct exactly, deterministically, on all patterns/sizes/depths?
+    #[test]
+    fn stage2_composed_with_stage1() {
+        let mut rng = Rng(12345);
+        for bits in [1u32, 2, 8, 12, 16] {
+            for &(w, h) in &SIZES {
+                for kind in 0..6 {
+                    let src = pattern(kind, w, h, bits, &mut rng);
+                    let mut s1 = Stage1::new(w, h, bits).unwrap();
+                    let mut res = vec![0i32; w * h];
+                    s1.encode(&src, &mut res).unwrap();
+                    let e0 = res.clone();
+                    Stage2::new().encode_in_place(&mut res);
+                    let first = res.clone();
+                    let mut again = e0.clone();
+                    Stage2::new().encode_in_place(&mut again);
+                    assert_eq!(first, again);
+                    Stage2::new().decode_in_place(&mut res);
+                    assert_eq!(res, e0);
+                    let mut out = vec![0u16; w * h];
+                    s1.decode(&res, &mut out).unwrap();
+                    assert_eq!(out, src);
+                }
+            }
+        }
+    }
+
+    /// Q: no state divergence over a long sequence (10M samples) with a drifting bias?
+    #[test]
+    fn stage2_long_sequence_no_divergence() {
+        let mut rng = Rng(777);
+        let n = 10_000_000;
+        let e: Vec<i32> = (0..n).map(|i| ((rng.next() % 41) as i32 - 20) + (((i / 100_000) % 7) as i32 - 3) * 9).collect();
+        let mut buf = e.clone();
+        let mut a = Stage2::new();
+        a.encode_in_place(&mut buf);
+        let mut b = Stage2::new();
+        b.decode_in_place(&mut buf);
+        assert_eq!(buf, e);
+        assert_eq!(a, b);
+    }
+
+    /// Q: does Stage 2 actually help on biased residuals, and stay neutral on unbiased ones?
+    #[test]
+    fn stage2_quality_effect() {
+        let mut rng = Rng(99);
+        for (name, off) in [("bias +6", 6i32), ("unbiased", 0)] {
+            let e: Vec<i32> = (0..400_000).map(|_| ((rng.next() % 17) as i32 - 8) + off).collect();
+            let mut r = e.clone();
+            Stage2::new().encode_in_place(&mut r);
+            let mad = |v: &[i32]| v.iter().map(|x| x.abs() as f64).sum::<f64>() / v.len() as f64;
+            println!("{name}: H(e) = {:.4} H(r) = {:.4} bits; mean|e| = {:.3} mean|r| = {:.3}", entropy_i32(&e), entropy_i32(&r), mad(&e), mad(&r));
+            assert!(mad(&r) <= mad(&e) + 0.05);
+        }
+    }
+
+    /// Q: what are Stage 2 encode/decode throughputs (release mode)?
+    #[test]
+    #[ignore]
+    fn stage2_throughput() {
+        let mut rng = Rng(5);
+        let n = 1 << 24;
+        let e: Vec<i32> = (0..n).map(|_| (rng.next() % 61) as i32 - 30).collect();
+        let mut buf = e.clone();
+        let (mut te, mut td) = (f64::MAX, f64::MAX);
+        for _ in 0..9 {
+            buf.copy_from_slice(&e);
+            let t = Instant::now();
+            Stage2::new().encode_in_place(&mut buf);
+            te = te.min(t.elapsed().as_secs_f64());
+            let t = Instant::now();
+            Stage2::new().decode_in_place(&mut buf);
+            td = td.min(t.elapsed().as_secs_f64());
+        }
+        assert_eq!(buf, e);
+        let nf = n as f64;
+        println!("stage2 encode {:.3} ns/sample ({:.0} Msamples/s)  decode {:.3} ns/sample ({:.0} Msamples/s)", te / nf * 1e9, nf / te / 1e6, td / nf * 1e9, nf / td / 1e6);
+    }
+
+    // ---- Stage 3 ----
+
+    use crate::rangecoder::{BinDec, BinEnc};
+
+    /// Encoder-side IO that records (p, bit); with `cost` it also accumulates -log2 P(bit) in bits.
+    struct RecIo {
+        log: Vec<(u32, u32)>,
+        bits: f64,
+    }
+    impl BitIo for RecIo {
+        fn code(&mut self, p1: u32, bit: u32) -> u32 {
+            self.log.push((p1, bit));
+            let p = p1 as f64 / 65536.0;
+            self.bits -= if bit == 1 { p.log2() } else { (1.0 - p).log2() };
+            bit
+        }
+    }
+    /// Decoder-side IO replaying a recorded bit log and asserting that every probability matches.
+    struct ReplayIo<'a> {
+        log: &'a [(u32, u32)],
+        i: usize,
+    }
+    impl BitIo for ReplayIo<'_> {
+        fn code(&mut self, p1: u32, _bit: u32) -> u32 {
+            let (p, b) = self.log[self.i];
+            assert_eq!(p, p1, "probability diverged at coded bit {}", self.i);
+            self.i += 1;
+            b
+        }
+    }
+    /// Cost-only IO (no log): measures bits.
+    struct CostIo(f64);
+    impl BitIo for CostIo {
+        #[inline(always)]
+        fn code(&mut self, p1: u32, bit: u32) -> u32 {
+            let p = p1 as f64 / 65536.0;
+            self.0 -= if bit == 1 { p.log2() } else { (1.0 - p).log2() };
+            bit
+        }
+    }
+    /// Bit-supply IO for model-only decode timing (no probability check, no coder).
+    struct BitsIo<'a> {
+        bits: &'a [u8],
+        i: usize,
+    }
+    impl BitIo for BitsIo<'_> {
+        #[inline(always)]
+        fn code(&mut self, _p1: u32, _bit: u32) -> u32 {
+            let b = self.bits[self.i];
+            self.i += 1;
+            b as u32
+        }
+    }
+    /// Model-only encode timing: accepts the bit without coding or recording.
+    struct NullIo;
+    impl BitIo for NullIo {
+        #[inline(always)]
+        fn code(&mut self, _p1: u32, bit: u32) -> u32 {
+            bit
+        }
+    }
+    struct BitLog(Vec<u8>);
+    impl BitIo for BitLog {
+        #[inline(always)]
+        fn code(&mut self, _p1: u32, bit: u32) -> u32 {
+            self.0.push(bit as u8);
+            bit
+        }
+    }
+
+    fn laplace(rng: &mut Rng, b: f64) -> i32 {
+        let u = (rng.next() >> 11) as f64 / (1u64 << 53) as f64;
+        let v = -b * (1.0 - u).ln();
+        let v = v.round() as i32;
+        if rng.next() & 1 == 0 { v } else { -v }
+    }
+
+    /// Exact entropy (bits) of the rounded two-sided Laplace(b) distribution.
+    fn laplace_entropy(b: f64) -> f64 {
+        let cdf = |x: f64| if x < 0.0 { 0.5 * (x / b).exp() } else { 1.0 - 0.5 * (-x / b).exp() };
+        let kmax = (40.0 * b) as i32 + 40;
+        let mut h = 0.0;
+        for k in -kmax..=kmax {
+            let p = cdf(k as f64 + 0.5) - cdf(k as f64 - 0.5);
+            if p > 0.0 {
+                h -= p * p.log2();
+            }
+        }
+        h
+    }
+
+    fn model_bits(res: &[i32], w: usize, h: usize, bits: u32) -> f64 {
+        let mut m = Stage3::new(w, h, bits).unwrap();
+        let mut io = CostIo(0.0);
+        m.encode_plane(res, &mut io).unwrap();
+        io.0
+    }
+
+    /// Q: real range-coder round trip over the full expanded domain [-2M, 2M] for every bit depth
+    /// (extremes, uniform, Laplace, flat); is the decoded plane identical and does the model end in the same state?
+    #[test]
+    fn stage3_roundtrip_full_range() {
+        let mut rng = Rng(31337);
+        for bits in 1..=16u32 {
+            let rm = 2 * ((1i32 << bits) - 1);
+            let (w, h) = (37, 29);
+            for kind in 0..5 {
+                let r: Vec<i32> = (0..w * h).map(|i| match kind {
+                    0 => (rng.next() % (2 * rm as u64 + 1)) as i32 - rm,
+                    1 => if i % 2 == 0 { rm } else { -rm },
+                    2 => 0,
+                    3 => laplace(&mut rng, 3.0).clamp(-rm, rm),
+                    _ => if i % 97 == 0 { rm } else { 0 },
+                }).collect();
+                let mut enc = Stage3::new(w, h, bits).unwrap();
+                let mut be = BinEnc::new();
+                enc.encode_plane(&r, &mut be).unwrap();
+                let bytes = be.finish();
+                let mut dec = Stage3::new(w, h, bits).unwrap();
+                let mut bd = BinDec::new(&bytes);
+                let mut out = vec![0i32; w * h];
+                dec.decode_plane(&mut out, &mut bd).unwrap();
+                assert_eq!(out, r, "bits {bits} kind {kind}");
+                assert!(enc == dec, "model state diverged: bits {bits} kind {kind}");
+            }
+            let mut m = Stage3::new(2, 2, bits).unwrap();
+            assert_eq!(m.encode_plane(&[0, 0, 0, rm + 1], &mut NullIo), Err(Stage3Error::ResidualOutOfRange));
+            assert_eq!(m.encode_plane(&[0; 3], &mut NullIo), Err(Stage3Error::BadLength));
+        }
+        assert_eq!(Stage3::new(1, 1, 0).err(), Some(Stage3Error::BadBits(0)));
+        assert_eq!(Stage3::new(1, 1, 17).err(), Some(Stage3Error::BadBits(17)));
+    }
+
+    /// Q: does the decoder see bit-for-bit the same probabilities (contexts, mixing, updates) as the encoder,
+    /// and is the whole thing deterministic across runs?
+    #[test]
+    fn stage3_probability_lockstep_and_determinism() {
+        let mut rng = Rng(4242);
+        let (w, h, bits) = (61, 47, 12);
+        let r: Vec<i32> = (0..w * h).map(|i| laplace(&mut rng, if (i / w / 8) % 2 == 0 { 1.5 } else { 40.0 })).collect();
+        let run = || {
+            let mut m = Stage3::new(w, h, bits).unwrap();
+            let mut io = RecIo { log: Vec::new(), bits: 0.0 };
+            m.encode_plane(&r, &mut io).unwrap();
+            (m, io.log)
+        };
+        let (m1, log1) = run();
+        let (m2, log2) = run();
+        assert_eq!(log1, log2);
+        assert!(m1 == m2);
+        let mut d = Stage3::new(w, h, bits).unwrap();
+        let mut rp = ReplayIo { log: &log1, i: 0 };
+        let mut out = vec![0i32; w * h];
+        d.decode_plane(&mut out, &mut rp).unwrap();
+        assert_eq!(out, r);
+        assert_eq!(rp.i, log1.len());
+        assert!(d == m1);
+        // reset() must restore the exact initial state.
+        let mut m3 = m1.clone();
+        m3.reset();
+        assert!(m3 == Stage3::new(w, h, bits).unwrap());
+    }
+
+    /// Q: does the full chain Stage 1 -> 2 -> 3 (real range coder) and back reconstruct exactly?
+    #[test]
+    fn stage3_composed_stages_1_to_3() {
+        let mut rng = Rng(2024);
+        for bits in [1u32, 4, 8, 12, 16] {
+            for &(w, h) in &SIZES {
+                for kind in 0..6 {
+                    let src = pattern(kind, w, h, bits, &mut rng);
+                    let mut s1 = Stage1::new(w, h, bits).unwrap();
+                    let mut res = vec![0i32; w * h];
+                    s1.encode(&src, &mut res).unwrap();
+                    Stage2::new().encode_in_place(&mut res);
+                    let mut m = Stage3::new(w, h, bits).unwrap();
+                    let mut be = BinEnc::new();
+                    m.encode_plane(&res, &mut be).unwrap();
+                    let bytes = be.finish();
+
+                    let mut m = Stage3::new(w, h, bits).unwrap();
+                    let mut bd = BinDec::new(&bytes);
+                    let mut back = vec![0i32; w * h];
+                    m.decode_plane(&mut back, &mut bd).unwrap();
+                    Stage2::new().decode_in_place(&mut back);
+                    let mut out = vec![0u16; w * h];
+                    s1.decode(&back, &mut out).unwrap();
+                    assert_eq!(out, src, "bits {bits} {w}x{h} kind {kind}");
+                }
+            }
+        }
+    }
+
+    /// Q: how are fresh/unseen contexts handled? A fresh model must start at p ~ 1/2, and after training only on
+    /// small residuals a never-seen huge residual in an unseen high-energy context must still code at bounded cost.
+    #[test]
+    fn stage3_sparse_and_unseen_contexts() {
+        let mut m = Stage3::new(64, 64, 16).unwrap();
+        let mut io = RecIo { log: Vec::new(), bits: 0.0 };
+        m.code_sample(&mut io, 5);
+        let (p0, _) = io.log[0];
+        assert!((32768 - 64..=32768 + 64).contains(&p0), "fresh p = {p0}");
+
+        let mut m = Stage3::new(64, 64, 16).unwrap();
+        let mut io = CostIo(0.0);
+        for _ in 0..640 {
+            m.code_sample(&mut io, 0);
+        }
+        let mut io = CostIo(0.0);
+        let before = io.0;
+        m.code_sample(&mut io, 100_000);
+        let cost = io.0 - before;
+        println!("cost of a never-seen 100000 after 640 zeros: {cost:.1} bits (uniform over the domain = {:.1})", (4.0 * 65535.0f64 + 1.0).log2());
+        assert!(cost < 60.0);
+    }
+
+    /// Q: does the model respond correctly to different statistics? (measured: model bits/sample vs exact entropy)
+    #[test]
+    fn stage3_synthetic_distributions() {
+        let mut rng = Rng(8080);
+        let (w, h) = (256, 256);
+        let n = (w * h) as f64;
+        println!("-- iid Laplace, model vs exact entropy (bits/sample) [measured / analytic]");
+        for b in [0.5f64, 2.0, 16.0, 256.0] {
+            let r: Vec<i32> = (0..w * h).map(|_| laplace(&mut rng, b)).collect();
+            let bits = model_bits(&r, w, h, 16) / n;
+            let hh = laplace_entropy(b);
+            println!("  b = {b:>5}: model {bits:.4}  entropy {hh:.4}  overhead {:+.2}%", (bits / hh - 1.0) * 100.0);
+            assert!(bits < hh * 1.06 + 0.02);
+        }
+
+        // Spatial scale switching: 32x32 blocks of b=1 / b=30. Compare to the oracle (knows the block scale) and to
+        // the best static zero-order model (mixture entropy).
+        let (bl, bh) = (1.0, 30.0);
+        let r: Vec<i32> = (0..w * h).map(|i| {
+            let (x, y) = (i % w, i / w);
+            laplace(&mut rng, if (x / 32 + y / 32) % 2 == 0 { bl } else { bh })
+        }).collect();
+        let bits = model_bits(&r, w, h, 12) / n;
+        let oracle = 0.5 * (laplace_entropy(bl) + laplace_entropy(bh));
+        let mut hist = std::collections::HashMap::new();
+        for &v in &r { *hist.entry(v).or_insert(0usize) += 1; }
+        let order0 = -hist.values().map(|&c| { let p = c as f64 / n; c as f64 / n * p.log2() }).sum::<f64>();
+        println!("-- scale-switching blocks: model {bits:.4}  oracle {oracle:.4}  static order-0 {order0:.4}");
+        assert!(bits < order0 - 0.3, "contexts must beat static order-0");
+        assert!(bits < oracle * 1.08);
+
+        // Sign structure: identical magnitudes, random vs persistent signs (P(same as W) = 0.85).
+        let mags: Vec<i32> = (0..w * h).map(|_| laplace(&mut rng, 6.0).abs() + 1).collect();
+        let rand_s: Vec<i32> = mags.iter().map(|&a| if rng.next() & 1 == 0 { a } else { -a }).collect();
+        let mut corr = rand_s.clone();
+        let mut last = 1i32;
+        for (i, v) in corr.iter_mut().enumerate() {
+            let same = (rng.next() % 100) < 85;
+            if i % w == 0 { last = if rng.next() & 1 == 0 { 1 } else { -1 }; }
+            let sgn = if same { last } else { -last };
+            *v = mags[i] * sgn;
+            last = sgn;
+        }
+        let (b_rand, b_corr) = (model_bits(&rand_s, w, h, 12), model_bits(&corr, w, h, 12));
+        let saved = (b_rand - b_corr) / n;
+        let ideal = 1.0 + 0.85f64 * 0.85f64.log2() + 0.15 * 0.15f64.log2();
+        println!("-- sign persistence 0.85: saved {saved:.4} bits/sample; ideal saving {ideal:.4}; random-sign cost vs 1 bit/sign: {:+.4} bits/sample", (b_rand - model_bits(&mags, w, h, 12)) / n - 1.0);
+        assert!(saved > ideal * 0.8);
+
+        // Flat plane and full-domain uniform.
+        let zeros = vec![0i32; w * h];
+        let z = model_bits(&zeros, w, h, 16) / n;
+        let rm = 2 * 65535;
+        let uni: Vec<i32> = (0..w * h).map(|_| (rng.next() % (2 * rm as u64 + 1)) as i32 - rm).collect();
+        let u = model_bits(&uni, w, h, 16) / n;
+        println!("-- all-zero plane: {z:.5} bits/sample; uniform over +-2M (B=16): {u:.3} vs log2(4M+1) = {:.3}", ((2 * rm + 1) as f64).log2());
+        assert!(z < 0.01);
+        assert!(u < ((2 * rm + 1) as f64).log2() + 0.15);
+    }
+
+    /// Q: Stage 3 model-only throughput (no coder), encode vs decode, plus memory. Residuals ~ Laplace(b=4).
+    #[test]
+    #[ignore]
+    fn stage3_throughput_and_memory() {
+        let mut rng = Rng(606);
+        let (w, h) = (2048, 2048);
+        let n = (w * h) as f64;
+        let r: Vec<i32> = (0..w * h).map(|i| laplace(&mut rng, if (i / w / 64) % 2 == 0 { 2.0 } else { 8.0 })).collect();
+        let mut m = Stage3::new(w, h, 8).unwrap();
+        println!("memory: model state {} B ({} slots x4 + sign + {} mixer sets x{}), neighbour rows {} B, total {} B; struct {} B",
+            m.model_state_bytes(), S3_SLOTS, m.wt.len(), S3_IN * 4, m.total_bytes() - m.model_state_bytes(), m.total_bytes(), std::mem::size_of::<Stage3>());
+        let mut log = BitLog(Vec::new());
+        m.encode_plane(&r, &mut log).unwrap();
+        let bits = log.0;
+        let (mut te, mut td, mut tc) = (f64::MAX, f64::MAX, f64::MAX);
+        let mut out = vec![0i32; w * h];
+        for _ in 0..5 {
+            m.reset();
+            let t = Instant::now();
+            m.encode_plane(&r, &mut NullIo).unwrap();
+            te = te.min(t.elapsed().as_secs_f64());
+            m.reset();
+            let mut io = BitsIo { bits: &bits, i: 0 };
+            let t = Instant::now();
+            m.decode_plane(&mut out, &mut io).unwrap();
+            td = td.min(t.elapsed().as_secs_f64());
+            m.reset();
+            let mut be = BinEnc::new();
+            let t = Instant::now();
+            m.encode_plane(&r, &mut be).unwrap();
+            tc = tc.min(t.elapsed().as_secs_f64());
+            let bytes = be.finish();
+            if tc == tc.min(f64::MAX) { std::hint::black_box(bytes.len()); }
+        }
+        assert_eq!(out, r);
+        m.reset();
+        let mut cio = CostIo(0.0);
+        m.encode_plane(&r, &mut cio).unwrap();
+        println!("coded bits/sample {:.3}, modelled binary decisions/sample {:.2}", cio.0 / n, bits.len() as f64 / n);
+        println!("model encode {:.1} ns/sample ({:.1} Msamples/s)  model decode {:.1} ns/sample ({:.1} Msamples/s)  model+real range coder encode {:.1} ns/sample",
+            te / n * 1e9, n / te / 1e6, td / n * 1e9, n / td / 1e6, tc / n * 1e9);
+    }
+
+    // ----------------------------------------------------------------------------------------------
+    // Stage 4
+    // ----------------------------------------------------------------------------------------------
+
+    /// Random (p, bit) streams: bit drawn from p (typical), or adversarial (against p), at extreme and mid probabilities.
+    fn s4_stream(rng: &mut Rng, n: usize, mode: usize) -> Vec<(u32, u32)> {
+        (0..n)
+            .map(|_| {
+                let p = match mode {
+                    0 => 32768,
+                    1 => 32,
+                    2 => 65503,
+                    _ => (32 + rng.next() % (65503 - 32 + 1)) as u32,
+                };
+                let likely = (rng.next() & 0xFFFF) < p as u64;
+                let bit = match mode {
+                    1 | 2 => (rng.next() % 997 == 0) as u32 ^ (p > 32768) as u32, // mostly the likely value, rare surprises
+                    _ => likely as u32,
+                };
+                (p, bit)
+            })
+            .collect()
+    }
+
+    fn s4_encode(stream: &[(u32, u32)]) -> Vec<u8> {
+        let mut e = Stage4Enc::new();
+        for &(p, b) in stream {
+            e.code(p, b);
+        }
+        e.finish().to_vec()
+    }
+
+    fn s4_decode_check(bytes: &[u8], stream: &[(u32, u32)]) {
+        let mut d = Stage4Dec::new(bytes);
+        for (i, &(p, b)) in stream.iter().enumerate() {
+            assert_eq!(d.code(p, 0), b, "bit {i}");
+        }
+    }
+
+    /// Q: does the coder round-trip every bit for every probability regime, and is termination within budget?
+    #[test]
+    fn stage4_roundtrip_and_termination() {
+        let mut rng = Rng(4040);
+        for mode in 0..4 {
+            for n in [0usize, 1, 2, 3, 7, 31, 100, 1000, 20000] {
+                for _ in 0..4 {
+                    let stream = s4_stream(&mut rng, n, mode);
+                    let bytes = s4_encode(&stream);
+                    s4_decode_check(&bytes, &stream);
+                    // Same arithmetic as the shared BinEnc; only the termination differs, and it must never cost more.
+                    let mut be = BinEnc::new();
+                    for &(p, b) in &stream {
+                        be.code(p, b);
+                    }
+                    let reference = be.finish();
+                    assert!(bytes.len() <= reference.len(), "mode {mode} n {n}: {} > {}", bytes.len(), reference.len());
+                }
+            }
+        }
+        // A degenerate empty stream costs nothing.
+        assert!(s4_encode(&[]).is_empty());
+    }
+
+    /// Q: carry propagation through long 0xFF runs (probability extremes, repeated surprises) stays exact.
+    #[test]
+    fn stage4_carry_stress() {
+        let mut rng = Rng(77);
+        for round in 0..200 {
+            let n = 500 + (rng.next() % 4000) as usize;
+            let stream: Vec<(u32, u32)> = (0..n)
+                .map(|_| {
+                    let p = if rng.next() & 1 == 0 { 65503 } else { 32 };
+                    // Bias toward unlikely symbols: they shrink the range most and push `low` to its top.
+                    let unlikely = rng.next() % (2 + round % 7) == 0;
+                    (p, if (p > 32768) ^ unlikely { 1 } else { 0 })
+                })
+                .collect();
+            let bytes = s4_encode(&stream);
+            s4_decode_check(&bytes, &stream);
+        }
+    }
+
+    /// Q: is reuse (reset) byte-identical to a fresh coder?
+    #[test]
+    fn stage4_reset_and_determinism() {
+        let mut rng = Rng(5);
+        let a = s4_stream(&mut rng, 5000, 3);
+        let b = s4_stream(&mut rng, 7000, 3);
+        let mut e = Stage4Enc::new();
+        for &(p, x) in &a {
+            e.code(p, x);
+        }
+        e.finish();
+        e.reset();
+        for &(p, x) in &b {
+            e.code(p, x);
+        }
+        assert_eq!(e.finish(), &s4_encode(&b)[..]);
+        assert_eq!(s4_encode(&a), s4_encode(&a));
+    }
+
+    /// Q: does the complete Stage 1-4 chain reconstruct exactly (multi-plane, both model-carry modes, every bit depth)?
+    #[test]
+    fn stage4_composed_stages_1_to_4() {
+        let mut rng = Rng(2025);
+        for bits in [1u32, 4, 8, 12, 16] {
+            for &(w, h) in &SIZES {
+                for carry in [false, true] {
+                    let planes: Vec<Vec<u16>> = (0..3).map(|k| pattern(k * 2, w, h, bits, &mut rng)).collect();
+                    let refs: Vec<&[u16]> = planes.iter().map(|p| p.as_slice()).collect();
+                    let mut codec = EllieCodec::new(w, h, bits).unwrap();
+                    codec.carry_model = carry;
+                    let mut enc = Stage4Enc::new();
+                    codec.encode_planes(&refs, &mut enc).unwrap();
+                    let bytes = enc.finish().to_vec();
+
+                    // Reusing the same codec object for a second identical encode must reproduce the bytes.
+                    enc.reset();
+                    codec.encode_planes(&refs, &mut enc).unwrap();
+                    assert_eq!(enc.finish(), &bytes[..], "bits {bits} {w}x{h} carry {carry}");
+
+                    let mut out: Vec<Vec<u16>> = vec![vec![0; w * h]; 3];
+                    let mut outs: Vec<&mut [u16]> = out.iter_mut().map(|p| p.as_mut_slice()).collect();
+                    let mut dec = EllieCodec::new(w, h, bits).unwrap();
+                    dec.carry_model = carry;
+                    dec.decode_planes(&bytes, &mut outs).unwrap();
+                    assert_eq!(out, planes, "bits {bits} {w}x{h} carry {carry}");
+                }
+            }
+        }
+    }
+
+    /// Q: corrupt or truncated streams must never panic (they may decode to wrong samples or report an error).
+    #[test]
+    fn stage4_garbage_does_not_panic() {
+        let mut rng = Rng(9);
+        let (w, h, bits) = (17, 13, 8);
+        let plane = pattern(2, w, h, bits, &mut rng);
+        let mut codec = EllieCodec::new(w, h, bits).unwrap();
+        let mut enc = Stage4Enc::new();
+        codec.encode_planes(&[&plane], &mut enc).unwrap();
+        let good = enc.finish().to_vec();
+        for cut in [0, 1, good.len() / 2, good.len().saturating_sub(1)] {
+            let mut out = vec![0u16; w * h];
+            let _ = codec.decode_planes(&good[..cut], &mut [&mut out[..]]);
+        }
+        for _ in 0..50 {
+            let junk: Vec<u8> = (0..64).map(|_| rng.next() as u8).collect();
+            let mut out = vec![0u16; w * h];
+            let _ = codec.decode_planes(&junk, &mut [&mut out[..]]);
+        }
+    }
+
+    /// Encoder that special-cases p = 1/2 with a shift instead of the multiply (A/B for the equiprobable fast path).
+    struct HalfShiftEnc(Stage4Enc);
+    impl BitIo for HalfShiftEnc {
+        #[inline(always)]
+        fn code(&mut self, p1: u32, bit: u32) -> u32 {
+            if p1 != 32768 {
+                return self.0.code(p1, bit);
+            }
+            let e = &mut self.0;
+            let bound = e.range >> 1;
+            if bit != 0 {
+                e.range = bound;
+            } else {
+                e.low += bound as u64;
+                e.range -= bound;
+            }
+            while e.range < S4_TOP {
+                e.range <<= 8;
+                e.shift_low();
+            }
+            bit
+        }
+    }
+
+    /// Q: Stage 4 cost on top of the model, and is a p = 1/2 shortcut worth a branch? Laplace residuals, 8 bit.
+    #[test]
+    #[ignore]
+    fn stage4_throughput_and_overhead() {
+        let mut rng = Rng(808);
+        let (w, h) = (2048, 2048);
+        let n = (w * h) as f64;
+        let r: Vec<i32> = (0..w * h).map(|i| laplace(&mut rng, if (i / w / 64) % 2 == 0 { 2.0 } else { 12.0 })).collect();
+        let mut m = Stage3::new(w, h, 8).unwrap();
+        let mut cio = CostIo(0.0);
+        m.encode_plane(&r, &mut cio).unwrap();
+        let ideal = cio.0 / 8.0;
+        let (mut t_null, mut t_s4, mut t_br, mut t_dec) = (f64::MAX, f64::MAX, f64::MAX, f64::MAX);
+        let mut bytes = Vec::new();
+        let mut out = vec![0i32; w * h];
+        for _ in 0..5 {
+            m.reset();
+            let t = Instant::now();
+            m.encode_plane(&r, &mut NullIo).unwrap();
+            t_null = t_null.min(t.elapsed().as_secs_f64());
+            m.reset();
+            let mut e = Stage4Enc::with_capacity(w * h);
+            let t = Instant::now();
+            m.encode_plane(&r, &mut e).unwrap();
+            let l = e.finish().len();
+            t_s4 = t_s4.min(t.elapsed().as_secs_f64());
+            bytes = e.finish().to_vec();
+            assert_eq!(l, bytes.len());
+            m.reset();
+            let mut e = HalfShiftEnc(Stage4Enc::with_capacity(w * h));
+            let t = Instant::now();
+            m.encode_plane(&r, &mut e).unwrap();
+            let l2 = e.0.finish().len();
+            t_br = t_br.min(t.elapsed().as_secs_f64());
+            assert_eq!(l2, l, "shift path must be bit-identical");
+            m.reset();
+            let mut d = Stage4Dec::new(&bytes);
+            let t = Instant::now();
+            m.decode_plane(&mut out, &mut d).unwrap();
+            t_dec = t_dec.min(t.elapsed().as_secs_f64());
+        }
+        assert_eq!(out, r);
+        println!("ideal model bytes {:.0}, coded bytes {}, overhead {:.0} B ({:.4}%)", ideal, bytes.len(), bytes.len() as f64 - ideal, (bytes.len() as f64 / ideal - 1.0) * 100.0);
+        println!(
+            "ns/sample: model only {:.1}, model+stage4 enc {:.1}, +half-shift variant {:.1}, model+stage4 dec {:.1}",
+            t_null / n * 1e9, t_s4 / n * 1e9, t_br / n * 1e9, t_dec / n * 1e9
+        );
     }
 }

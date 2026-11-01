@@ -37,7 +37,7 @@ Compatibility rules (normative):
 | 0 | 4 | `magic` | `89 50 4B 32`; else `BadMagic` |
 | 4 | 1 | `version` | `2` |
 | 5 | 1 | `flags` | `0` |
-| 6 | 1 | `codec` | `1`, `2`, `3` (ELLIE-X4) or `4` (LISA) |
+| 6 | 1 | `codec` | `1`, `2`, `3` (retired ELLIE-X4), `4` (LISA) or `6` (ELLIE) |
 | 7 | 1 | `meta_version` | `1` |
 | 8 | 1 | `bit_depth` | X4: `8`. LISA: `1..=16` |
 | 9 | 1 | `channels` | X4: `1..=4` (layout). LISA: `1` |
@@ -66,7 +66,9 @@ counts vs. the limit (`TooLarge`) -> payload bounds (`InvalidPayloadLength`) -> 
 | 2 | ELLIE-X4P | same | v1 codec 2 |
 | 3 | ELLIE-X4PJ (REL6) | same | v1 codec 3, default writer for standard images |
 | 4 | LISA RAW, production | `u16` samples + `ImageMetadata` | OR-128 rule 2, Stage 4 coding 1 |
-| 0, 5..=255 | unassigned | | rejected (`UnsupportedCodec`) |
+| 5 | unassigned | | rejected (`UnsupportedCodec`) |
+| 6 | ELLIE (Stages 1-4, `src/ellie.rs`) | 8/16-bit gray, gray+alpha, RGB, RGBA standard image | per-plane streams; explicit colour representation (section 2.3) |
+| 0, 7..=255 | unassigned | | rejected (`UnsupportedCodec`) |
 
 The codec ids 1..=3 are the same ids, with the same meaning and **byte-identical payloads**, as container v1. The payload
 is the headerless range-coder stream defined in `docs/pkon2-format-v1.md` section 3 and produced by `pkonfile`; it does not
@@ -120,6 +122,32 @@ Plausibility bound: `width*height / 16384 <= payload_len`. Derivation: every sam
 the probability clamp (`[32, 65503]/65536`) bounds a decision's cost below by 7.3e-4 bits, so at most ~11,000 samples fit
 in one payload byte; a flat 2048x2048 image measures 11,245 samples/byte (`tests/pkon_container.rs`). 16,384 keeps a
 power-of-two margin and prevents a tiny file from requesting unbounded decode work.
+
+### 2.3 ELLIE (codec 6)
+
+Header: `bit_depth` 8 or 16, `channels` 1..=4 (the interleaved `Canonical` layout), `pixel_crc32` over the decoded bytes in
+`Canonical` order (16-bit little-endian). `payload_len` is the sum of the plane stream lengths. Codecs 1..=3 (retired) are
+unrelated and stay rejected; id 5 stays unassigned.
+
+Metadata version 1, at offset 32, `2 + 5 * channels` bytes:
+
+| Offset | Size | Field | Values |
+|---:|---:|---|---|
+| 0 | 1 | `sample_layout` | `0` Gray, `1` GrayAlpha, `2` Rgb, `3` Rgba (must agree with `channels`) |
+| 1 | 1 | `representation` | `0` untransformed (planes = channels); `1` YCoCg-R (8-bit Rgb/Rgba only) |
+| 2 + 5k | 1 | `plane_bits[k]` | coding bit depth of plane k; must equal the value the representation implies |
+| 3 + 5k | 4 | `plane_len[k]` | encoded length of plane k's stream, > 0; all lengths sum to `payload_len` |
+
+Payload: the plane streams back to back. Each plane is an independent Stage 1-4 stream (Stage 2 and Stage 3 restart per plane;
+the range coder is finished per plane).
+
+Representation `1` (YCoCg-R): `Co = R - B; t = B + (Co >> 1); Cg = G - t; Y = t + (Cg >> 1)`, inverse
+`t = Y - (Cg >> 1); G = Cg + t; B = t - (Co >> 1); R = Co + B` (signed integers, arithmetic shifts). Plane 0 = Y (8-bit),
+planes 1, 2 = Co + 255, Cg + 255 (9-bit, `0..=510`); an alpha plane 3 is coded unchanged at 8 bits. A decoded value outside
+its domain, or an inverse result outside 0..=255, is `CorruptPayload`. Representation `0` codes every channel at `bit_depth`.
+
+The reference encoder (`pkon::encode_standard`) tries both representations for 8-bit RGB/RGBA and writes the smaller complete
+file (ties: untransformed); `encode_standard_with` forces one.
 
 ## 3. Resource policy
 

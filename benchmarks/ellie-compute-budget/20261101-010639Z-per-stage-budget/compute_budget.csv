@@ -1,0 +1,7 @@
+Stage,Current cost (ns/sample),Current share,Unallocated headroom (ns/sample),Reallocatable headroom (ns/sample),"Max stage cost, others unchanged (ns/sample)",Measurement basis,Confidence
+Stage 1,not isolated,not isolated,0,unknown (<= Stage 1+2 bound),= current,no stored Stage 1 timing; bounded jointly with Stage 2,none (unseparated)
+Stage 2,not isolated,not isolated,0,unknown (<= Stage 1+2 bound),= current,no stored Stage 2 timing; ~6 integer ops/sample by code inspection,none (unseparated)
+Stage 1+2,<= 29.3,<= 28%,0,unknown,= current,intercept of per-sample cost vs content (two fits: 23.8 and 29.3),low-medium (upper bound)
+Stage 3,>= 57.0 (and <= 86.3),>= 55%,0,unknown,= current,Stages 1-3 null-coder minus Stage 1+2 upper bound,low-medium (lower bound)
+Stage 4,18.4,17.7%,0,unknown (no coder-speed comparison stored),= current,"full encode minus null-coder encode, 50 images; 3-image cross-check 3.1-4.3 ns/decision",medium-high (measured by difference)
+Total,104.5,100%,0,-,104.5,net encode 16547 ms / 158334976 samples = 3.1685 MP/s,high (session variation +-5-10%)

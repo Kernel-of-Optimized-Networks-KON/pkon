@@ -82,8 +82,13 @@ fn err(b: &[u8]) -> ContainerError {
 // ---------------------------------------------------------------- standard images (no codec registered)
 
 #[test]
-fn standard_encoder_is_not_registered_until_ellie_is_wired_in() {
-    assert!(matches!(encode_standard(&std_img(4, 4, Layout::Rgb, 1)), Err(ContainerError::UnsupportedImage(_))));
+fn standard_encoder_is_registered_and_round_trips() {
+    // ELLIE (codec 6) is wired in; the exhaustive ELLIE container tests live in tests/ellie_container.rs.
+    let img = std_img(4, 4, Layout::Rgb, 1);
+    let f = encode_standard(&img).unwrap();
+    assert_eq!(f[6], 6);
+    let Decoded::Standard(back) = decode(&f).unwrap() else { panic!("expected a standard image") };
+    assert_eq!(back.data, img.data);
 }
 
 // ---------------------------------------------------------------- LISA RAW

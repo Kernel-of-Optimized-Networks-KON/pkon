@@ -1,0 +1,224 @@
+{
+  "aggregate": {
+    "all_deterministic": true,
+    "all_exact": true,
+    "canonical_bytes": 10485760,
+    "decode_MBps_carry_off": 8.71207841083267,
+    "encode_MBps_carry_off": 10.381880975336973,
+    "encoded_bytes_carry_off": 3617736,
+    "encoded_bytes_carry_on": 3617169,
+    "file_bytes": 6208798,
+    "headline_bytes": 3617169,
+    "headline_mode": "carry on",
+    "ideal_stage3_bytes_carry_off": 3617735.0217875307,
+    "images": 3,
+    "ratio_carry_off": 2.8984315052286846,
+    "ratio_carry_on": 2.8988858413859013,
+    "shared_binenc_bytes_carry_off": 3617745,
+    "stage4_overhead_pct_carry_off": 0.00002703936201609025
+  },
+  "images": [
+    {
+      "canonical_bytes": 3145728,
+      "channels": 3,
+      "content_sha256": "97eb1d21e21f59133abc547348268529d96480722425f38ed27d1fb0d5044bc0",
+      "crop_px": [
+        1024,
+        1024
+      ],
+      "file_bytes": 742583,
+      "format": "jpeg",
+      "image": "portrait_0",
+      "layout": "rgb",
+      "load_decode_crop_s": 0.0238596,
+      "path": "data/portrait_0.jpg",
+      "runs": [
+        {
+          "binary_decisions": 10325180,
+          "bits_per_sample": 2.556767781575521,
+          "bytes_committed_before_finish": 1005360,
+          "decode_MBps": 9.855676730915821,
+          "decode_s_best": 0.3191793,
+          "deterministic": true,
+          "encode_MBps": 12.338041360722022,
+          "encode_s_best": 0.2549617,
+          "encoded_bytes": 1005362,
+          "exact": true,
+          "ideal_stage3_bytes": 1005361.4889014175,
+          "model_only_encode_s_best": 0.2193493,
+          "ratio_vs_canonical": 3.1289505670594275,
+          "setup_s": 0.0012719,
+          "shared_binenc_5byte_flush_bytes": 1005365,
+          "stage3_carry_model": false,
+          "stage4_encode_share_pct": 13.967744959340955,
+          "stage4_overhead_bytes": 0.5110985825303942,
+          "stage4_overhead_pct": 0.00005083729466281994,
+          "termination_saving_vs_5byte_flush": 3
+        },
+        {
+          "binary_decisions": 10325180,
+          "bits_per_sample": 2.5566329956054688,
+          "bytes_committed_before_finish": 1005307,
+          "decode_MBps": 10.007571544735104,
+          "decode_s_best": 0.3143348,
+          "deterministic": true,
+          "encode_MBps": 12.253584658712445,
+          "encode_s_best": 0.256719,
+          "encoded_bytes": 1005309,
+          "exact": true,
+          "ideal_stage3_bytes": 1005308.9046193021,
+          "model_only_encode_s_best": 0.2229202,
+          "ratio_vs_canonical": 3.129115525674196,
+          "setup_s": 0.0012917,
+          "shared_binenc_5byte_flush_bytes": 1005312,
+          "stage3_carry_model": true,
+          "stage4_encode_share_pct": 13.165679205668447,
+          "stage4_overhead_bytes": 0.09538069786503911,
+          "stage4_overhead_pct": 9.48770049191694e-6,
+          "termination_saving_vs_5byte_flush": 3
+        }
+      ],
+      "source_px": [
+        2034,
+        2717
+      ]
+    },
+    {
+      "canonical_bytes": 4194304,
+      "channels": 4,
+      "content_sha256": "4cdccee62c01b9d2b50d2f8a6db5494f3a59c0f0f48d44a0fa171144a54d9478",
+      "crop_px": [
+        1024,
+        1024
+      ],
+      "file_bytes": 1865853,
+      "format": "png",
+      "image": "screen_0",
+      "layout": "rgba",
+      "load_decode_crop_s": 0.0212958,
+      "path": "data/screen_0.png",
+      "runs": [
+        {
+          "binary_decisions": 11540386,
+          "bits_per_sample": 1.0362892150878906,
+          "bytes_committed_before_finish": 543221,
+          "decode_MBps": 12.88859334610832,
+          "decode_s_best": 0.3254276,
+          "deterministic": true,
+          "encode_MBps": 14.565710066836276,
+          "encode_s_best": 0.2879574,
+          "encoded_bytes": 543314,
+          "exact": true,
+          "ideal_stage3_bytes": 543313.8801930592,
+          "model_only_encode_s_best": 0.252595,
+          "ratio_vs_canonical": 7.719852608252318,
+          "setup_s": 0.0017015,
+          "shared_binenc_5byte_flush_bytes": 543317,
+          "stage3_carry_model": false,
+          "stage4_encode_share_pct": 12.2804275910256,
+          "stage4_overhead_bytes": 0.11980694078374654,
+          "stage4_overhead_pct": 0.000022051146708612634,
+          "termination_saving_vs_5byte_flush": 3
+        },
+        {
+          "binary_decisions": 11540386,
+          "bits_per_sample": 1.0348072052001953,
+          "bytes_committed_before_finish": 542445,
+          "decode_MBps": 12.899712161049568,
+          "decode_s_best": 0.3251471,
+          "deterministic": true,
+          "encode_MBps": 14.574035704146974,
+          "encode_s_best": 0.2877929,
+          "encoded_bytes": 542537,
+          "exact": true,
+          "ideal_stage3_bytes": 542536.2986653805,
+          "model_only_encode_s_best": 0.2520258,
+          "ratio_vs_canonical": 7.730908675353017,
+          "setup_s": 0.0017202,
+          "shared_binenc_5byte_flush_bytes": 542540,
+          "stage3_carry_model": true,
+          "stage4_encode_share_pct": 12.42806893429268,
+          "stage4_overhead_bytes": 0.7013346195453778,
+          "stage4_overhead_pct": 0.00012926962145165533,
+          "termination_saving_vs_5byte_flush": 3
+        }
+      ],
+      "source_px": [
+        2880,
+        1628
+      ]
+    },
+    {
+      "canonical_bytes": 3145728,
+      "channels": 3,
+      "content_sha256": "d2443550d92e5a56030d29895aa22435a753b2c7de60ce40b52d432e2f90f1c1",
+      "crop_px": [
+        1024,
+        1024
+      ],
+      "file_bytes": 3600362,
+      "format": "jpeg",
+      "image": "night_0",
+      "layout": "rgb",
+      "load_decode_crop_s": 0.059253,
+      "path": "data/night_0.jpg",
+      "runs": [
+        {
+          "binary_decisions": 21940705,
+          "bits_per_sample": 5.261891682942708,
+          "bytes_committed_before_finish": 2069058,
+          "decode_MBps": 5.627602611104223,
+          "decode_s_best": 0.5589819,
+          "deterministic": true,
+          "encode_MBps": 6.734783927694794,
+          "encode_s_best": 0.4670867,
+          "encoded_bytes": 2069060,
+          "exact": true,
+          "ideal_stage3_bytes": 2069059.652693054,
+          "model_only_encode_s_best": 0.3732009,
+          "ratio_vs_canonical": 1.5203657699631716,
+          "setup_s": 0.0014084,
+          "shared_binenc_5byte_flush_bytes": 2069063,
+          "stage3_carry_model": false,
+          "stage4_encode_share_pct": 20.10029401393789,
+          "stage4_overhead_bytes": 0.3473069460596889,
+          "stage4_overhead_pct": 0.00001678573866570332,
+          "termination_saving_vs_5byte_flush": 3
+        },
+        {
+          "binary_decisions": 21940705,
+          "bits_per_sample": 5.262560526529948,
+          "bytes_committed_before_finish": 2069321,
+          "decode_MBps": 5.598927959986097,
+          "decode_s_best": 0.5618447,
+          "deterministic": true,
+          "encode_MBps": 6.7615515169023315,
+          "encode_s_best": 0.4652376,
+          "encoded_bytes": 2069323,
+          "exact": true,
+          "ideal_stage3_bytes": 2069322.2901771402,
+          "model_only_encode_s_best": 0.3708391,
+          "ratio_vs_canonical": 1.5201725395213797,
+          "setup_s": 0.0013243,
+          "shared_binenc_5byte_flush_bytes": 2069326,
+          "stage3_carry_model": true,
+          "stage4_encode_share_pct": 20.290384955988085,
+          "stage4_overhead_bytes": 0.7098228598479182,
+          "stage4_overhead_pct": 0.00003430218982192201,
+          "termination_saving_vs_5byte_flush": 3
+        }
+      ],
+      "source_px": [
+        2000,
+        1329
+      ]
+    }
+  ],
+  "meta": {
+    "build": "release",
+    "crop": 1024,
+    "pkon_header_bytes_not_included": 24,
+    "reps": 3,
+    "timing": "best of reps; encode = Stage 1-4 + finish, decode = Stage 4 + inverse 3-1; setup (model allocation) and plane extraction timed separately/excluded"
+  }
+}

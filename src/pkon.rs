@@ -5,11 +5,14 @@
 //! compression algorithm and therefore how the metadata block and the payload are interpreted:
 //!
 //! * id 4: LISA RAW (payload produced by the unchanged LISA Stage 1..4 pipeline).
+//! * id 6: ELLIE standard images (8/16-bit gray, gray+alpha, RGB, RGBA); one Stage 1..4 stream per plane, with an explicit
+//!   colour representation (untransformed, or reversible YCoCg-R on RGB planes). Id 5 stays unassigned.
 //!
 //! Ids 1..=3 belonged to the retired PKON2 coder and are no longer supported; no standard-image codec is registered yet.
 //! Version 1 files (`.pkon2`, `pkonfile`) share magic and version-byte position with version 2, so `decode` recognises both.
 //! All integers are little-endian and read/written byte by byte; nothing depends on struct layout or host endianness.
-use crate::canon::Canonical;
+use crate::canon::{Canonical, Layout, Spec};
+use crate::ellie::{self, EllieCodec, Stage4Enc};
 use crate::lisa::{self, CfaPattern, ColorFilter, ImageMetadata, LisaError, ReconstructionRecord, SampleLayout, Stage3Rule, Stage4Output};
 use crate::lisa_bayer_plane::{self as bayer, Stage1Mode};
 use crate::pkonfile::{self, PkonError};
@@ -24,6 +27,12 @@ pub const VERSION_V1: u8 = 1;
 pub const FIXED_HEADER_LEN: usize = 32;
 /// Codec id 4: LISA RAW, production configuration (Stage 3 rule version 2 = OR-128, Stage 4 coding version 1).
 pub const CODEC_LISA: u8 = 4;
+/// Codec id 6: ELLIE (Stages 1-4 as in `ellie.rs`), per-plane streams, explicit colour representation in the metadata.
+pub const CODEC_ELLIE: u8 = 6;
+/// ELLIE representation ids (metadata byte 1). Planes are the interleaved channels, in order.
+pub const ELLIE_REPR_UNTRANSFORMED: u8 = 0;
+/// RGB planes 0..3 -> reversible YCoCg-R (Y 8-bit, Co/Cg 9-bit with +255 offset); an alpha plane is coded unchanged.
+pub const ELLIE_REPR_YCOCG_R: u8 = 1;
 /// Reconstruction-metadata layout version understood for every assigned codec so far.
 pub const META_VERSION_1: u8 = 1;
 
@@ -193,6 +202,16 @@ fn crc_of(parts: &[&[u8]]) -> u32 {
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum CodecParams {
     Lisa(LisaParams),
+    Ellie(EllieParams),
+}
+
+/// ELLIE metadata, version 1: `layout u8, representation u8`, then per plane `bit_depth u8, stream_len u32`.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct EllieParams {
+    pub layout: Layout,
+    pub representation: u8,
+    /// `(coding bit depth, encoded stream length)` per plane, in channel order; lengths sum to the payload length.
+    pub planes: Vec<(u8, u32)>,
 }
 
 /// Everything LISA's decoder needs besides dimensions, bit depth and payload.
@@ -269,16 +288,17 @@ pub fn parse_header_with_limit(bytes: &[u8], max_decoded_bytes: u64) -> Result<H
 
     let (codec, meta_version, bit_depth, channels) = (bytes[6], bytes[7], bytes[8], bytes[9]);
     let (width, height, payload_len, pixel_crc32) = (rd32(bytes, 12), rd32(bytes, 16), rd32(bytes, 20), rd32(bytes, 24));
-    if codec != CODEC_LISA {
+    if codec != CODEC_LISA && codec != CODEC_ELLIE {
         return Err(ContainerError::UnsupportedCodec(codec));
     }
+    let ellie = codec == CODEC_ELLIE;
     if meta_version != META_VERSION_1 {
         return Err(ContainerError::UnsupportedMetaVersion { codec, version: meta_version });
     }
-    if !(1..=16).contains(&bit_depth) {
+    if !(if ellie { bit_depth == 8 || bit_depth == 16 } else { (1..=16).contains(&bit_depth) }) {
         return Err(ContainerError::UnsupportedBitDepth { codec, bit_depth });
     }
-    if channels != 1 {
+    if !(if ellie { (1..=4).contains(&channels) } else { channels == 1 }) {
         return Err(ContainerError::InvalidChannels { codec, channels });
     }
     let max_per_byte = LISA_MAX_SAMPLES_PER_PAYLOAD_BYTE;
@@ -291,11 +311,16 @@ pub fn parse_header_with_limit(bytes: &[u8], max_decoded_bytes: u64) -> Result<H
     if decoded_bytes > max_decoded_bytes || usize::try_from(decoded_bytes).is_err() {
         return Err(too_large);
     }
-    if payload_len == 0 || samples / max_per_byte > payload_len as u64 {
+    // ELLIE has no samples-per-byte bound: the decoded-size limit above already caps its allocation.
+    if payload_len == 0 || (!ellie && samples / max_per_byte > payload_len as u64) {
         return Err(ContainerError::InvalidPayloadLength { payload_len });
     }
 
-    let params = CodecParams::Lisa(parse_lisa_meta(meta, width, height, bit_depth)?);
+    let params = if ellie {
+        CodecParams::Ellie(parse_ellie_meta(meta, bit_depth, channels, payload_len)?)
+    } else {
+        CodecParams::Lisa(parse_lisa_meta(meta, width, height, bit_depth)?)
+    };
     Ok(Header { codec, meta_version, bit_depth, channels, width, height, meta_len, payload_len, pixel_crc32, header_crc32: expected, params })
 }
 
@@ -406,6 +431,86 @@ fn serialize_lisa_meta(p: &LisaParams) -> Result<Vec<u8>, ContainerError> {
     Ok(m)
 }
 
+// ---------------------------------------------------------------- ELLIE metadata, version 1
+
+const ELLIE_META_FIXED: usize = 2;
+const ELLIE_PLANE_META: usize = 5;
+
+fn ellie_layout_code(l: Layout) -> u8 {
+    match l {
+        Layout::Gray => 0,
+        Layout::GrayAlpha => 1,
+        Layout::Rgb => 2,
+        Layout::Rgba => 3,
+    }
+}
+
+fn ellie_layout_from_code(c: u8) -> Option<Layout> {
+    Some(match c {
+        0 => Layout::Gray,
+        1 => Layout::GrayAlpha,
+        2 => Layout::Rgb,
+        3 => Layout::Rgba,
+        _ => return None,
+    })
+}
+
+/// Coding bit depth of plane `k` for a representation at sample depth `bit_depth` (None: representation not valid here).
+fn ellie_plane_bits(repr: u8, layout: Layout, bit_depth: u8, k: usize) -> Option<u8> {
+    match repr {
+        ELLIE_REPR_UNTRANSFORMED => Some(bit_depth),
+        ELLIE_REPR_YCOCG_R if bit_depth == 8 && matches!(layout, Layout::Rgb | Layout::Rgba) => {
+            Some(if k == 1 || k == 2 { ellie::YCOCG_CHROMA_BITS as u8 } else { 8 })
+        }
+        _ => None,
+    }
+}
+
+fn parse_ellie_meta(meta: &[u8], bit_depth: u8, channels: u8, payload_len: u32) -> Result<EllieParams, ContainerError> {
+    let n = channels as usize;
+    if meta.len() != ELLIE_META_FIXED + ELLIE_PLANE_META * n {
+        return Err(ContainerError::InvalidMetaLength { codec: CODEC_ELLIE, meta_len: meta.len() });
+    }
+    let unsupported = |field, value| ContainerError::UnsupportedCodecVersion { codec: CODEC_ELLIE, field, value };
+    let layout = ellie_layout_from_code(meta[0]).ok_or_else(|| unsupported("sample_layout", meta[0]))?;
+    if layout.channels() != n {
+        return Err(ContainerError::InvalidMetadata("layout disagrees with the channel count".into()));
+    }
+    let representation = meta[1];
+    if !matches!(representation, ELLIE_REPR_UNTRANSFORMED | ELLIE_REPR_YCOCG_R) {
+        return Err(unsupported("representation", representation));
+    }
+    let mut planes = Vec::with_capacity(n);
+    let mut total = 0u64;
+    for k in 0..n {
+        let at = ELLIE_META_FIXED + ELLIE_PLANE_META * k;
+        let (bits, len) = (meta[at], rd32(meta, at + 1));
+        match ellie_plane_bits(representation, layout, bit_depth, k) {
+            Some(b) if b == bits => {}
+            Some(_) => return Err(ContainerError::InvalidMetadata(format!("plane {k} bit depth {bits} does not match the representation"))),
+            None => return Err(unsupported("representation", representation)),
+        }
+        if len == 0 {
+            return Err(ContainerError::InvalidMetadata(format!("plane {k} has an empty stream")));
+        }
+        total += len as u64;
+        planes.push((bits, len));
+    }
+    if total != payload_len as u64 {
+        return Err(ContainerError::InvalidMetadata("plane stream lengths do not sum to the payload length".into()));
+    }
+    Ok(EllieParams { layout, representation, planes })
+}
+
+fn serialize_ellie_meta(p: &EllieParams) -> Vec<u8> {
+    let mut m = vec![ellie_layout_code(p.layout), p.representation];
+    for &(bits, len) in &p.planes {
+        m.push(bits);
+        m.extend_from_slice(&len.to_le_bytes());
+    }
+    m
+}
+
 // ---------------------------------------------------------------- writing
 
 struct FileParts<'a> {
@@ -439,10 +544,140 @@ fn write_file(p: FileParts) -> Result<Vec<u8>, ContainerError> {
     Ok(out)
 }
 
-/// Integration point for the standard (decoded-pixel) image codec. No standard-image codec is registered (the PKON2
-/// codecs 1..=3 were removed), so this always fails; the ELLIE encoder will be wired in here.
-pub fn encode_standard(_img: &Canonical) -> Result<Vec<u8>, ContainerError> {
-    Err(ContainerError::UnsupportedImage("no standard-image codec is registered".into()))
+/// Which colour representation the ELLIE encoder uses for a standard image.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum EllieRepr {
+    /// Try every valid representation and keep the smaller complete file (ties go to untransformed). Equivalent to
+    /// `Untransformed` for gray, gray+alpha and 16-bit input.
+    Auto,
+    Untransformed,
+    /// Reversible YCoCg-R on the RGB planes of 8-bit RGB/RGBA input; an error for anything else.
+    YCoCgR,
+}
+
+/// Encode a decoded-pixel standard image with ELLIE (codec 6). 8-bit RGB/RGBA input is tried both untransformed and as
+/// YCoCg-R, and the smaller file is written.
+pub fn encode_standard(img: &Canonical) -> Result<Vec<u8>, ContainerError> {
+    encode_standard_with(img, EllieRepr::Auto)
+}
+
+pub fn encode_standard_with(img: &Canonical, repr: EllieRepr) -> Result<Vec<u8>, ContainerError> {
+    let rgb8 = img.spec.bit_depth == 8 && matches!(img.spec.layout, Layout::Rgb | Layout::Rgba);
+    match repr {
+        EllieRepr::Untransformed => encode_ellie(img, ELLIE_REPR_UNTRANSFORMED),
+        EllieRepr::YCoCgR if rgb8 => encode_ellie(img, ELLIE_REPR_YCOCG_R),
+        EllieRepr::YCoCgR => Err(ContainerError::UnsupportedImage("YCoCg-R needs 8-bit RGB or RGBA input".into())),
+        EllieRepr::Auto => {
+            let plain = encode_ellie(img, ELLIE_REPR_UNTRANSFORMED)?;
+            if !rgb8 {
+                return Ok(plain);
+            }
+            let ycocg = encode_ellie(img, ELLIE_REPR_YCOCG_R)?;
+            Ok(if ycocg.len() < plain.len() { ycocg } else { plain })
+        }
+    }
+}
+
+fn ellie_err(e: ellie::EllieError) -> ContainerError {
+    ContainerError::CorruptPayload(format!("ELLIE: {e:?}"))
+}
+
+fn encode_ellie(img: &Canonical, repr: u8) -> Result<Vec<u8>, ContainerError> {
+    let Spec { width, height, layout, bit_depth } = img.spec;
+    let (w, h, ch) = (width as usize, height as usize, layout.channels());
+    let n = w * h;
+    let mut planes = vec![vec![0u16; n]; ch];
+    if bit_depth == 8 {
+        for (i, px) in img.data.chunks_exact(ch).enumerate() {
+            for (k, &v) in px.iter().enumerate() {
+                planes[k][i] = v as u16;
+            }
+        }
+    } else {
+        for (i, px) in img.data.chunks_exact(2 * ch).enumerate() {
+            for k in 0..ch {
+                planes[k][i] = u16::from_le_bytes([px[2 * k], px[2 * k + 1]]);
+            }
+        }
+    }
+    if repr == ELLIE_REPR_YCOCG_R && !ellie::ycocg_r_forward_planes(&mut planes[..3]) {
+        return Err(ContainerError::UnsupportedImage("YCoCg-R input out of range".into()));
+    }
+    let mut payload = Vec::new();
+    let mut meta_planes = Vec::with_capacity(ch);
+    let mut enc = Stage4Enc::with_capacity(n);
+    let mut codecs: Vec<(u8, EllieCodec)> = vec![];
+    for (k, plane) in planes.iter().enumerate() {
+        let bits = ellie_plane_bits(repr, layout, bit_depth, k).ok_or_else(|| ContainerError::UnsupportedImage("invalid ELLIE representation".into()))?;
+        let at = match codecs.iter().position(|c| c.0 == bits) {
+            Some(i) => i,
+            None => {
+                codecs.push((bits, EllieCodec::new(w, h, bits as u32).map_err(ellie_err)?));
+                codecs.len() - 1
+            }
+        };
+        enc.reset();
+        codecs[at].1.encode_planes(&[plane.as_slice()], &mut enc).map_err(ellie_err)?;
+        let bytes = enc.finish();
+        let len = u32::try_from(bytes.len()).map_err(|_| ContainerError::UnsupportedImage("plane stream exceeds 4 GiB".into()))?;
+        payload.extend_from_slice(bytes);
+        meta_planes.push((bits, len));
+    }
+    let meta = serialize_ellie_meta(&EllieParams { layout, representation: repr, planes: meta_planes });
+    let mut crc = Crc32::new();
+    crc.update(&img.data);
+    write_file(FileParts {
+        codec: CODEC_ELLIE,
+        bit_depth,
+        channels: ch as u8,
+        width,
+        height,
+        meta: &meta,
+        payload: &payload,
+        pixel_crc32: crc.finish(),
+    })
+}
+
+fn decode_ellie(hdr: &Header, p: &EllieParams, payload: &[u8]) -> Result<Canonical, ContainerError> {
+    let (w, h, ch) = (hdr.width as usize, hdr.height as usize, hdr.channels as usize);
+    let n = w * h;
+    let mut planes = vec![vec![0u16; n]; ch];
+    let mut codecs: Vec<(u8, EllieCodec)> = vec![];
+    let mut at = 0usize;
+    for (k, &(bits, len)) in p.planes.iter().enumerate() {
+        let stream = &payload[at..at + len as usize];
+        at += len as usize;
+        let i = match codecs.iter().position(|c| c.0 == bits) {
+            Some(i) => i,
+            None => {
+                codecs.push((bits, EllieCodec::new(w, h, bits as u32).map_err(ellie_err)?));
+                codecs.len() - 1
+            }
+        };
+        codecs[i].1.decode_planes(stream, &mut [planes[k].as_mut_slice()]).map_err(ellie_err)?;
+    }
+    if p.representation == ELLIE_REPR_YCOCG_R && !ellie::ycocg_r_inverse_planes(&mut planes[..3]) {
+        return Err(ContainerError::CorruptPayload("YCoCg-R plane value outside its domain".into()));
+    }
+    let bps = bytes_per_sample(hdr.bit_depth);
+    let mut data = vec![0u8; n * ch * bps];
+    for (k, plane) in planes.iter().enumerate() {
+        for (i, &v) in plane.iter().enumerate() {
+            let o = (i * ch + k) * bps;
+            data[o] = v as u8;
+            if bps == 2 {
+                data[o + 1] = (v >> 8) as u8;
+            }
+        }
+    }
+    let mut crc = Crc32::new();
+    crc.update(&data);
+    let actual = crc.finish();
+    if actual != hdr.pixel_crc32 {
+        return Err(ContainerError::ChecksumMismatch { expected: hdr.pixel_crc32, actual });
+    }
+    let spec = Spec { width: hdr.width, height: hdr.height, layout: p.layout, bit_depth: hdr.bit_depth };
+    Canonical::new(spec, data).map_err(ContainerError::InvalidMetadata)
 }
 
 /// Encode a RAW mosaic or plane with LISA (production path: per-plane Stage 1 for Bayer CFA, OR-128, Stage 4 counted).
@@ -506,7 +741,7 @@ pub struct RawImage {
 /// Result of decoding any supported `.pkon` / `.pkon2` file.
 #[derive(Clone, Debug)]
 pub enum Decoded {
-    /// Decoded-pixel standard image. No codec produces one at present; kept for the incoming standard-image codec.
+    /// Decoded-pixel standard image (ELLIE, codec 6).
     Standard(Canonical),
     /// LISA RAW image (container v2, codec 4).
     Raw(RawImage),
@@ -555,6 +790,7 @@ fn decode_v2(bytes: &[u8], max_decoded_bytes: u64) -> Result<Decoded, ContainerE
         if actual == hdr.pixel_crc32 { Ok(()) } else { Err(ContainerError::ChecksumMismatch { expected: hdr.pixel_crc32, actual }) }
     };
     match &hdr.params {
+        CodecParams::Ellie(p) => Ok(Decoded::Standard(decode_ellie(&hdr, p, payload)?)),
         CodecParams::Lisa(p) => {
             let s4 = Stage4Output::from_parts(
                 payload.to_vec(),

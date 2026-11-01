@@ -1,0 +1,94 @@
+{
+  "baseline_total": 3572101,
+  "images": [
+    {
+      "baseline": 987160,
+      "dec_s": [
+        0.3420536,
+        0.4338625
+      ],
+      "deterministic": [
+        true,
+        true
+      ],
+      "enc_s": [
+        0.2980118,
+        0.21198879999999998
+      ],
+      "exact": [
+        true,
+        true
+      ],
+      "image": "portrait_0",
+      "raw": 3145728,
+      "xf_fwd_s": 0.0024879,
+      "xf_inv_s": 0.0018838,
+      "ycocg": 548022,
+      "ycocg_planes": [
+        320681,
+        126556,
+        100785
+      ]
+    },
+    {
+      "baseline": 527075,
+      "dec_s": [
+        0.4628466,
+        0.5466686000000001
+      ],
+      "deterministic": [
+        true,
+        true
+      ],
+      "enc_s": [
+        0.434257,
+        0.3513533
+      ],
+      "exact": [
+        true,
+        true
+      ],
+      "image": "screen_0",
+      "raw": 4194304,
+      "xf_fwd_s": 0.0040536,
+      "xf_inv_s": 0.0046553,
+      "ycocg": 310981,
+      "ycocg_planes": [
+        178329,
+        81191,
+        51360,
+        101
+      ]
+    },
+    {
+      "baseline": 2057866,
+      "dec_s": [
+        0.9352546,
+        0.8820703
+      ],
+      "deterministic": [
+        true,
+        true
+      ],
+      "enc_s": [
+        0.8368285,
+        0.7950601
+      ],
+      "exact": [
+        true,
+        true
+      ],
+      "image": "night_0",
+      "raw": 3145728,
+      "xf_fwd_s": 0.0033204,
+      "xf_inv_s": 0.0036944,
+      "ycocg": 1976616,
+      "ycocg_planes": [
+        665589,
+        710086,
+        600941
+      ]
+    }
+  ],
+  "ycocg_total": 2835619
+}

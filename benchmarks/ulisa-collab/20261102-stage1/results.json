@@ -1,0 +1,1785 @@
+{
+  "images": [
+    {
+      "E_O": {
+        "bytes": 7256668,
+        "dec_s": 5.4227245,
+        "enc_s": 4.6203975,
+        "exact_planes": true,
+        "plane_payload": [
+          1868323,
+          1785216,
+          1785705,
+          1817264
+        ]
+      },
+      "E_O_prod16": {
+        "dec_s": 5.2217613,
+        "enc_s": 4.7970276,
+        "exact": true,
+        "file_bytes": 7256707,
+        "per_plane": [
+          1868366,
+          1785272,
+          1785756,
+          1817313
+        ]
+      },
+      "E_T_V0": {
+        "bytes": 7125142,
+        "dec_s": 3.5084666,
+        "enc_s": 2.9835729,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          1799121,
+          1785216,
+          1785705,
+          1754939
+        ],
+        "transform_s": 0.0916029
+      },
+      "E_T_V1": {
+        "bytes": 7184348,
+        "dec_s": 2.8307199,
+        "enc_s": 2.4160293,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          1827449,
+          1785216,
+          1785705,
+          1785817
+        ],
+        "transform_s": 0.1183362
+      },
+      "L_O": {
+        "dec_s": 19.2438136,
+        "enc_s": 19.8141963,
+        "exact": true,
+        "file_bytes": 7517952,
+        "l1_off_file_bytes": 7517952,
+        "l1_off_payload": 7517904,
+        "meta_version": 1,
+        "payload": 7517904
+      },
+      "L_T_V0": {
+        "bytes": 7387524,
+        "dec_s": 20.937216,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 2761,
+          "min": 904
+        },
+        "enc_s": 19.4381061,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.043903,
+        "payload": 7387475,
+        "secondary_l1": null,
+        "transform_s": 0.0916029,
+        "wrap_rate": 0.0
+      },
+      "L_T_V1": {
+        "bytes": 7445416,
+        "dec_s": 12.4319066,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 2776,
+          "min": 919
+        },
+        "enc_s": 11.8646071,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.1013142,
+        "payload": 7445367,
+        "secondary_l1": null,
+        "transform_s": 0.1183362,
+        "wrap_rate": 0.0
+      },
+      "bd": 12,
+      "coding_bd": 12,
+      "h": 2176,
+      "id": "bmpcc4k_person",
+      "l1": null,
+      "l1_matches_production": true,
+      "roles": [
+        "R",
+        "G1",
+        "G2",
+        "B"
+      ],
+      "w": 4128
+    },
+    {
+      "E_O": {
+        "bytes": 11522107,
+        "dec_s": 6.6550175,
+        "enc_s": 5.694665100000001,
+        "exact_planes": true,
+        "plane_payload": [
+          2740893,
+          3014832,
+          3013586,
+          2752636
+        ]
+      },
+      "E_O_prod16": {
+        "dec_s": 9.629455,
+        "enc_s": 9.266015,
+        "exact": true,
+        "file_bytes": 11522117,
+        "per_plane": [
+          2740935,
+          3014875,
+          3013628,
+          2752679
+        ]
+      },
+      "E_T_V0": {
+        "bytes": 11564065,
+        "dec_s": 8.1710958,
+        "enc_s": 7.259355399999999,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          2809778,
+          3014832,
+          3013586,
+          2725708
+        ],
+        "transform_s": 0.179519
+      },
+      "E_T_V1": {
+        "bytes": 11713715,
+        "dec_s": 10.191843800000001,
+        "enc_s": 7.899712599999999,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          2877631,
+          3014832,
+          3013586,
+          2807505
+        ],
+        "transform_s": 0.2421442
+      },
+      "L_O": {
+        "dec_s": 19.35282,
+        "enc_s": 20.4130957,
+        "exact": true,
+        "file_bytes": 11954219,
+        "l1_off_file_bytes": 11954219,
+        "l1_off_payload": 11954171,
+        "meta_version": 1,
+        "payload": 11954171
+      },
+      "L_T_V0": {
+        "bytes": 11996984,
+        "dec_s": 32.7854802,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 4030,
+          "min": 12
+        },
+        "enc_s": 28.4108541,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.1489022,
+        "payload": 11996935,
+        "secondary_l1": null,
+        "transform_s": 0.179519,
+        "wrap_rate": 1.565121578644229e-7
+      },
+      "L_T_V1": {
+        "bytes": 12146060,
+        "dec_s": 25.8546125,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 4057,
+          "min": 198
+        },
+        "enc_s": 26.0399934,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.2240735,
+        "payload": 12146011,
+        "secondary_l1": null,
+        "transform_s": 0.2421442,
+        "wrap_rate": 3.130243157288458e-7
+      },
+      "bd": 12,
+      "coding_bd": 12,
+      "h": 3060,
+      "id": "canon_sx40_snow",
+      "l1": null,
+      "l1_matches_production": true,
+      "roles": [
+        "R",
+        "G1",
+        "G2",
+        "B"
+      ],
+      "w": 4176
+    },
+    {
+      "E_O": {
+        "bytes": 25314445,
+        "dec_s": 13.6024735,
+        "enc_s": 11.6224107,
+        "exact_planes": true,
+        "plane_payload": [
+          5848676,
+          6589044,
+          6589820,
+          6286745
+        ]
+      },
+      "E_O_prod16": {
+        "dec_s": 13.9405432,
+        "enc_s": 12.4830869,
+        "exact": true,
+        "file_bytes": 25314445,
+        "per_plane": [
+          5848716,
+          6589084,
+          6589860,
+          6286785
+        ]
+      },
+      "E_T_V0": {
+        "bytes": 25501963,
+        "dec_s": 14.982781099999999,
+        "enc_s": 13.893105,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          6118453,
+          6589044,
+          6589820,
+          6204485
+        ],
+        "transform_s": 0.2076208
+      },
+      "E_T_V1": {
+        "bytes": 25828137,
+        "dec_s": 13.883699699999998,
+        "enc_s": 11.9649392,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          6300950,
+          6589044,
+          6589820,
+          6348162
+        ],
+        "transform_s": 0.3440035
+      },
+      "L_O": {
+        "dec_s": 29.4563056,
+        "enc_s": 29.6478052,
+        "exact": true,
+        "file_bytes": 25974595,
+        "l1_off_file_bytes": 25974595,
+        "l1_off_payload": 25974547,
+        "meta_version": 1,
+        "payload": 25974547
+      },
+      "L_T_V0": {
+        "bytes": 26137829,
+        "dec_s": 34.3073433,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 34870,
+          "min": 8124
+        },
+        "enc_s": 31.6156236,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.2184657,
+        "payload": 26137780,
+        "secondary_l1": null,
+        "transform_s": 0.2076208,
+        "wrap_rate": 0.0
+      },
+      "L_T_V1": {
+        "bytes": 26466844,
+        "dec_s": 29.8937054,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 36161,
+          "min": 7955
+        },
+        "enc_s": 31.9119639,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.2982034,
+        "payload": 26466795,
+        "secondary_l1": null,
+        "transform_s": 0.3440035,
+        "wrap_rate": 0.0
+      },
+      "bd": 16,
+      "coding_bd": 16,
+      "h": 3648,
+      "id": "hasselblad_tallinn",
+      "l1": null,
+      "l1_matches_production": true,
+      "roles": [
+        "R",
+        "G1",
+        "G2",
+        "B"
+      ],
+      "w": 5568
+    },
+    {
+      "E_O": {
+        "bytes": 24456758,
+        "dec_s": 28.2203625,
+        "enc_s": 18.7824434,
+        "exact_planes": true,
+        "plane_payload": [
+          6438079,
+          5913818,
+          5669660,
+          6435041
+        ]
+      },
+      "E_O_prod16": {
+        "dec_s": 32.8485659,
+        "enc_s": 30.6401443,
+        "exact": true,
+        "file_bytes": 24456788,
+        "per_plane": [
+          6438125,
+          5913865,
+          5669706,
+          6435092
+        ]
+      },
+      "E_T_V0": {
+        "bytes": 24679081,
+        "dec_s": 17.0360231,
+        "enc_s": 14.433642900000002,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          6438079,
+          5948781,
+          5857019,
+          6435041
+        ],
+        "transform_s": 0.5773005
+      },
+      "E_T_V1": {
+        "bytes": 25036136,
+        "dec_s": 12.536141999999998,
+        "enc_s": 11.373752200000002,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          6438079,
+          6113054,
+          6049801,
+          6435041
+        ],
+        "transform_s": 0.4536575
+      },
+      "L_O": {
+        "dec_s": 48.6449196,
+        "enc_s": 57.5697402,
+        "exact": true,
+        "file_bytes": 25248992,
+        "l1_off_file_bytes": 25248992,
+        "l1_off_payload": 25248944,
+        "meta_version": 1,
+        "payload": 25248944
+      },
+      "L_T_V0": {
+        "bytes": 25463920,
+        "dec_s": 64.6356013,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 16383,
+          "min": 0
+        },
+        "enc_s": 61.9269122,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.2659616,
+        "payload": 25463871,
+        "secondary_l1": null,
+        "transform_s": 0.5773005,
+        "wrap_rate": 0.0009762420904616826
+      },
+      "L_T_V1": {
+        "bytes": 25808057,
+        "dec_s": 36.4005698,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 16383,
+          "min": 0
+        },
+        "enc_s": 40.9132675,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.3431735,
+        "payload": 25808008,
+        "secondary_l1": null,
+        "transform_s": 0.4536575,
+        "wrap_rate": 0.001664095252975028
+      },
+      "bd": 14,
+      "coding_bd": 14,
+      "h": 4016,
+      "id": "leica_cl_chateau",
+      "l1": null,
+      "l1_matches_production": true,
+      "roles": [
+        "G1",
+        "B",
+        "R",
+        "G2"
+      ],
+      "w": 6120
+    },
+    {
+      "E_O": {
+        "bytes": 5127843,
+        "dec_s": 4.624309,
+        "enc_s": 3.9019067,
+        "exact_planes": true,
+        "plane_payload": [
+          1191069,
+          1324823,
+          1323955,
+          1287836
+        ]
+      },
+      "E_O_prod16": {
+        "dec_s": 4.6847544,
+        "enc_s": 4.3363622,
+        "exact": true,
+        "file_bytes": 5127935,
+        "per_plane": [
+          1191113,
+          1324897,
+          1324034,
+          1287891
+        ]
+      },
+      "E_T_V0": {
+        "bytes": 4769032,
+        "dec_s": 4.6621372,
+        "enc_s": 3.8897953000000003,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          1032229,
+          1324823,
+          1323955,
+          1087864
+        ],
+        "transform_s": 0.1292217
+      },
+      "E_T_V1": {
+        "bytes": 4890292,
+        "dec_s": 2.9996484999999997,
+        "enc_s": 2.4697648,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          1112670,
+          1324823,
+          1323955,
+          1128683
+        ],
+        "transform_s": 0.2226527
+      },
+      "L_O": {
+        "dec_s": 22.5860371,
+        "enc_s": 25.8534441,
+        "exact": true,
+        "file_bytes": 5443197,
+        "l1_off_file_bytes": 5443197,
+        "l1_off_payload": 5443149,
+        "meta_version": 1,
+        "payload": 5443149
+      },
+      "L_T_V0": {
+        "bytes": 5080941,
+        "dec_s": 20.715106,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 204,
+          "min": 29
+        },
+        "enc_s": 20.1977286,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.084109,
+        "payload": 5080892,
+        "secondary_l1": null,
+        "transform_s": 0.1292217,
+        "wrap_rate": 0.0
+      },
+      "L_T_V1": {
+        "bytes": 5201237,
+        "dec_s": 14.5648592,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 231,
+          "min": 12
+        },
+        "enc_s": 20.133239,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.1437527,
+        "payload": 5201188,
+        "secondary_l1": null,
+        "transform_s": 0.2226527,
+        "wrap_rate": 0.0
+      },
+      "bd": 8,
+      "coding_bd": 8,
+      "h": 2638,
+      "id": "leica_m8_house",
+      "l1": null,
+      "l1_matches_production": true,
+      "roles": [
+        "R",
+        "G1",
+        "G2",
+        "B"
+      ],
+      "w": 3920
+    },
+    {
+      "E_O": {
+        "bytes": 26852636,
+        "dec_s": 31.3913724,
+        "enc_s": 22.9374481,
+        "exact_planes": true,
+        "plane_payload": [
+          6453392,
+          7017022,
+          7022850,
+          6359212
+        ]
+      },
+      "E_O_prod16": {
+        "dec_s": 36.3264037,
+        "enc_s": 31.372612099999998,
+        "exact": true,
+        "file_bytes": 26862291,
+        "per_plane": [
+          6456016,
+          7020490,
+          7026265,
+          6359520
+        ]
+      },
+      "E_T_V0": {
+        "bytes": 26951364,
+        "dec_s": 17.8641702,
+        "enc_s": 15.3628126,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          6420652,
+          7017022,
+          7022850,
+          6490679
+        ],
+        "transform_s": 0.6579648
+      },
+      "E_T_V1": {
+        "bytes": 27210377,
+        "dec_s": 14.229271100000002,
+        "enc_s": 12.750577700000001,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          6527145,
+          7017022,
+          7022850,
+          6643199
+        ],
+        "transform_s": 0.4443305
+      },
+      "L_O": {
+        "dec_s": 48.6828241,
+        "enc_s": 55.9456443,
+        "exact": true,
+        "file_bytes": 27966357,
+        "l1_off_file_bytes": 27966357,
+        "l1_off_payload": 27966309,
+        "meta_version": 1,
+        "payload": 27966309
+      },
+      "L_T_V0": {
+        "bytes": 28046389,
+        "dec_s": 63.4537666,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 16383,
+          "min": 0
+        },
+        "enc_s": 58.08621,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.2484007,
+        "payload": 28046340,
+        "secondary_l1": null,
+        "transform_s": 0.6579648,
+        "wrap_rate": 0.002472544462672187
+      },
+      "L_T_V1": {
+        "bytes": 28301696,
+        "dec_s": 38.9508907,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 16383,
+          "min": 0
+        },
+        "enc_s": 41.2531915,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.2898796,
+        "payload": 28301647,
+        "secondary_l1": null,
+        "transform_s": 0.4443305,
+        "wrap_rate": 0.004223872483920527
+      },
+      "bd": 14,
+      "coding_bd": 14,
+      "h": 4016,
+      "id": "leica_q_canoe",
+      "l1": null,
+      "l1_matches_production": true,
+      "roles": [
+        "B",
+        "G1",
+        "G2",
+        "R"
+      ],
+      "w": 6120
+    },
+    {
+      "E_O": {
+        "bytes": 9071943,
+        "dec_s": 5.8890789,
+        "enc_s": 5.016025,
+        "exact_planes": true,
+        "plane_payload": [
+          2165108,
+          2431881,
+          2428175,
+          2046619
+        ]
+      },
+      "E_O_prod16": {
+        "dec_s": 6.1995114,
+        "enc_s": 5.1636047,
+        "exact": true,
+        "file_bytes": 9071949,
+        "per_plane": [
+          2165149,
+          2431922,
+          2428217,
+          2046661
+        ]
+      },
+      "E_T_V0": {
+        "bytes": 9196508,
+        "dec_s": 7.259003999999999,
+        "enc_s": 6.2393269,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          2182476,
+          2431881,
+          2428175,
+          2153815
+        ],
+        "transform_s": 0.1727298
+      },
+      "E_T_V1": {
+        "bytes": 9364793,
+        "dec_s": 6.8531252,
+        "enc_s": 5.8631841,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          2263986,
+          2431881,
+          2428175,
+          2240590
+        ],
+        "transform_s": 0.2994043
+      },
+      "L_O": {
+        "dec_s": 25.8631641,
+        "enc_s": 26.5883147,
+        "exact": true,
+        "file_bytes": 9588249,
+        "l1_off_file_bytes": 9588249,
+        "l1_off_payload": 9588201,
+        "meta_version": 1,
+        "payload": 9588201
+      },
+      "L_T_V0": {
+        "bytes": 9696822,
+        "dec_s": 26.6824609,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 564,
+          "min": 74
+        },
+        "enc_s": 26.5884095,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.1397823,
+        "payload": 9696773,
+        "secondary_l1": null,
+        "transform_s": 0.1727298,
+        "wrap_rate": 0.0
+      },
+      "L_T_V1": {
+        "bytes": 9864909,
+        "dec_s": 31.5180473,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 1021,
+          "min": 10
+        },
+        "enc_s": 30.6615304,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.2447796,
+        "payload": 9864860,
+        "secondary_l1": null,
+        "transform_s": 0.2994043,
+        "wrap_rate": 1.260060321607716e-7
+      },
+      "bd": 10,
+      "coding_bd": 10,
+      "h": 2988,
+      "id": "lg_h815_mountain",
+      "l1": null,
+      "l1_matches_production": true,
+      "roles": [
+        "B",
+        "G1",
+        "G2",
+        "R"
+      ],
+      "w": 5312
+    },
+    {
+      "E_O": {
+        "bytes": 7577900,
+        "dec_s": 4.8621973999999994,
+        "enc_s": 4.4761509,
+        "exact_planes": true,
+        "plane_payload": [
+          1827063,
+          2006709,
+          1993532,
+          1750436
+        ]
+      },
+      "E_O_prod16": {
+        "dec_s": 4.7484037,
+        "enc_s": 4.4571263,
+        "exact": true,
+        "file_bytes": 7577907,
+        "per_plane": [
+          1827105,
+          2006751,
+          1993573,
+          1750478
+        ]
+      },
+      "E_T_V0": {
+        "bytes": 7693392,
+        "dec_s": 5.2929884,
+        "enc_s": 4.406854,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          1872857,
+          2006709,
+          1993532,
+          1820133
+        ],
+        "transform_s": 0.1343672
+      },
+      "E_T_V1": {
+        "bytes": 7845969,
+        "dec_s": 8.6875395,
+        "enc_s": 7.4886085,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          1942280,
+          2006709,
+          1993532,
+          1903287
+        ],
+        "transform_s": 0.2221448
+      },
+      "L_O": {
+        "dec_s": 22.4993601,
+        "enc_s": 22.5922768,
+        "exact": true,
+        "file_bytes": 8006715,
+        "l1_off_file_bytes": 8006715,
+        "l1_off_payload": 8006667,
+        "meta_version": 1,
+        "payload": 8006667
+      },
+      "L_T_V0": {
+        "bytes": 8116824,
+        "dec_s": 22.4980192,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 534,
+          "min": 69
+        },
+        "enc_s": 23.1609283,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.1229952,
+        "payload": 8116775,
+        "secondary_l1": null,
+        "transform_s": 0.1343672,
+        "wrap_rate": 0.0
+      },
+      "L_T_V1": {
+        "bytes": 8270165,
+        "dec_s": 32.8086897,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 551,
+          "min": 72
+        },
+        "enc_s": 30.1763094,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.2825928,
+        "payload": 8270116,
+        "secondary_l1": null,
+        "transform_s": 0.2221448,
+        "wrap_rate": 0.0
+      },
+      "bd": 10,
+      "coding_bd": 10,
+      "h": 3120,
+      "id": "nexus6_courtyard",
+      "l1": null,
+      "l1_matches_production": true,
+      "roles": [
+        "B",
+        "G1",
+        "G2",
+        "R"
+      ],
+      "w": 4208
+    },
+    {
+      "E_O": {
+        "bytes": 11582290,
+        "dec_s": 6.9686045,
+        "enc_s": 5.7644814,
+        "exact_planes": true,
+        "plane_payload": [
+          2908666,
+          3001053,
+          3004339,
+          2668067
+        ]
+      },
+      "E_O_prod16": {
+        "dec_s": 12.4739701,
+        "enc_s": 11.012923599999999,
+        "exact": true,
+        "file_bytes": 22297791,
+        "per_plane": [
+          5595942,
+          5675039,
+          5678403,
+          5348407
+        ]
+      },
+      "E_T_V0": {
+        "bytes": 11808424,
+        "dec_s": 8.4490035,
+        "enc_s": 7.315787199999999,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          2982632,
+          3001053,
+          3004339,
+          2820234
+        ],
+        "transform_s": 0.1681514
+      },
+      "E_T_V1": {
+        "bytes": 12032501,
+        "dec_s": 7.539058499999999,
+        "enc_s": 5.9673812999999996,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          3078864,
+          3001053,
+          3004339,
+          2948079
+        ],
+        "transform_s": 0.345788
+      },
+      "L_O": {
+        "dec_s": 31.5153199,
+        "enc_s": 32.3703999,
+        "exact": true,
+        "file_bytes": 12291116,
+        "l1_off_file_bytes": 23137362,
+        "l1_off_payload": 23137314,
+        "meta_version": 2,
+        "payload": 12291063
+      },
+      "L_T_V0": {
+        "bytes": 12508285,
+        "dec_s": 40.8797042,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 1023,
+          "min": 0
+        },
+        "enc_s": 36.110873,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.2329425,
+        "payload": 12508231,
+        "secondary_l1": null,
+        "transform_s": 0.1681514,
+        "wrap_rate": 0.00003270972994250543
+      },
+      "L_T_V1": {
+        "bytes": 12734519,
+        "dec_s": 33.5265903,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 1023,
+          "min": 0
+        },
+        "enc_s": 35.0212678,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.3521298,
+        "payload": 12734465,
+        "secondary_l1": null,
+        "transform_s": 0.345788,
+        "wrap_rate": 0.00008703956628575518
+      },
+      "bd": 14,
+      "coding_bd": 10,
+      "h": 4016,
+      "id": "parrot_anafi_dusk",
+      "l1": {
+        "coding_bd": 10,
+        "g": 16,
+        "origin": 816
+      },
+      "l1_matches_production": true,
+      "roles": [
+        "B",
+        "G1",
+        "G2",
+        "R"
+      ],
+      "w": 5344
+    },
+    {
+      "E_O": {
+        "bytes": 35385789,
+        "dec_s": 40.0286486,
+        "enc_s": 34.9391042,
+        "exact_planes": true,
+        "plane_payload": [
+          8488230,
+          9209839,
+          9207976,
+          8479584
+        ]
+      },
+      "E_O_prod16": {
+        "dec_s": 32.1929066,
+        "enc_s": 26.3744048,
+        "exact": true,
+        "file_bytes": 35385786,
+        "per_plane": [
+          8488270,
+          9209876,
+          9208016,
+          8479624
+        ]
+      },
+      "E_T_V0": {
+        "bytes": 35518159,
+        "dec_s": 19.219016,
+        "enc_s": 17.3511108,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          8517026,
+          9209839,
+          9207976,
+          8583157
+        ],
+        "transform_s": 0.5306035
+      },
+      "E_T_V1": {
+        "bytes": 36063383,
+        "dec_s": 22.133305400000005,
+        "enc_s": 18.894063700000004,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          8789441,
+          9209839,
+          9207976,
+          8855966
+        ],
+        "transform_s": 0.6624832
+      },
+      "L_O": {
+        "dec_s": 100.7627108,
+        "enc_s": 83.1264872,
+        "exact": true,
+        "file_bytes": 36498518,
+        "l1_off_file_bytes": 36498518,
+        "l1_off_payload": 36498470,
+        "meta_version": 1,
+        "payload": 36498470
+      },
+      "L_T_V0": {
+        "bytes": 36621090,
+        "dec_s": 59.9120109,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 8573,
+          "min": 141
+        },
+        "enc_s": 75.9138525,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.3780305,
+        "payload": 36621041,
+        "secondary_l1": null,
+        "transform_s": 0.5306035,
+        "wrap_rate": 0.0
+      },
+      "L_T_V1": {
+        "bytes": 37166278,
+        "dec_s": 56.0263913,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 9864,
+          "min": 291
+        },
+        "enc_s": 55.1810214,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.4745421,
+        "payload": 37166229,
+        "secondary_l1": null,
+        "transform_s": 0.6624832,
+        "wrap_rate": 0.0
+      },
+      "bd": 14,
+      "coding_bd": 14,
+      "h": 4950,
+      "id": "pentax_k1ii_station",
+      "l1": null,
+      "l1_matches_production": true,
+      "roles": [
+        "R",
+        "G1",
+        "G2",
+        "B"
+      ],
+      "w": 7392
+    },
+    {
+      "E_O": {
+        "bytes": 19615816,
+        "dec_s": 30.8376481,
+        "enc_s": 20.0673098,
+        "exact_planes": true,
+        "plane_payload": [
+          4789827,
+          5077353,
+          5078037,
+          4670439
+        ]
+      },
+      "E_O_prod16": {
+        "dec_s": 31.2058659,
+        "enc_s": 25.3943655,
+        "exact": true,
+        "file_bytes": 19615860,
+        "per_plane": [
+          4789874,
+          5077409,
+          5078095,
+          4670482
+        ]
+      },
+      "E_T_V0": {
+        "bytes": 19998557,
+        "dec_s": 14.629528700000002,
+        "enc_s": 12.864016399999999,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          4962322,
+          5077353,
+          5078037,
+          4880684
+        ],
+        "transform_s": 0.7264626
+      },
+      "E_T_V1": {
+        "bytes": 20309305,
+        "dec_s": 12.1537944,
+        "enc_s": 10.613693699999999,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          5105477,
+          5077353,
+          5078037,
+          5048277
+        ],
+        "transform_s": 0.4466928
+      },
+      "L_O": {
+        "dec_s": 51.6729301,
+        "enc_s": 63.0574675,
+        "exact": true,
+        "file_bytes": 20396919,
+        "l1_off_file_bytes": 20396919,
+        "l1_off_payload": 20396871,
+        "meta_version": 1,
+        "payload": 20396871
+      },
+      "L_T_V0": {
+        "bytes": 20756082,
+        "dec_s": 66.7087852,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 16382,
+          "min": 0
+        },
+        "enc_s": 65.545101,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.2996477,
+        "payload": 20756033,
+        "secondary_l1": null,
+        "transform_s": 0.7264626,
+        "wrap_rate": 0.00015297995234148364
+      },
+      "L_T_V1": {
+        "bytes": 21062148,
+        "dec_s": 41.7577999,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 16382,
+          "min": 0
+        },
+        "enc_s": 44.6261813,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.3121617,
+        "payload": 21062099,
+        "secondary_l1": null,
+        "transform_s": 0.4466928,
+        "wrap_rate": 0.00016066942084542064
+      },
+      "bd": 14,
+      "coding_bd": 14,
+      "h": 4064,
+      "id": "pentax_k70_bulb",
+      "l1": null,
+      "l1_matches_production": true,
+      "roles": [
+        "R",
+        "G1",
+        "G2",
+        "B"
+      ],
+      "w": 6080
+    },
+    {
+      "E_O": {
+        "bytes": 11055946,
+        "dec_s": 11.3295868,
+        "enc_s": 8.5449687,
+        "exact_planes": true,
+        "plane_payload": [
+          2568331,
+          2823856,
+          2824446,
+          2839153
+        ]
+      },
+      "E_O_prod16": {
+        "dec_s": 8.7802454,
+        "enc_s": 8.042971,
+        "exact": true,
+        "file_bytes": 11055950,
+        "per_plane": [
+          2568371,
+          2823896,
+          2824487,
+          2839196
+        ]
+      },
+      "E_T_V0": {
+        "bytes": 11243754,
+        "dec_s": 8.5434978,
+        "enc_s": 7.0839305,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          2709138,
+          2823856,
+          2824446,
+          2886153
+        ],
+        "transform_s": 0.1360031
+      },
+      "E_T_V1": {
+        "bytes": 11362511,
+        "dec_s": 4.937304699999999,
+        "enc_s": 4.0847307,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          2785791,
+          2823856,
+          2824446,
+          2928257
+        ],
+        "transform_s": 0.2690373
+      },
+      "L_O": {
+        "dec_s": 29.452265,
+        "enc_s": 27.0411388,
+        "exact": true,
+        "file_bytes": 11458135,
+        "l1_off_file_bytes": 11458135,
+        "l1_off_payload": 11458087,
+        "meta_version": 1,
+        "payload": 11458087
+      },
+      "L_T_V0": {
+        "bytes": 11607862,
+        "dec_s": 27.1551414,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 4095,
+          "min": 0
+        },
+        "enc_s": 26.5843143,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.1616796,
+        "payload": 11607813,
+        "secondary_l1": null,
+        "transform_s": 0.1360031,
+        "wrap_rate": 0.0010604464065961112
+      },
+      "L_T_V1": {
+        "bytes": 11722630,
+        "dec_s": 18.676242,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 4095,
+          "min": 0
+        },
+        "enc_s": 25.0770697,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.1619498,
+        "payload": 11722581,
+        "secondary_l1": null,
+        "transform_s": 0.2690373,
+        "wrap_rate": 0.0016807226290097628
+      },
+      "bd": 12,
+      "coding_bd": 12,
+      "h": 2868,
+      "id": "pentax_kx_lichen",
+      "l1": null,
+      "l1_matches_production": true,
+      "roles": [
+        "B",
+        "G1",
+        "G2",
+        "R"
+      ],
+      "w": 4352
+    },
+    {
+      "E_O": {
+        "bytes": 10880698,
+        "dec_s": 7.801139,
+        "enc_s": 6.732264600000001,
+        "exact_planes": true,
+        "plane_payload": [
+          2829999,
+          2703903,
+          2514586,
+          2832050
+        ]
+      },
+      "E_O_prod16": {
+        "dec_s": 8.991317899999999,
+        "enc_s": 7.6530517,
+        "exact": true,
+        "file_bytes": 10880705,
+        "per_plane": [
+          2830042,
+          2703943,
+          2514626,
+          2832094
+        ]
+      },
+      "E_T_V0": {
+        "bytes": 10885172,
+        "dec_s": 7.9779502,
+        "enc_s": 7.059678,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          2829999,
+          2665976,
+          2556986,
+          2832050
+        ],
+        "transform_s": 0.1473037
+      },
+      "E_T_V1": {
+        "bytes": 11030427,
+        "dec_s": 8.9148398,
+        "enc_s": 8.5351658,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          2829999,
+          2726445,
+          2641772,
+          2832050
+        ],
+        "transform_s": 0.1999634
+      },
+      "L_O": {
+        "dec_s": 21.7579759,
+        "enc_s": 21.8063093,
+        "exact": true,
+        "file_bytes": 11299938,
+        "l1_off_file_bytes": 11299938,
+        "l1_off_payload": 11299890,
+        "meta_version": 1,
+        "payload": 11299890
+      },
+      "L_T_V0": {
+        "bytes": 11302852,
+        "dec_s": 31.8765865,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 16382,
+          "min": 8
+        },
+        "enc_s": 29.8819655,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.0917913,
+        "payload": 11302803,
+        "secondary_l1": null,
+        "transform_s": 0.1473037,
+        "wrap_rate": 0.000042764501633986925
+      },
+      "L_T_V1": {
+        "bytes": 11448613,
+        "dec_s": 26.1146687,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 16381,
+          "min": 3
+        },
+        "enc_s": 26.0695747,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.2144141,
+        "payload": 11448564,
+        "secondary_l1": null,
+        "transform_s": 0.1999634,
+        "wrap_rate": 0.00005217907475490196
+      },
+      "bd": 14,
+      "coding_bd": 14,
+      "h": 3072,
+      "id": "pixel6pro_valley",
+      "l1": null,
+      "l1_matches_production": true,
+      "roles": [
+        "G1",
+        "B",
+        "R",
+        "G2"
+      ],
+      "w": 4080
+    },
+    {
+      "E_O": {
+        "bytes": 25929917,
+        "dec_s": 30.0235531,
+        "enc_s": 19.0630599,
+        "exact_planes": true,
+        "plane_payload": [
+          5950637,
+          6864043,
+          6860721,
+          6254356
+        ]
+      },
+      "E_O_prod16": {
+        "dec_s": 33.4694642,
+        "enc_s": 30.7821991,
+        "exact": true,
+        "file_bytes": 25929918,
+        "per_plane": [
+          5950678,
+          6864083,
+          6860759,
+          6254398
+        ]
+      },
+      "E_T_V0": {
+        "bytes": 26105807,
+        "dec_s": 17.654113700000003,
+        "enc_s": 15.376987699999999,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          6134781,
+          6864043,
+          6860721,
+          6246101
+        ],
+        "transform_s": 0.6901062
+      },
+      "E_T_V1": {
+        "bytes": 26546915,
+        "dec_s": 12.762344200000001,
+        "enc_s": 10.9497006,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          6382561,
+          6864043,
+          6860721,
+          6439429
+        ],
+        "transform_s": 0.4631175
+      },
+      "L_O": {
+        "dec_s": 48.6312604,
+        "enc_s": 55.617304,
+        "exact": true,
+        "file_bytes": 26829161,
+        "l1_off_file_bytes": 26829161,
+        "l1_off_payload": 26829113,
+        "meta_version": 1,
+        "payload": 26829113
+      },
+      "L_T_V0": {
+        "bytes": 27010195,
+        "dec_s": 64.0098407,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 16370,
+          "min": 98
+        },
+        "enc_s": 60.6144282,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.3686574,
+        "payload": 27010146,
+        "secondary_l1": null,
+        "transform_s": 0.6901062,
+        "wrap_rate": 5.636259636393618e-7
+      },
+      "L_T_V1": {
+        "bytes": 27438305,
+        "dec_s": 35.8090478,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 16321,
+          "min": 28
+        },
+        "enc_s": 41.3396611,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.3553598,
+        "payload": 27438256,
+        "secondary_l1": null,
+        "transform_s": 0.4631175,
+        "wrap_rate": 5.636259636393618e-7
+      },
+      "bd": 14,
+      "coding_bd": 14,
+      "h": 4064,
+      "id": "ricoh_gr3_dunes",
+      "l1": null,
+      "l1_matches_production": true,
+      "roles": [
+        "R",
+        "G1",
+        "G2",
+        "B"
+      ],
+      "w": 6112
+    },
+    {
+      "E_O": {
+        "bytes": 11228886,
+        "dec_s": 6.9847853,
+        "enc_s": 6.1828449,
+        "exact_planes": true,
+        "plane_payload": [
+          2692363,
+          2848017,
+          2847760,
+          2840586
+        ]
+      },
+      "E_O_prod16": {
+        "dec_s": 6.4985628,
+        "enc_s": 5.4880303,
+        "exact": true,
+        "file_bytes": 11229499,
+        "per_plane": [
+          2692571,
+          2848201,
+          2847948,
+          2840779
+        ]
+      },
+      "E_T_V0": {
+        "bytes": 11359185,
+        "dec_s": 6.527270400000001,
+        "enc_s": 5.9464364,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          2761956,
+          2848017,
+          2847760,
+          2901291
+        ],
+        "transform_s": 0.1621847
+      },
+      "E_T_V1": {
+        "bytes": 11504151,
+        "dec_s": 10.0584445,
+        "enc_s": 8.733903100000001,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          2846283,
+          2848017,
+          2847760,
+          2961930
+        ],
+        "transform_s": 0.2366933
+      },
+      "L_O": {
+        "dec_s": 31.3431386,
+        "enc_s": 32.1363498,
+        "exact": true,
+        "file_bytes": 11666928,
+        "l1_off_file_bytes": 11666928,
+        "l1_off_payload": 11666880,
+        "meta_version": 1,
+        "payload": 11666880
+      },
+      "L_T_V0": {
+        "bytes": 11797922,
+        "dec_s": 26.2221873,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 4038,
+          "min": 45
+        },
+        "enc_s": 26.5124786,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.1125425,
+        "payload": 11797873,
+        "secondary_l1": null,
+        "transform_s": 0.1621847,
+        "wrap_rate": 3.671287593984962e-6
+      },
+      "L_T_V1": {
+        "bytes": 11942784,
+        "dec_s": 34.294829,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 4038,
+          "min": 45
+        },
+        "enc_s": 25.3738669,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.2177826,
+        "payload": 11942735,
+        "secondary_l1": null,
+        "transform_s": 0.2366933,
+        "wrap_rate": 6.686988117615467e-6
+      },
+      "bd": 12,
+      "coding_bd": 12,
+      "h": 3136,
+      "id": "samsung_gx20_berries",
+      "l1": null,
+      "l1_matches_production": true,
+      "roles": [
+        "B",
+        "G1",
+        "G2",
+        "R"
+      ],
+      "w": 4864
+    },
+    {
+      "E_O": {
+        "bytes": 22960821,
+        "dec_s": 13.8887575,
+        "enc_s": 11.759268500000001,
+        "exact_planes": true,
+        "plane_payload": [
+          6146456,
+          5802875,
+          5804073,
+          5207257
+        ]
+      },
+      "E_O_prod16": {
+        "dec_s": 13.630380000000002,
+        "enc_s": 12.578233,
+        "exact": true,
+        "file_bytes": 22961088,
+        "per_plane": [
+          6146614,
+          5802985,
+          5804185,
+          5207304
+        ]
+      },
+      "E_T_V0": {
+        "bytes": 23318844,
+        "dec_s": 14.146968000000001,
+        "enc_s": 12.8983779,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          6235364,
+          5802875,
+          5804073,
+          5476371
+        ],
+        "transform_s": 0.2969568
+      },
+      "E_T_V1": {
+        "bytes": 23577644,
+        "dec_s": 13.2377144,
+        "enc_s": 11.220308800000002,
+        "exact_original": true,
+        "exact_planes": true,
+        "plane_payload": [
+          6302639,
+          5802875,
+          5804073,
+          5667896
+        ],
+        "transform_s": 0.3954839
+      },
+      "L_O": {
+        "dec_s": 39.3711415,
+        "enc_s": 38.1165505,
+        "exact": true,
+        "file_bytes": 23748198,
+        "l1_off_file_bytes": 23748198,
+        "l1_off_payload": 23748150,
+        "meta_version": 1,
+        "payload": 23748150
+      },
+      "L_T_V0": {
+        "bytes": 24090158,
+        "dec_s": 45.623111,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 16383,
+          "min": 0
+        },
+        "enc_s": 42.1492368,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.240303,
+        "payload": 24090109,
+        "secondary_l1": null,
+        "transform_s": 0.2969568,
+        "wrap_rate": 0.003140670714751051
+      },
+      "L_T_V1": {
+        "bytes": 24346332,
+        "dec_s": 39.7977465,
+        "derived_rb": {
+          "gcd": 1,
+          "max": 16383,
+          "min": 0
+        },
+        "enc_s": 38.2823323,
+        "exact_original": true,
+        "exact_stream": true,
+        "inverse_s": 0.3494202,
+        "payload": 24346283,
+        "secondary_l1": null,
+        "transform_s": 0.3954839,
+        "wrap_rate": 0.0031502991674489103
+      },
+      "bd": 14,
+      "coding_bd": 14,
+      "h": 4042,
+      "id": "sigma_fp_bike14",
+      "l1": null,
+      "l1_matches_production": true,
+      "roles": [
+        "R",
+        "G1",
+        "G2",
+        "B"
+      ],
+      "w": 6064
+    }
+  ],
+  "threads": 5
+}

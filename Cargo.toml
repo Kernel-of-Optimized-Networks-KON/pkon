@@ -216,3 +216,13 @@ path = "experiments/bin/exp_lisa_lattice.rs"
 [[bin]]
 name = "exp_lisa_l1_prod"
 path = "experiments/bin/exp_lisa_l1_prod.rs"
+
+# EXPERIMENTAL (ULISA collaboration viability harness; isolated, touches no production code).
+[[bin]]
+name = "exp_ulisa_collab"
+path = "experiments/bin/exp_ulisa_collab.rs"
+
+# EXPERIMENTAL (ULISA bit-split: Lisa high bits + ELLIE low bits; isolated).
+[[bin]]
+name = "exp_ulisa_split"
+path = "experiments/bin/exp_ulisa_split.rs"

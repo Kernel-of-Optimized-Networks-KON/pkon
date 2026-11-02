@@ -1,0 +1,837 @@
+{
+  "images": [
+    {
+      "bd": 12,
+      "coding_bd": 12,
+      "id": "bmpcc4k_person",
+      "l1": false,
+      "prod_bytes": 7517952,
+      "prod_dec_s": 17.2197038,
+      "prod_enc_s": 20.1473147,
+      "prod_exact": true,
+      "splits": {
+        "1": {
+          "ellie_dec_s": 1.1888972,
+          "ellie_enc_s": 1.0489883,
+          "ellie_lo": 1442318,
+          "exact": true,
+          "lisa_dec_s": 11.4083942,
+          "lisa_enc_s": 14.8678472,
+          "lisa_hi": 6390584,
+          "total": 7832918
+        },
+        "2": {
+          "ellie_dec_s": 1.1857537,
+          "ellie_enc_s": 1.0981340000000002,
+          "ellie_lo": 2718996,
+          "exact": true,
+          "lisa_dec_s": 10.5317356,
+          "lisa_enc_s": 11.0536799,
+          "lisa_hi": 5270794,
+          "total": 7989806
+        },
+        "3": {
+          "ellie_dec_s": 1.5037235999999998,
+          "ellie_enc_s": 1.2195349000000002,
+          "ellie_lo": 3868834,
+          "exact": true,
+          "lisa_dec_s": 6.7837156,
+          "lisa_enc_s": 6.8690942,
+          "lisa_hi": 4172555,
+          "total": 8041405
+        },
+        "4": {
+          "ellie_dec_s": 1.905668,
+          "ellie_enc_s": 1.596347,
+          "ellie_lo": 5021066,
+          "exact": true,
+          "lisa_dec_s": 6.0903719,
+          "lisa_enc_s": 5.8449670000000005,
+          "lisa_hi": 3141578,
+          "total": 8162660
+        }
+      }
+    },
+    {
+      "bd": 12,
+      "coding_bd": 12,
+      "id": "canon_sx40_snow",
+      "l1": false,
+      "prod_bytes": 11954219,
+      "prod_dec_s": 25.9793999,
+      "prod_enc_s": 24.0488806,
+      "prod_exact": true,
+      "splits": {
+        "1": {
+          "ellie_dec_s": 2.8595645,
+          "ellie_enc_s": 2.3435165,
+          "ellie_lo": 2063840,
+          "exact": true,
+          "lisa_dec_s": 26.1660337,
+          "lisa_enc_s": 29.6737359,
+          "lisa_hi": 10354596,
+          "total": 12418452
+        },
+        "2": {
+          "ellie_dec_s": 2.7696783000000003,
+          "ellie_enc_s": 2.3815676,
+          "ellie_lo": 3874905,
+          "exact": true,
+          "lisa_dec_s": 26.8369657,
+          "lisa_enc_s": 32.4832599,
+          "lisa_hi": 8763559,
+          "total": 12638480
+        },
+        "3": {
+          "ellie_dec_s": 5.9092210000000005,
+          "ellie_enc_s": 4.1689588,
+          "ellie_lo": 5519564,
+          "exact": true,
+          "lisa_dec_s": 21.7834273,
+          "lisa_enc_s": 18.6897194,
+          "lisa_hi": 7206013,
+          "total": 12725593
+        },
+        "4": {
+          "ellie_dec_s": 6.973977199999999,
+          "ellie_enc_s": 6.233437499999999,
+          "ellie_lo": 7158019,
+          "exact": true,
+          "lisa_dec_s": 24.7577414,
+          "lisa_enc_s": 24.2073277,
+          "lisa_hi": 5702048,
+          "total": 12860083
+        }
+      }
+    },
+    {
+      "bd": 16,
+      "coding_bd": 16,
+      "id": "hasselblad_tallinn",
+      "l1": false,
+      "prod_bytes": 25974595,
+      "prod_dec_s": 34.2329647,
+      "prod_enc_s": 39.3693059,
+      "prod_exact": true,
+      "splits": {
+        "1": {
+          "ellie_dec_s": 3.8557715999999997,
+          "ellie_enc_s": 3.5408253,
+          "ellie_lo": 3189396,
+          "exact": true,
+          "lisa_dec_s": 37.6550091,
+          "lisa_enc_s": 37.7881967,
+          "lisa_hi": 23418132,
+          "total": 26607544
+        },
+        "2": {
+          "ellie_dec_s": 5.3189889,
+          "ellie_enc_s": 4.9253751,
+          "ellie_lo": 5971772,
+          "exact": true,
+          "lisa_dec_s": 40.1621872,
+          "lisa_enc_s": 37.5284399,
+          "lisa_hi": 20856067,
+          "total": 26827855
+        },
+        "3": {
+          "ellie_dec_s": 8.9046827,
+          "ellie_enc_s": 7.0747877,
+          "ellie_lo": 8476387,
+          "exact": true,
+          "lisa_dec_s": 40.9572112,
+          "lisa_enc_s": 43.6720441,
+          "lisa_hi": 18285450,
+          "total": 26761853
+        },
+        "4": {
+          "ellie_dec_s": 8.904456099999999,
+          "ellie_enc_s": 7.271678199999999,
+          "ellie_lo": 10650718,
+          "exact": true,
+          "lisa_dec_s": 45.8733125,
+          "lisa_enc_s": 42.1531692,
+          "lisa_hi": 15695655,
+          "total": 26346389
+        }
+      }
+    },
+    {
+      "bd": 14,
+      "coding_bd": 14,
+      "id": "leica_cl_chateau",
+      "l1": false,
+      "prod_bytes": 25248992,
+      "prod_dec_s": 49.077514,
+      "prod_enc_s": 48.3546188,
+      "prod_exact": true,
+      "splits": {
+        "1": {
+          "ellie_dec_s": 6.8230311,
+          "ellie_enc_s": 5.9361562999999995,
+          "ellie_lo": 3968952,
+          "exact": true,
+          "lisa_dec_s": 53.2043637,
+          "lisa_enc_s": 52.0413217,
+          "lisa_hi": 22166304,
+          "total": 26135272
+        },
+        "2": {
+          "ellie_dec_s": 7.7572002,
+          "ellie_enc_s": 6.968413100000001,
+          "ellie_lo": 7455076,
+          "exact": true,
+          "lisa_dec_s": 57.8099461,
+          "lisa_enc_s": 55.837791,
+          "lisa_hi": 19086273,
+          "total": 26541365
+        },
+        "3": {
+          "ellie_dec_s": 10.5522149,
+          "ellie_enc_s": 8.8162954,
+          "ellie_lo": 10617672,
+          "exact": true,
+          "lisa_dec_s": 55.6497865,
+          "lisa_enc_s": 53.5314249,
+          "lisa_hi": 16012554,
+          "total": 26630242
+        },
+        "4": {
+          "ellie_dec_s": 12.2824189,
+          "ellie_enc_s": 10.3519247,
+          "ellie_lo": 13755262,
+          "exact": true,
+          "lisa_dec_s": 48.1986664,
+          "lisa_enc_s": 47.5054476,
+          "lisa_hi": 12960941,
+          "total": 26716219
+        }
+      }
+    },
+    {
+      "bd": 8,
+      "coding_bd": 8,
+      "id": "leica_m8_house",
+      "l1": false,
+      "prod_bytes": 5443197,
+      "prod_dec_s": 17.4537409,
+      "prod_enc_s": 25.033187,
+      "prod_exact": true,
+      "splits": {
+        "1": {
+          "ellie_dec_s": 1.8038242000000002,
+          "ellie_enc_s": 1.8630565,
+          "ellie_lo": 1595072,
+          "exact": true,
+          "lisa_dec_s": 12.5707209,
+          "lisa_enc_s": 12.9173779,
+          "lisa_hi": 4270802,
+          "total": 5865890
+        },
+        "2": {
+          "ellie_dec_s": 3.7453187000000003,
+          "ellie_enc_s": 3.0069611,
+          "ellie_lo": 2980182,
+          "exact": true,
+          "lisa_dec_s": 18.0893295,
+          "lisa_enc_s": 12.839081,
+          "lisa_hi": 3180959,
+          "total": 6161157
+        },
+        "3": {
+          "ellie_dec_s": 4.0156392,
+          "ellie_enc_s": 3.3205952,
+          "ellie_lo": 4127253,
+          "exact": true,
+          "lisa_dec_s": 17.441288,
+          "lisa_enc_s": 15.9199077,
+          "lisa_hi": 2248200,
+          "total": 6375469
+        },
+        "4": {
+          "ellie_dec_s": 3.2440341999999998,
+          "ellie_enc_s": 3.1371588999999998,
+          "ellie_lo": 5012080,
+          "exact": true,
+          "lisa_dec_s": 16.8355027,
+          "lisa_enc_s": 16.3194412,
+          "lisa_hi": 1509914,
+          "total": 6522010
+        }
+      }
+    },
+    {
+      "bd": 14,
+      "coding_bd": 14,
+      "id": "leica_q_canoe",
+      "l1": false,
+      "prod_bytes": 27966357,
+      "prod_dec_s": 45.8840294,
+      "prod_enc_s": 48.7287615,
+      "prod_exact": true,
+      "splits": {
+        "1": {
+          "ellie_dec_s": 5.6710848,
+          "ellie_enc_s": 5.0107453,
+          "ellie_lo": 3898457,
+          "exact": true,
+          "lisa_dec_s": 48.5205436,
+          "lisa_enc_s": 46.5054431,
+          "lisa_hi": 24912371,
+          "total": 28810844
+        },
+        "2": {
+          "ellie_dec_s": 7.421948799999999,
+          "ellie_enc_s": 5.9864147999999995,
+          "ellie_lo": 7313876,
+          "exact": true,
+          "lisa_dec_s": 47.412243,
+          "lisa_enc_s": 54.1720237,
+          "lisa_hi": 21874704,
+          "total": 29188596
+        },
+        "3": {
+          "ellie_dec_s": 8.860954,
+          "ellie_enc_s": 7.7785769,
+          "ellie_lo": 10408877,
+          "exact": true,
+          "lisa_dec_s": 49.3285516,
+          "lisa_enc_s": 52.9496633,
+          "lisa_hi": 18854593,
+          "total": 29263486
+        },
+        "4": {
+          "ellie_dec_s": 10.5297103,
+          "ellie_enc_s": 9.6432401,
+          "ellie_lo": 13490549,
+          "exact": true,
+          "lisa_dec_s": 50.2708197,
+          "lisa_enc_s": 47.6424412,
+          "lisa_hi": 15866577,
+          "total": 29357142
+        }
+      }
+    },
+    {
+      "bd": 10,
+      "coding_bd": 10,
+      "id": "lg_h815_mountain",
+      "l1": false,
+      "prod_bytes": 9588249,
+      "prod_dec_s": 31.3045603,
+      "prod_enc_s": 33.325482,
+      "prod_exact": true,
+      "splits": {
+        "1": {
+          "ellie_dec_s": 3.4602614000000003,
+          "ellie_enc_s": 2.8492432,
+          "ellie_lo": 2560876,
+          "exact": true,
+          "lisa_dec_s": 27.9737926,
+          "lisa_enc_s": 29.7230459,
+          "lisa_hi": 7665929,
+          "total": 10226821
+        },
+        "2": {
+          "ellie_dec_s": 4.6921973,
+          "ellie_enc_s": 4.379016699999999,
+          "ellie_lo": 4799490,
+          "exact": true,
+          "lisa_dec_s": 27.6239761,
+          "lisa_enc_s": 24.3453454,
+          "lisa_hi": 5844535,
+          "total": 10644041
+        },
+        "3": {
+          "ellie_dec_s": 5.2561942,
+          "ellie_enc_s": 5.1141399,
+          "ellie_lo": 6752093,
+          "exact": true,
+          "lisa_dec_s": 26.6626107,
+          "lisa_enc_s": 23.4168911,
+          "lisa_hi": 4218091,
+          "total": 10970200
+        },
+        "4": {
+          "ellie_dec_s": 7.7556498000000005,
+          "ellie_enc_s": 7.2417897,
+          "ellie_lo": 8396162,
+          "exact": true,
+          "lisa_dec_s": 22.8330333,
+          "lisa_enc_s": 20.7636829,
+          "lisa_hi": 2868221,
+          "total": 11264399
+        }
+      }
+    },
+    {
+      "bd": 10,
+      "coding_bd": 10,
+      "id": "nexus6_courtyard",
+      "l1": false,
+      "prod_bytes": 8006715,
+      "prod_dec_s": 26.050075,
+      "prod_enc_s": 29.4051405,
+      "prod_exact": true,
+      "splits": {
+        "1": {
+          "ellie_dec_s": 2.8232546,
+          "ellie_enc_s": 2.3809538000000003,
+          "ellie_lo": 2121703,
+          "exact": true,
+          "lisa_dec_s": 25.5234046,
+          "lisa_enc_s": 22.3433211,
+          "lisa_hi": 6344270,
+          "total": 8465989
+        },
+        "2": {
+          "ellie_dec_s": 3.7156277,
+          "ellie_enc_s": 3.312719,
+          "ellie_lo": 3983785,
+          "exact": true,
+          "lisa_dec_s": 17.7383213,
+          "lisa_enc_s": 17.7960371,
+          "lisa_hi": 4681532,
+          "total": 8665333
+        },
+        "3": {
+          "ellie_dec_s": 4.7772007,
+          "ellie_enc_s": 4.2303377,
+          "ellie_lo": 5656670,
+          "exact": true,
+          "lisa_dec_s": 16.9262757,
+          "lisa_enc_s": 20.733754,
+          "lisa_hi": 3309263,
+          "total": 8965949
+        },
+        "4": {
+          "ellie_dec_s": 6.606934800000001,
+          "ellie_enc_s": 6.306576,
+          "ellie_lo": 7144927,
+          "exact": true,
+          "lisa_dec_s": 19.5833422,
+          "lisa_enc_s": 18.4043077,
+          "lisa_hi": 2175564,
+          "total": 9320507
+        }
+      }
+    },
+    {
+      "bd": 14,
+      "coding_bd": 10,
+      "id": "parrot_anafi_dusk",
+      "l1": true,
+      "prod_bytes": 12291116,
+      "prod_dec_s": 42.9838911,
+      "prod_enc_s": 42.9335816,
+      "prod_exact": true,
+      "splits": {
+        "1": {
+          "ellie_dec_s": 4.8949324,
+          "ellie_enc_s": 4.355796,
+          "ellie_lo": 3444837,
+          "exact": true,
+          "lisa_dec_s": 36.2509603,
+          "lisa_enc_s": 37.2906632,
+          "lisa_hi": 9670614,
+          "total": 13115472
+        },
+        "2": {
+          "ellie_dec_s": 5.566571,
+          "ellie_enc_s": 4.765877,
+          "ellie_lo": 6466215,
+          "exact": true,
+          "lisa_dec_s": 33.9066242,
+          "lisa_enc_s": 35.5656588,
+          "lisa_hi": 7212591,
+          "total": 13678827
+        },
+        "3": {
+          "ellie_dec_s": 9.7506761,
+          "ellie_enc_s": 8.0736411,
+          "ellie_lo": 9140508,
+          "exact": true,
+          "lisa_dec_s": 31.0993264,
+          "lisa_enc_s": 31.8844816,
+          "lisa_hi": 5014744,
+          "total": 14155273
+        },
+        "4": {
+          "ellie_dec_s": 9.1234268,
+          "ellie_enc_s": 8.2612752,
+          "ellie_lo": 11137261,
+          "exact": true,
+          "lisa_dec_s": 31.2820475,
+          "lisa_enc_s": 27.5520488,
+          "lisa_hi": 3115851,
+          "total": 14253133
+        }
+      }
+    },
+    {
+      "bd": 14,
+      "coding_bd": 14,
+      "id": "pentax_k1ii_station",
+      "l1": false,
+      "prod_bytes": 36498518,
+      "prod_dec_s": 73.3613876,
+      "prod_enc_s": 75.2262152,
+      "prod_exact": true,
+      "splits": {
+        "1": {
+          "ellie_dec_s": 8.637832399999999,
+          "ellie_enc_s": 7.552324,
+          "ellie_lo": 5912822,
+          "exact": true,
+          "lisa_dec_s": 80.0265796,
+          "lisa_enc_s": 82.4654498,
+          "lisa_hi": 31900760,
+          "total": 37813598
+        },
+        "2": {
+          "ellie_dec_s": 12.0063456,
+          "ellie_enc_s": 10.8482412,
+          "ellie_lo": 11105994,
+          "exact": true,
+          "lisa_dec_s": 86.5166047,
+          "lisa_enc_s": 83.0846517,
+          "lisa_hi": 27303872,
+          "total": 38409882
+        },
+        "3": {
+          "ellie_dec_s": 14.9330071,
+          "ellie_enc_s": 11.910593700000002,
+          "ellie_lo": 15807005,
+          "exact": true,
+          "lisa_dec_s": 80.4573924,
+          "lisa_enc_s": 83.0406409,
+          "lisa_hi": 22721811,
+          "total": 38528832
+        },
+        "4": {
+          "ellie_dec_s": 17.4789681,
+          "ellie_enc_s": 15.912428199999999,
+          "ellie_lo": 20475917,
+          "exact": true,
+          "lisa_dec_s": 69.4248283,
+          "lisa_enc_s": 71.3779335,
+          "lisa_hi": 18205280,
+          "total": 38681213
+        }
+      }
+    },
+    {
+      "bd": 14,
+      "coding_bd": 14,
+      "id": "pentax_k70_bulb",
+      "l1": false,
+      "prod_bytes": 20396919,
+      "prod_dec_s": 53.3866486,
+      "prod_enc_s": 53.5611198,
+      "prod_exact": true,
+      "splits": {
+        "1": {
+          "ellie_dec_s": 3.8617587,
+          "ellie_enc_s": 3.6768996,
+          "ellie_lo": 13404,
+          "exact": true,
+          "lisa_dec_s": 61.4324799,
+          "lisa_enc_s": 59.9614084,
+          "lisa_hi": 17316614,
+          "total": 17330034
+        },
+        "2": {
+          "ellie_dec_s": 6.625670899999999,
+          "ellie_enc_s": 5.597770500000001,
+          "ellie_lo": 6323428,
+          "exact": true,
+          "lisa_dec_s": 52.148992,
+          "lisa_enc_s": 54.9962697,
+          "lisa_hi": 14263226,
+          "total": 20586670
+        },
+        "3": {
+          "ellie_dec_s": 11.5727024,
+          "ellie_enc_s": 9.792509899999999,
+          "ellie_lo": 10333564,
+          "exact": true,
+          "lisa_dec_s": 41.4125787,
+          "lisa_enc_s": 42.2378055,
+          "lisa_hi": 11236805,
+          "total": 21570385
+        },
+        "4": {
+          "ellie_dec_s": 12.6843719,
+          "ellie_enc_s": 11.5753183,
+          "ellie_lo": 13624842,
+          "exact": true,
+          "lisa_dec_s": 39.5554356,
+          "lisa_enc_s": 37.8255283,
+          "lisa_hi": 8320760,
+          "total": 21945618
+        }
+      }
+    },
+    {
+      "bd": 12,
+      "coding_bd": 12,
+      "id": "pentax_kx_lichen",
+      "l1": false,
+      "prod_bytes": 11458135,
+      "prod_dec_s": 25.0330707,
+      "prod_enc_s": 24.0690011,
+      "prod_exact": true,
+      "splits": {
+        "1": {
+          "ellie_dec_s": 2.0772363,
+          "ellie_enc_s": 1.6066118999999999,
+          "ellie_lo": 2014124,
+          "exact": true,
+          "lisa_dec_s": 21.4267788,
+          "lisa_enc_s": 33.1126118,
+          "lisa_hi": 9886029,
+          "total": 11900169
+        },
+        "2": {
+          "ellie_dec_s": 3.5040283999999997,
+          "ellie_enc_s": 3.2220574,
+          "ellie_lo": 3789486,
+          "exact": true,
+          "lisa_dec_s": 29.9138347,
+          "lisa_enc_s": 20.6959502,
+          "lisa_hi": 8315803,
+          "total": 12105305
+        },
+        "3": {
+          "ellie_dec_s": 5.4252994999999995,
+          "ellie_enc_s": 4.5032054,
+          "ellie_lo": 5387942,
+          "exact": true,
+          "lisa_dec_s": 25.095473,
+          "lisa_enc_s": 27.5595945,
+          "lisa_hi": 6751347,
+          "total": 12139305
+        },
+        "4": {
+          "ellie_dec_s": 4.0971975,
+          "ellie_enc_s": 3.5891978,
+          "ellie_lo": 6968300,
+          "exact": true,
+          "lisa_dec_s": 15.4249091,
+          "lisa_enc_s": 19.3677346,
+          "lisa_hi": 5210078,
+          "total": 12178394
+        }
+      }
+    },
+    {
+      "bd": 14,
+      "coding_bd": 14,
+      "id": "pixel6pro_valley",
+      "l1": false,
+      "prod_bytes": 11299938,
+      "prod_dec_s": 28.5379851,
+      "prod_enc_s": 27.031079,
+      "prod_exact": true,
+      "splits": {
+        "1": {
+          "ellie_dec_s": 3.9627437000000003,
+          "ellie_enc_s": 3.4397535,
+          "ellie_lo": 2024186,
+          "exact": true,
+          "lisa_dec_s": 32.3844081,
+          "lisa_enc_s": 25.8386877,
+          "lisa_hi": 9729603,
+          "total": 11753805
+        },
+        "2": {
+          "ellie_dec_s": 2.9057091999999995,
+          "ellie_enc_s": 2.5323688,
+          "ellie_lo": 3804625,
+          "exact": true,
+          "lisa_dec_s": 19.3989402,
+          "lisa_enc_s": 23.1490977,
+          "lisa_hi": 8164379,
+          "total": 11969020
+        },
+        "3": {
+          "ellie_dec_s": 4.9785285,
+          "ellie_enc_s": 4.9235755999999995,
+          "ellie_lo": 5424980,
+          "exact": true,
+          "lisa_dec_s": 25.4524123,
+          "lisa_enc_s": 20.3004211,
+          "lisa_hi": 6616783,
+          "total": 12041779
+        },
+        "4": {
+          "ellie_dec_s": 6.5725494,
+          "ellie_enc_s": 5.9712811,
+          "ellie_lo": 7044099,
+          "exact": true,
+          "lisa_dec_s": 23.328308,
+          "lisa_enc_s": 24.0042731,
+          "lisa_hi": 5120959,
+          "total": 12165074
+        }
+      }
+    },
+    {
+      "bd": 14,
+      "coding_bd": 14,
+      "id": "ricoh_gr3_dunes",
+      "l1": false,
+      "prod_bytes": 26829161,
+      "prod_dec_s": 49.0038249,
+      "prod_enc_s": 48.3479353,
+      "prod_exact": true,
+      "splits": {
+        "1": {
+          "ellie_dec_s": 7.085753700000001,
+          "ellie_enc_s": 6.2134059,
+          "ellie_lo": 4000501,
+          "exact": true,
+          "lisa_dec_s": 51.1561335,
+          "lisa_enc_s": 50.7107316,
+          "lisa_hi": 23728293,
+          "total": 27728810
+        },
+        "2": {
+          "ellie_dec_s": 8.1100245,
+          "ellie_enc_s": 6.9323250000000005,
+          "ellie_lo": 7502715,
+          "exact": true,
+          "lisa_dec_s": 55.2451783,
+          "lisa_enc_s": 53.1758399,
+          "lisa_hi": 20630630,
+          "total": 28133361
+        },
+        "3": {
+          "ellie_dec_s": 10.8710155,
+          "ellie_enc_s": 10.201106,
+          "ellie_lo": 10654242,
+          "exact": true,
+          "lisa_dec_s": 53.1871927,
+          "lisa_enc_s": 51.6644678,
+          "lisa_hi": 17518826,
+          "total": 28173084
+        },
+        "4": {
+          "ellie_dec_s": 11.8831771,
+          "ellie_enc_s": 10.8504553,
+          "ellie_lo": 13781101,
+          "exact": true,
+          "lisa_dec_s": 51.938779,
+          "lisa_enc_s": 50.0370484,
+          "lisa_hi": 14478536,
+          "total": 28259653
+        }
+      }
+    },
+    {
+      "bd": 12,
+      "coding_bd": 12,
+      "id": "samsung_gx20_berries",
+      "l1": false,
+      "prod_bytes": 11666928,
+      "prod_dec_s": 35.5497636,
+      "prod_enc_s": 31.1904596,
+      "prod_exact": true,
+      "splits": {
+        "1": {
+          "ellie_dec_s": 3.1036222,
+          "ellie_enc_s": 2.550483,
+          "ellie_lo": 2439323,
+          "exact": true,
+          "lisa_dec_s": 35.2974743,
+          "lisa_enc_s": 33.0344359,
+          "lisa_hi": 9785271,
+          "total": 12224610
+        },
+        "2": {
+          "ellie_dec_s": 4.0090802,
+          "ellie_enc_s": 3.6074923000000005,
+          "ellie_lo": 4566527,
+          "exact": true,
+          "lisa_dec_s": 29.4660011,
+          "lisa_enc_s": 25.930053,
+          "lisa_hi": 7909295,
+          "total": 12475838
+        },
+        "3": {
+          "ellie_dec_s": 6.6778985,
+          "ellie_enc_s": 6.0445053,
+          "ellie_lo": 6495447,
+          "exact": true,
+          "lisa_dec_s": 24.4093031,
+          "lisa_enc_s": 21.9608174,
+          "lisa_hi": 6068861,
+          "total": 12564324
+        },
+        "4": {
+          "ellie_dec_s": 7.680401099999999,
+          "ellie_enc_s": 7.2019517,
+          "ellie_lo": 8393833,
+          "exact": true,
+          "lisa_dec_s": 20.5620971,
+          "lisa_enc_s": 21.982584,
+          "lisa_hi": 4348183,
+          "total": 12742032
+        }
+      }
+    },
+    {
+      "bd": 14,
+      "coding_bd": 14,
+      "id": "sigma_fp_bike14",
+      "l1": false,
+      "prod_bytes": 23748198,
+      "prod_dec_s": 46.4808915,
+      "prod_enc_s": 46.9628057,
+      "prod_exact": true,
+      "splits": {
+        "1": {
+          "ellie_dec_s": 5.4022798000000005,
+          "ellie_enc_s": 5.154237,
+          "ellie_lo": 3958835,
+          "exact": true,
+          "lisa_dec_s": 51.084658,
+          "lisa_enc_s": 52.154409,
+          "lisa_hi": 20680523,
+          "total": 24639374
+        },
+        "2": {
+          "ellie_dec_s": 8.454332999999998,
+          "ellie_enc_s": 7.654623299999999,
+          "ellie_lo": 7432601,
+          "exact": true,
+          "lisa_dec_s": 53.6542599,
+          "lisa_enc_s": 53.2545217,
+          "lisa_hi": 17613990,
+          "total": 25046607
+        },
+        "3": {
+          "ellie_dec_s": 9.797610599999999,
+          "ellie_enc_s": 8.4288403,
+          "ellie_lo": 10581992,
+          "exact": true,
+          "lisa_dec_s": 50.2510071,
+          "lisa_enc_s": 46.1693357,
+          "lisa_hi": 14557681,
+          "total": 25139689
+        },
+        "4": {
+          "ellie_dec_s": 10.334703000000001,
+          "ellie_enc_s": 8.811828,
+          "ellie_lo": 13715076,
+          "exact": true,
+          "lisa_dec_s": 43.5639111,
+          "lisa_enc_s": 39.5009911,
+          "lisa_hi": 11538307,
+          "total": 25253399
+        }
+      }
+    }
+  ],
+  "threads": 4
+}

@@ -1,0 +1,44 @@
+[portrait_0] production 481178 B, ycocg=true, enc(auto) 561 ms, enc(single) 410 ms, dec 551 ms
+  prod          481178 B  enc    524 ms dec    491 ms exact=true det=true
+  prevbest      468572 B  enc    470 ms dec    571 ms exact=true det=true
+  BEST noconf (B,C,T, leaf-mixer)   468634 B  enc    515 ms dec    560 ms exact=true det=true
+  SIMPLE D3 (C,T) noconf 1-set   470661 B  enc    489 ms dec    454 ms exact=true det=true
+  SIMPLE D1 (B,C,T) noconf 1-set   469145 B  enc    466 ms dec    592 ms exact=true det=true
+  NOTREE noconf 1-set (B,C)   481904 B  enc    403 ms dec    422 ms exact=true det=true
+[screen_0] production 222580 B, ycocg=true, enc(auto) 993 ms, enc(single) 442 ms, dec 612 ms
+  prod          222580 B  enc    419 ms dec    508 ms exact=true det=true
+  prevbest      210006 B  enc    748 ms dec    621 ms exact=true det=true
+  BEST noconf (B,C,T, leaf-mixer)   210203 B  enc    632 ms dec    834 ms exact=true det=true
+  SIMPLE D3 (C,T) noconf 1-set   210529 B  enc    680 ms dec    669 ms exact=true det=true
+  SIMPLE D1 (B,C,T) noconf 1-set   210285 B  enc    544 ms dec    535 ms exact=true det=true
+  NOTREE noconf 1-set (B,C)   222796 B  enc    533 ms dec    499 ms exact=true det=true
+[night_0] production 1909182 B, ycocg=true, enc(auto) 1362 ms, enc(single) 783 ms, dec 835 ms
+  prod         1909182 B  enc    844 ms dec   1018 ms exact=true det=true
+  prevbest     1904010 B  enc   1099 ms dec   1562 ms exact=true det=true
+  BEST noconf (B,C,T, leaf-mixer)  1903279 B  enc   1024 ms dec    996 ms exact=true det=true
+  SIMPLE D3 (C,T) noconf 1-set  1903413 B  enc    986 ms dec   1013 ms exact=true det=true
+  SIMPLE D1 (B,C,T) noconf 1-set  1903973 B  enc   1185 ms dec   1149 ms exact=true det=true
+  NOTREE noconf 1-set (B,C)  1909365 B  enc    889 ms dec    770 ms exact=true det=true
+production baseline total: 2612940 B (portrait_0 481178, screen_0 222580, night_0 1909182)
+
+| config | total B | vs prod | portrait | screen | night | enc ms (sum) | dec ms (sum) |
+|---|---|---|---|---|---|---|---|
+| prod | 2612940 | +0.000% | +0.00% | +0.00% | +0.00% | 1787 | 2017 |
+| prevbest | 2582588 | -1.162% | -2.62% | -5.65% | -0.27% | 2317 | 2754 |
+| BEST noconf (B,C,T, leaf-mixer) | 2582116 | -1.180% | -2.61% | -5.56% | -0.31% | 2170 | 2390 |
+| SIMPLE D3 (C,T) noconf 1-set | 2584603 | -1.084% | -2.19% | -5.41% | -0.30% | 2155 | 2135 |
+| SIMPLE D1 (B,C,T) noconf 1-set | 2583403 | -1.130% | -2.50% | -5.52% | -0.27% | 2195 | 2276 |
+| NOTREE noconf 1-set (B,C) | 2614065 | +0.043% | +0.15% | +0.10% | +0.01% | 1825 | 1691 |
+
+production timing (best of reps, ms): portrait_0: enc(auto,2 repr) 561, enc(1 repr) 410, dec 551; screen_0: enc(auto,2 repr) 993, enc(1 repr) 442, dec 612; night_0: enc(auto,2 repr) 1362, enc(1 repr) 783, dec 835; 
+
+leaf histogram (% of pixels, config T, all planes):
+
+| image | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| portrait_0 | 31.3 | 5.6 | 14.4 | 17.2 | 0.0 | 21.6 | 0.3 | 0.7 | 4.5 | 4.1 | 0.2 | 0.1 |
+| screen_0 | 88.6 | 2.4 | 1.4 | 3.8 | 0.0 | 0.5 | 0.1 | 0.5 | 0.7 | 1.4 | 0.2 | 0.5 |
+| night_0 | 0.3 | 0.3 | 0.0 | 5.3 | 0.0 | 15.6 | 0.4 | 1.8 | 35.5 | 24.4 | 10.6 | 5.8 |
+
+all exact+deterministic: true
+

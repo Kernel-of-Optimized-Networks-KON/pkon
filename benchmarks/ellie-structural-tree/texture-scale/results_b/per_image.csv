@@ -1,0 +1,31 @@
+image,config,stream_bytes,total_bytes,enc_ms,dec_ms,exact,deterministic
+portrait_0,prod,481128,481178,297.7,311.2,true,true
+portrait_0,REF-BEST (leaf mixer),468583,468634,402.5,751.3,true,true
+portrait_0,REF-D1 (1 mixer set),469094,469145,721.5,594.9,true,true
+portrait_0,A:Z+K texture,468936,468987,795.4,767.6,true,true
+portrait_0,B:DIR+BRD scale,469009,469060,700.8,845.5,true,true
+portrait_0,B:RES+DIR+BRD scale,469026,469077,786.5,582.8,true,true
+portrait_0,AB:K+DIR,468949,469000,723.2,704.6,true,true
+portrait_0,AB:Z+K+DIR,468960,469011,847.8,729.3,true,true
+portrait_0,AB:Z+K+DIR+BRD,468974,469025,627.6,850.7,true,true
+portrait_0,OVH: Z+K+DIR+BRD computed, unused,481854,481904,715.0,788.2,true,true
+screen_0,prod,222525,222580,645.6,812.9,true,true
+screen_0,REF-BEST (leaf mixer),210147,210203,903.9,918.5,true,true
+screen_0,REF-D1 (1 mixer set),210229,210285,841.3,895.9,true,true
+screen_0,A:Z+K texture,209237,209293,921.8,1027.5,true,true
+screen_0,B:DIR+BRD scale,209519,209575,1031.1,823.2,true,true
+screen_0,B:RES+DIR+BRD scale,209455,209511,651.0,882.8,true,true
+screen_0,AB:K+DIR,208732,208788,749.2,758.4,true,true
+screen_0,AB:Z+K+DIR,208446,208502,848.9,751.6,true,true
+screen_0,AB:Z+K+DIR+BRD,208480,208536,851.2,855.4,true,true
+screen_0,OVH: Z+K+DIR+BRD computed, unused,222741,222796,785.6,781.6,true,true
+night_0,prod,1909132,1909182,1048.4,997.5,true,true
+night_0,REF-BEST (leaf mixer),1903228,1903279,989.3,1030.2,true,true
+night_0,REF-D1 (1 mixer set),1903922,1903973,1084.7,1131.9,true,true
+night_0,A:Z+K texture,1904139,1904190,1191.7,1469.6,true,true
+night_0,B:DIR+BRD scale,1903994,1904045,1106.7,1964.5,true,true
+night_0,B:RES+DIR+BRD scale,1904106,1904157,1575.0,1441.3,true,true
+night_0,AB:K+DIR,1904314,1904365,1690.0,1991.5,true,true
+night_0,AB:Z+K+DIR,1904924,1904975,1765.9,1740.4,true,true
+night_0,AB:Z+K+DIR+BRD,1905392,1905443,1725.2,1554.4,true,true
+night_0,OVH: Z+K+DIR+BRD computed, unused,1909315,1909365,1123.7,1291.9,true,true

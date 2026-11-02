@@ -1,0 +1,31 @@
+image,config,stream_bytes,total_bytes,enc_ms,dec_ms,exact,deterministic
+portrait_0,prod,481128,481178,529.6,969.5,true,true
+portrait_0,REF-BEST (leaf mixer),468583,468634,917.8,581.9,true,true
+portrait_0,REF-D1 (1 mixer set),469094,469145,591.4,545.6,true,true
+portrait_0,A:Z zigzag,469050,469101,759.0,742.0,true,true
+portrait_0,A:K curvature,468951,469002,614.4,702.9,true,true
+portrait_0,A:Z+K,468936,468987,456.6,629.3,true,true
+portrait_0,B:RES local/med residual,469071,469122,632.9,734.6,true,true
+portrait_0,B:ACT local/med activity,469110,469161,649.1,657.4,true,true
+portrait_0,B:DIR med orientation,469046,469097,623.2,574.3,true,true
+portrait_0,B:BRD broad level,469037,469088,610.9,640.0,true,true
+screen_0,prod,222525,222580,543.7,734.0,true,true
+screen_0,REF-BEST (leaf mixer),210147,210203,785.6,910.5,true,true
+screen_0,REF-D1 (1 mixer set),210229,210285,810.1,998.7,true,true
+screen_0,A:Z zigzag,210041,210097,1037.7,978.7,true,true
+screen_0,A:K curvature,209489,209545,961.7,1107.5,true,true
+screen_0,A:Z+K,209237,209293,827.4,1582.3,true,true
+screen_0,B:RES local/med residual,210045,210101,1312.5,1154.8,true,true
+screen_0,B:ACT local/med activity,209993,210049,1018.4,992.8,true,true
+screen_0,B:DIR med orientation,209607,209663,904.8,1293.5,true,true
+screen_0,B:BRD broad level,210095,210151,1537.5,1265.4,true,true
+night_0,prod,1909132,1909182,1150.3,1304.5,true,true
+night_0,REF-BEST (leaf mixer),1903228,1903279,1305.0,1227.7,true,true
+night_0,REF-D1 (1 mixer set),1903922,1903973,1290.8,1376.6,true,true
+night_0,A:Z zigzag,1903807,1903858,1427.6,2080.0,true,true
+night_0,A:K curvature,1903909,1903960,2071.7,2007.5,true,true
+night_0,A:Z+K,1904139,1904190,1889.7,1490.9,true,true
+night_0,B:RES local/med residual,1903524,1903575,1445.1,1403.7,true,true
+night_0,B:ACT local/med activity,1903704,1903755,1267.3,1655.7,true,true
+night_0,B:DIR med orientation,1904054,1904105,1555.8,1578.7,true,true
+night_0,B:BRD broad level,1903629,1903680,1405.4,1583.4,true,true

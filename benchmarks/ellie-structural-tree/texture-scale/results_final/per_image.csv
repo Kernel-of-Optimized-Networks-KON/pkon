@@ -1,0 +1,28 @@
+image,config,stream_bytes,total_bytes,enc_ms,dec_ms,exact,deterministic
+portrait_0,prod,481128,481178,445.9,475.9,true,true
+portrait_0,REF-BEST (leaf mixer),468583,468634,523.8,568.9,true,true
+portrait_0,REF-D1 (1 mixer set),469094,469145,600.5,761.5,true,true
+portrait_0,A:K curvature,468951,469002,641.7,652.7,true,true
+portrait_0,A:Z+K texture,468936,468987,547.3,528.6,true,true
+portrait_0,B:DIR med orientation,469046,469097,523.3,600.3,true,true
+portrait_0,AB:K+DIR,468949,469000,720.0,817.7,true,true
+portrait_0,OVH: K+DIR computed, unused,481854,481904,874.6,609.1,true,true
+portrait_0,OVH: tree only, unused,481854,481904,472.2,669.8,true,true
+screen_0,prod,222525,222580,603.6,542.4,true,true
+screen_0,REF-BEST (leaf mixer),210147,210203,633.9,601.5,true,true
+screen_0,REF-D1 (1 mixer set),210229,210285,492.4,684.1,true,true
+screen_0,A:K curvature,209489,209545,812.4,825.8,true,true
+screen_0,A:Z+K texture,209237,209293,719.6,713.0,true,true
+screen_0,B:DIR med orientation,209607,209663,840.4,880.0,true,true
+screen_0,AB:K+DIR,208732,208788,791.7,937.7,true,true
+screen_0,OVH: K+DIR computed, unused,222741,222796,793.6,752.6,true,true
+screen_0,OVH: tree only, unused,222741,222796,568.7,620.6,true,true
+night_0,prod,1909132,1909182,960.3,595.6,true,true
+night_0,REF-BEST (leaf mixer),1903228,1903279,1311.3,1361.8,true,true
+night_0,REF-D1 (1 mixer set),1903922,1903973,681.3,1301.8,true,true
+night_0,A:K curvature,1903909,1903960,1361.0,1747.1,true,true
+night_0,A:Z+K texture,1904139,1904190,1189.1,1345.3,true,true
+night_0,B:DIR med orientation,1904054,1904105,1375.8,1942.2,true,true
+night_0,AB:K+DIR,1904314,1904365,1520.4,2045.8,true,true
+night_0,OVH: K+DIR computed, unused,1909315,1909365,1116.5,1430.4,true,true
+night_0,OVH: tree only, unused,1909315,1909365,1052.7,1126.4,true,true

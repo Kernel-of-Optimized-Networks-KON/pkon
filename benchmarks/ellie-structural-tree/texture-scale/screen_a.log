@@ -1,0 +1,60 @@
+[portrait_0] production 481178 B, ycocg=true, enc(auto) 739 ms, enc(single) 396 ms, dec 417 ms
+  prod          481178 B  enc    530 ms dec    969 ms exact=true det=true
+  REF-BEST (leaf mixer)   468634 B  enc    918 ms dec    582 ms exact=true det=true
+  REF-D1 (1 mixer set)   469145 B  enc    591 ms dec    546 ms exact=true det=true
+  A:Z zigzag    469101 B  enc    759 ms dec    742 ms exact=true det=true
+  A:K curvature   469002 B  enc    614 ms dec    703 ms exact=true det=true
+  A:Z+K         468987 B  enc    457 ms dec    629 ms exact=true det=true
+  B:RES local/med residual   469122 B  enc    633 ms dec    735 ms exact=true det=true
+  B:ACT local/med activity   469161 B  enc    649 ms dec    657 ms exact=true det=true
+  B:DIR med orientation   469097 B  enc    623 ms dec    574 ms exact=true det=true
+  B:BRD broad level   469088 B  enc    611 ms dec    640 ms exact=true det=true
+[screen_0] production 222580 B, ycocg=true, enc(auto) 958 ms, enc(single) 422 ms, dec 513 ms
+  prod          222580 B  enc    544 ms dec    734 ms exact=true det=true
+  REF-BEST (leaf mixer)   210203 B  enc    786 ms dec    911 ms exact=true det=true
+  REF-D1 (1 mixer set)   210285 B  enc    810 ms dec    999 ms exact=true det=true
+  A:Z zigzag    210097 B  enc   1038 ms dec    979 ms exact=true det=true
+  A:K curvature   209545 B  enc    962 ms dec   1108 ms exact=true det=true
+  A:Z+K         209293 B  enc    827 ms dec   1582 ms exact=true det=true
+  B:RES local/med residual   210101 B  enc   1313 ms dec   1155 ms exact=true det=true
+  B:ACT local/med activity   210049 B  enc   1018 ms dec    993 ms exact=true det=true
+  B:DIR med orientation   209663 B  enc    905 ms dec   1294 ms exact=true det=true
+  B:BRD broad level   210151 B  enc   1537 ms dec   1265 ms exact=true det=true
+[night_0] production 1909182 B, ycocg=true, enc(auto) 2562 ms, enc(single) 977 ms, dec 950 ms
+  prod         1909182 B  enc   1150 ms dec   1305 ms exact=true det=true
+  REF-BEST (leaf mixer)  1903279 B  enc   1305 ms dec   1228 ms exact=true det=true
+  REF-D1 (1 mixer set)  1903973 B  enc   1291 ms dec   1377 ms exact=true det=true
+  A:Z zigzag   1903858 B  enc   1428 ms dec   2080 ms exact=true det=true
+  A:K curvature  1903960 B  enc   2072 ms dec   2007 ms exact=true det=true
+  A:Z+K        1904190 B  enc   1890 ms dec   1491 ms exact=true det=true
+  B:RES local/med residual  1903575 B  enc   1445 ms dec   1404 ms exact=true det=true
+  B:ACT local/med activity  1903755 B  enc   1267 ms dec   1656 ms exact=true det=true
+  B:DIR med orientation  1904105 B  enc   1556 ms dec   1579 ms exact=true det=true
+  B:BRD broad level  1903680 B  enc   1405 ms dec   1583 ms exact=true det=true
+production baseline total: 2612940 B (portrait_0 481178, screen_0 222580, night_0 1909182)
+
+| config | total B | vs prod | vs D1 | portrait | screen | night | enc ms (sum) | dec ms (sum) |
+|---|---|---|---|---|---|---|---|
+| prod | 2612940 | +0.000% | +0.00% | +0.00% | +0.00% | 2224 | 3008 |
+| REF-BEST (leaf mixer) | 2582116 | -1.180% | -2.61% | -5.56% | -0.31% | 3008 | 2720 |
+| REF-D1 (1 mixer set) | 2583403 | -1.130% | -2.50% | -5.52% | -0.27% | 2692 | 2921 |
+| A:Z zigzag | 2583056 | -1.144% | -2.51% | -5.61% | -0.28% | 3224 | 3801 |
+| A:K curvature | 2582507 | -1.165% | -2.53% | -5.86% | -0.27% | 3648 | 3818 |
+| A:Z+K | 2582470 | -1.166% | -2.53% | -5.97% | -0.26% | 3174 | 3702 |
+| B:RES local/med residual | 2582798 | -1.154% | -2.51% | -5.61% | -0.29% | 3391 | 3293 |
+| B:ACT local/med activity | 2582965 | -1.147% | -2.50% | -5.63% | -0.28% | 2935 | 3306 |
+| B:DIR med orientation | 2582865 | -1.151% | -2.51% | -5.80% | -0.27% | 3084 | 3446 |
+| B:BRD broad level | 2582919 | -1.149% | -2.51% | -5.58% | -0.29% | 3554 | 3489 |
+
+production timing (best of reps, ms): portrait_0: enc(auto,2 repr) 739, enc(1 repr) 396, dec 417; screen_0: enc(auto,2 repr) 958, enc(1 repr) 422, dec 513; night_0: enc(auto,2 repr) 2562, enc(1 repr) 977, dec 950; 
+
+leaf histogram (% of pixels, config T, all planes):
+
+| image | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| portrait_0 | 31.3 | 5.6 | 14.4 | 17.2 | 0.0 | 21.6 | 0.3 | 0.7 | 4.5 | 4.1 | 0.2 | 0.1 |
+| screen_0 | 88.6 | 2.4 | 1.4 | 3.8 | 0.0 | 0.5 | 0.1 | 0.5 | 0.7 | 1.4 | 0.2 | 0.5 |
+| night_0 | 0.3 | 0.3 | 0.0 | 5.3 | 0.0 | 15.6 | 0.4 | 1.8 | 35.5 | 24.4 | 10.6 | 5.8 |
+
+all exact+deterministic: true
+

@@ -159,6 +159,29 @@ impl Shrub {
     }
 }
 
+/// Structural leaf (0..[`TREE_LEAVES`]) of the sample being coded, from causal data only. This is the `TM-nostat` configuration of
+/// `benchmarks/ellie-structural-tree/` (stationarity test off). `r` = `2|e_W| + 2|e_N| + |e_NW| + |e_NE|` of the Stage 1 residual magnitudes.
+///   0/1 flat (all of W,N,NW,NE equal) with quiet/active residuals; 2/3 two distinct values, same split; 5 smooth (S_H+S_V < 16);
+///   otherwise 6 + 2 * predictability (r small / medium / large against S_H+S_V) + 1 if one direction clearly dominates. Leaf 4 is unused.
+#[inline(always)]
+pub fn tree_leaf(w: i32, n: i32, nw: i32, ne: i32, s_h: u32, s_v: u32, s_d: u32, r: u32) -> usize {
+    let g = s_h + s_v;
+    let d = 1 + (n != w) as u32 + (nw != w && nw != n) as u32 + (ne != w && ne != n && ne != nw) as u32;
+    if d == 1 {
+        return (r > 0) as usize;
+    }
+    if d == 2 {
+        return 2 + (r > 0) as usize;
+    }
+    if g < 16 {
+        return 5;
+    }
+    let p = if 4 * r < g { 0 } else if r >= g { 2 } else { 1 };
+    let m = s_h.min(s_v).min(s_d);
+    let med = s_h + s_v + s_d - m - s_h.max(s_v).max(s_d);
+    6 + p * 2 + (med > 0 && 2 * m <= med) as usize
+}
+
 /// Reusable Stage 1 scanner for one plane geometry. All buffers are allocated once in [`Stage1::new`].
 pub struct Stage1 {
     w: usize,
@@ -172,6 +195,9 @@ pub struct Stage1 {
     // Two difference rows `[H, V, A, G]`, index = column, plus one ghost column at `w`.
     da: Vec<[u16; 4]>,
     db: Vec<[u16; 4]>,
+    // Residual-magnitude rows for the structural tree (`scan_tree` only), index = column + 1.
+    ma: Vec<u32>,
+    mb: Vec<u32>,
 }
 
 impl Stage1 {
@@ -189,6 +215,8 @@ impl Stage1 {
             rc: vec![0; width + 4],
             da: vec![[0; 4]; width + 1],
             db: vec![[0; 4]; width + 1],
+            ma: vec![0; width + 2],
+            mb: vec![0; width + 2],
         })
     }
 
@@ -232,6 +260,38 @@ impl Stage1 {
         let mut bad = false;
         self.scan(|i, p| {
             let v = p as i32 + res[i];
+            bad |= (v as u32) > m as u32;
+            let v = v.clamp(0, m);
+            out[i] = v as u16;
+            v as u32
+        });
+        if bad { Err(Stage1Error::ResidualOutOfRange) } else { Ok(()) }
+    }
+
+    /// Encoder for the `Bc255S11Tree` profile: residuals plus the structural leaf of every sample.
+    pub fn encode_tree(&mut self, src: &[u16], res: &mut [i32], leaf: &mut [u8]) -> Result<(), Stage1Error> {
+        self.check_encode(src, res.len())?;
+        if leaf.len() != src.len() {
+            return Err(Stage1Error::BadLength);
+        }
+        self.scan_tree(|i, p, l| {
+            res[i] = src[i] as i32 - p as i32;
+            leaf[i] = l as u8;
+            src[i] as u32
+        });
+        Ok(())
+    }
+
+    /// Fused decoder for the `Bc255S11Tree` profile: each residual is decoded by `s3` under the leaf computed from the samples
+    /// reconstructed so far. `s3` must be a `Bc255S11Tree` model of the same geometry, freshly reset.
+    pub fn decode_tree<I: BitIo>(&mut self, s3: &mut Stage3, io: &mut I, out: &mut [u16]) -> Result<(), Stage1Error> {
+        if out.len() != self.w * self.h {
+            return Err(Stage1Error::BadLength);
+        }
+        let m = self.m as i32;
+        let mut bad = false;
+        self.scan_tree(|i, p, l| {
+            let v = p as i32 + s3.code_sample_leaf(io, 0, l);
             bad |= (v as u32) > m as u32;
             let v = v.clamp(0, m);
             out[i] = v as u16;
@@ -359,6 +419,117 @@ impl Stage1 {
             std::mem::swap(&mut pp, &mut p);
             std::mem::swap(&mut p, &mut cur);
             std::mem::swap(&mut dprev, &mut dcur);
+        }
+    }
+
+    /// [`Stage1::scan`] with the structural leaf: `resolve(index, prediction, leaf)`. The prediction does not depend on the leaf (one
+    /// Shrub state), so the arithmetic is identical to `scan`; the leaf is only handed to the probability model. Row 0 is leaf 0.
+    #[inline(always)]
+    fn scan_tree<F: FnMut(usize, u32, usize) -> u32>(&mut self, mut resolve: F) {
+        let (w, h, m) = (self.w, self.h, self.m as i32);
+        if w == 0 || h == 0 {
+            return;
+        }
+        let mid = 1u32 << (self.bits - 1);
+        let mut shrub = Shrub { e: [0; 3] };
+        let mut cur: &mut [u16] = &mut self.ra[..];
+        let mut p: &mut [u16] = &mut self.rb[..];
+        let mut pp: &mut [u16] = &mut self.rc[..];
+        let mut dcur: &mut [[u16; 4]] = &mut self.da[..];
+        let mut dprev: &mut [[u16; 4]] = &mut self.db[..];
+        let mut am_c: &mut [u32] = &mut self.ma[..];
+        let mut am_p: &mut [u32] = &mut self.mb[..];
+        am_p.fill(0);
+
+        // ---- Row 0: as `scan`, plus residual magnitudes. ----
+        am_c[0] = am_p[1];
+        let x0 = resolve(0, mid, 0) as u16;
+        cur[2] = x0;
+        cur[0] = x0;
+        cur[1] = x0;
+        am_c[1] = (x0 as i32 - mid as i32).unsigned_abs();
+        for x in 1..w {
+            let wv = cur[x + 1] as i32;
+            let wwv = cur[x] as i32;
+            let pr = ((5 * wv - wwv + 2) >> 2).clamp(0, m);
+            let v = resolve(x, pr as u32, 0);
+            cur[x + 2] = v as u16;
+            am_c[x + 1] = (v as i32 - pr).unsigned_abs();
+        }
+        let last = cur[w + 1];
+        cur[w + 2] = last;
+        cur[w + 3] = last;
+        dcur[0] = [0; 4];
+        for x in 1..w {
+            let hh = (cur[x + 2] as i32 - cur[x + 1] as i32).unsigned_abs() as u16;
+            dcur[x] = [hh, 0, hh, hh];
+        }
+        dcur[w] = [0; 4];
+        pp.copy_from_slice(cur);
+        std::mem::swap(&mut p, &mut cur);
+        std::mem::swap(&mut dprev, &mut dcur);
+        std::mem::swap(&mut am_p, &mut am_c);
+        am_p[0] = am_p[1];
+        am_p[w + 1] = am_p[w];
+
+        // ---- Rows >= 1. ----
+        for y in 1..h {
+            let base = y * w;
+            let n0 = p[2];
+            cur[0] = n0;
+            cur[1] = n0;
+            am_c[0] = am_p[1];
+            let (mut h_c, mut v_c, mut a_c) = (0u32, 0u32, 0u32);
+            for x in 0..w {
+                let i = x + 2;
+                let (wv, wwv, nw) = if x == 0 { (n0 as i32, n0 as i32, n0 as i32) } else { (cur[i - 1] as i32, cur[i - 2] as i32, p[i - 1] as i32) };
+                let n = p[i] as i32;
+                let ne = p[i + 1] as i32;
+                let nn = pp[i] as i32;
+                let (d0, d1) = (dprev[x], dprev[x + 1]);
+                let s_h = h_c + d0[0] as u32 + d1[0] as u32;
+                let s_v = v_c + d0[1] as u32 + d1[1] as u32;
+                let s45 = a_c + d0[2] as u32;
+                let s135 = d1[3] as u32 + d0[3] as u32;
+                let mn = s45.min(s135);
+                let j = x + 1;
+                let r = 2 * am_c[j - 1] + 2 * am_p[j] + am_p[j - 1] + am_p[j + 1];
+                let leaf = tree_leaf(wv, n, nw, ne, s_h, s_v, mn + (mn >> 2), r);
+                let (pr, est) = predict(m, wv, wwv, n, nn, nw, ne, s_h, s_v, s45, s135, shrub.factors());
+                let xv = resolve(base + x, pr as u32, leaf) as i32;
+                shrub.update(xv, est, m);
+                am_c[x + 1] = (xv - pr).unsigned_abs();
+                if x == 0 {
+                    let v = (xv - n).unsigned_abs() as u16;
+                    cur[2] = xv as u16;
+                    cur[0] = xv as u16;
+                    cur[1] = xv as u16;
+                    dcur[0] = [0, v, v, v];
+                    h_c = 0;
+                    v_c = v as u32;
+                    a_c = (xv - ne).unsigned_abs();
+                } else {
+                    let hh = (xv - wv).unsigned_abs();
+                    let vv = (xv - n).unsigned_abs();
+                    let gg = (xv - nw).unsigned_abs();
+                    let an = (xv - ne).unsigned_abs();
+                    dcur[x] = [hh as u16, vv as u16, a_c as u16, gg as u16];
+                    cur[i] = xv as u16;
+                    h_c = hh;
+                    v_c = vv;
+                    a_c = an;
+                }
+            }
+            let last = cur[w + 1];
+            cur[w + 2] = last;
+            cur[w + 3] = last;
+            dcur[w] = [0, v_c as u16, 0, v_c as u16];
+            std::mem::swap(&mut pp, &mut p);
+            std::mem::swap(&mut p, &mut cur);
+            std::mem::swap(&mut dprev, &mut dcur);
+            std::mem::swap(&mut am_p, &mut am_c);
+            am_p[0] = am_p[1];
+            am_p[w + 1] = am_p[w];
         }
     }
 }
@@ -497,6 +668,9 @@ const OFF_B: usize = OFF_A + NQ * 64;
 const OFF_C: usize = OFF_B + NQ * ND * 64;
 const OFF_D: usize = OFF_C + NQ * NW * 64;
 const S3_SLOTS: usize = OFF_D + 64;
+// Profile `Bc255S11Tree`: one extra mixed context, structural leaf x qS, in the input slot that `Bc255S11` leaves idle.
+pub const TREE_LEAVES: usize = 12;
+const S3_SLOTS_TREE: usize = S3_SLOTS + TREE_LEAVES * NQ * 64;
 const SLOT_INIT: u32 = 1 << 31; // p = 1/2, n = 0
 const CONF: [i32; 5] = [0, 4, 6, 7, 8];
 
@@ -561,6 +735,8 @@ pub enum Stage3Error {
     BadLength,
     /// `|r| > 2M`.
     ResidualOutOfRange,
+    /// The `Bc255S11Tree` profile needs a per-sample leaf; use the `*_leaf` entry points.
+    LeafRequired,
 }
 
 /// Quantiser: identity below 4, then two levels per octave.
@@ -601,6 +777,9 @@ pub enum Stage3Profile {
     Bc255S11,
     /// The `Bc255S11` model fed directly by Stage 1 residuals, with no bias correction.
     Bc255S11Direct,
+    /// `Bc255S11Direct` plus the structural tree (see [`tree_leaf`]): the leaf selects an extra qS-conditioned probability context and the
+    /// mixer weight set. The leaf depends on reconstructed pixels, so the decoder fuses Stage 1 and Stage 3 ([`Stage1::decode_tree`]).
+    Bc255S11Tree,
 }
 
 /// Stage 3 model for one plane of `width x height` residuals, coded in raster order.
@@ -646,9 +825,9 @@ impl Stage3 {
             cur_m: vec![0; width + 2],
             prev_s: vec![1; width + 2],
             cur_s: vec![1; width + 2],
-            t: vec![SLOT_INIT; S3_SLOTS],
+            t: vec![SLOT_INIT; if profile == Stage3Profile::Bc255S11Tree { S3_SLOTS_TREE } else { S3_SLOTS }],
             sg: [SLOT_INIT; 9],
-            wt: vec![[0; S3_IN]; 4 * 64],
+            wt: vec![[0; S3_IN]; if profile == Stage3Profile::Bc255S11Tree { TREE_LEAVES } else { 4 } * 64],
             profile,
         };
         s.reset();
@@ -690,14 +869,31 @@ impl Stage3 {
         match self.profile {
             Stage3Profile::Legacy4 => {
                 for &r in res {
-                    self.code_sample_g::<I, false>(io, r);
+                    self.code_sample_g::<I, false, false>(io, r, 0);
                 }
             }
             Stage3Profile::Bc255S11 | Stage3Profile::Bc255S11Direct => {
                 for &r in res {
-                    self.code_sample_g::<I, true>(io, r);
+                    self.code_sample_g::<I, true, false>(io, r, 0);
                 }
             }
+            Stage3Profile::Bc255S11Tree => return Err(Stage3Error::LeafRequired),
+        }
+        Ok(())
+    }
+
+    /// [`Stage3::encode_plane`] for the `Bc255S11Tree` profile: `leaf[i] < TREE_LEAVES` is the structural leaf of sample `i`.
+    pub fn encode_plane_leaf<I: BitIo>(&mut self, res: &[i32], leaf: &[u8], io: &mut I) -> Result<(), Stage3Error> {
+        if res.len() != self.w * self.h || leaf.len() != res.len() {
+            return Err(Stage3Error::BadLength);
+        }
+        let lim = self.rmax;
+        if res.iter().any(|&r| r.unsigned_abs() > lim) {
+            return Err(Stage3Error::ResidualOutOfRange);
+        }
+        assert!(self.profile == Stage3Profile::Bc255S11Tree, "encode_plane_leaf needs Stage3Profile::Bc255S11Tree");
+        for (&r, &l) in res.iter().zip(leaf) {
+            self.code_sample_leaf(io, r, l as usize);
         }
         Ok(())
     }
@@ -710,36 +906,37 @@ impl Stage3 {
         match self.profile {
             Stage3Profile::Legacy4 => {
                 for o in out.iter_mut() {
-                    *o = self.code_sample_g::<I, false>(io, 0);
+                    *o = self.code_sample_g::<I, false, false>(io, 0, 0);
                 }
             }
             Stage3Profile::Bc255S11 | Stage3Profile::Bc255S11Direct => {
                 for o in out.iter_mut() {
-                    *o = self.code_sample_g::<I, true>(io, 0);
+                    *o = self.code_sample_g::<I, true, false>(io, 0, 0);
                 }
             }
+            Stage3Profile::Bc255S11Tree => return Err(Stage3Error::LeafRequired),
         }
         Ok(())
     }
 
     #[inline(always)]
-    fn code_bit<I: BitIo, const BC: bool>(&mut self, io: &mut I, idx: [usize; 3], wb: usize, node: usize, want: u32) -> u32 {
+    fn code_bit<I: BitIo, const BC: bool, const TREE: bool>(&mut self, io: &mut I, idx: [usize; 3], wb: usize, node: usize, want: u32) -> u32 {
         let (ia, ib, ic) = (idx[0] + node, idx[1] + node, idx[2] + node);
         let id = OFF_D + node;
         // Bounds: node <= 62; ia/ib/ic/id < S3_SLOTS by the qS/qd/qE/qW caps; wb + node < 256 (wb <= 192).
-        debug_assert!(ia < S3_SLOTS && ib < S3_SLOTS && ic < S3_SLOTS && id < S3_SLOTS && wb + node < self.wt.len());
+        debug_assert!(ia < self.t.len() && ib < S3_SLOTS && ic < S3_SLOTS && id < S3_SLOTS && wb + node < self.wt.len());
         let (limit, shift) = if BC { (S3_LIMIT_BC, S3_MIX_SHIFT_BC) } else { (S3_LIMIT, S3_MIX_SHIFT) };
         let (t, wt) = (&mut self.t[..], &mut self.wt[..]);
         // SAFETY: indices are within the allocations (see above). Under BC the A and D inputs are fixed at 0 and never read.
         let (sa, sb, sc, sd) = unsafe {
             (
-                if BC { SLOT_INIT } else { *t.get_unchecked(ia) },
+                if BC && !TREE { SLOT_INIT } else { *t.get_unchecked(ia) },
                 *t.get_unchecked(ib),
                 *t.get_unchecked(ic),
                 if BC { SLOT_INIT } else { *t.get_unchecked(id) },
             )
         };
-        let inp = [if BC { 0 } else { s3_input(sa) }, s3_input(sb), s3_input(sc), if BC { 0 } else { s3_input(sd) }, 256];
+        let inp = [if BC && !TREE { 0 } else { s3_input(sa) }, s3_input(sb), s3_input(sc), if BC { 0 } else { s3_input(sd) }, 256];
         let ws = unsafe { wt.get_unchecked_mut(wb + node) };
         // |in| <= 2047 and |w| <= 2^20, so each product fits i32 exactly; the sum is taken in i64 as before.
         let dot = (inp[0] * ws[0]) as i64 + (inp[1] * ws[1]) as i64 + (inp[2] * ws[2]) as i64 + (inp[3] * ws[3]) as i64 + (inp[4] * ws[4]) as i64;
@@ -751,7 +948,7 @@ impl Stage3 {
         for i in 0..S3_IN {
             ws[i] = (ws[i] + ((inp[i] * err) >> shift)).clamp(-S3_W_CLAMP, S3_W_CLAMP);
         }
-        if !BC {
+        if !BC || TREE {
             s3_update_slot(unsafe { t.get_unchecked_mut(ia) }, bit, limit);
         }
         s3_update_slot(unsafe { t.get_unchecked_mut(ib) }, bit, limit);
@@ -766,13 +963,21 @@ impl Stage3 {
     #[inline(always)]
     pub fn code_sample<I: BitIo>(&mut self, io: &mut I, r: i32) -> i32 {
         match self.profile {
-            Stage3Profile::Legacy4 => self.code_sample_g::<I, false>(io, r),
-            Stage3Profile::Bc255S11 | Stage3Profile::Bc255S11Direct => self.code_sample_g::<I, true>(io, r),
+            Stage3Profile::Legacy4 => self.code_sample_g::<I, false, false>(io, r, 0),
+            Stage3Profile::Bc255S11 | Stage3Profile::Bc255S11Direct => self.code_sample_g::<I, true, false>(io, r, 0),
+            Stage3Profile::Bc255S11Tree => panic!("Stage3Profile::Bc255S11Tree needs code_sample_leaf"),
         }
     }
 
+    /// Like [`Stage3::code_sample`] for the `Bc255S11Tree` profile; `leaf < TREE_LEAVES` comes from [`tree_leaf`].
     #[inline(always)]
-    fn code_sample_g<I: BitIo, const BC: bool>(&mut self, io: &mut I, r: i32) -> i32 {
+    pub fn code_sample_leaf<I: BitIo>(&mut self, io: &mut I, r: i32, leaf: usize) -> i32 {
+        assert!(self.profile == Stage3Profile::Bc255S11Tree && leaf < TREE_LEAVES);
+        self.code_sample_g::<I, true, true>(io, r, leaf)
+    }
+
+    #[inline(always)]
+    fn code_sample_g<I: BitIo, const BC: bool, const TREE: bool>(&mut self, io: &mut I, r: i32, leaf: usize) -> i32 {
         let x = self.x;
         let i = x + 1;
         if x == 0 {
@@ -786,29 +991,30 @@ impl Stage3 {
         let qd = s3q(aw.abs_diff(an)).min(ND - 1);
         let qe = s3q((self.e >> 2) as u32).min(NQ - 1);
         let qw = s3q(aw).min(NW - 1);
-        let idx = [OFF_A + qs * 64, OFF_B + (qs * ND + qd) * 64, OFF_C + (qe * NW + qw) * 64];
-        let wb = (qs >> 3) * 64;
+        let a_ctx = if TREE { S3_SLOTS + (leaf * NQ + qs) * 64 } else { OFF_A + qs * 64 };
+        let idx = [a_ctx, OFF_B + (qs * ND + qd) * 64, OFF_C + (qe * NW + qw) * 64];
+        let wb = if TREE { leaf * 64 } else { (qs >> 3) * 64 };
         let sgi = self.cur_s[i - 1] as usize * 3 + self.prev_s[i] as usize;
 
         let a_in = r.unsigned_abs();
         let k_in = 32 - a_in.leading_zeros();
-        let nz = self.code_bit::<I, BC>(io, idx, wb, 0, (a_in != 0) as u32);
+        let nz = self.code_bit::<I, BC, TREE>(io, idx, wb, 0, (a_in != 0) as u32);
         let mut a = 0u32;
         let mut neg = 0u32;
         if nz != 0 {
             let mut k = 1u32;
             while k < self.kmax {
-                if self.code_bit::<I, BC>(io, idx, wb, k as usize, (k_in > k) as u32) == 0 {
+                if self.code_bit::<I, BC, TREE>(io, idx, wb, k as usize, (k_in > k) as u32) == 0 {
                     break;
                 }
                 k += 1;
             }
             a = 1;
             if k >= 2 {
-                let t = self.code_bit::<I, BC>(io, idx, wb, 15 + k as usize, (a_in >> (k - 2)) & 1);
+                let t = self.code_bit::<I, BC, TREE>(io, idx, wb, 15 + k as usize, (a_in >> (k - 2)) & 1);
                 a = 2 + t;
                 if k >= 3 {
-                    let u = self.code_bit::<I, BC>(io, idx, wb, 33 + 2 * (k as usize - 3) + t as usize, (a_in >> (k - 3)) & 1);
+                    let u = self.code_bit::<I, BC, TREE>(io, idx, wb, 33 + 2 * (k as usize - 3) + t as usize, (a_in >> (k - 3)) & 1);
                     a = 2 * a + u;
                     for b in (0..k - 3).rev() {
                         a = 2 * a + io.code(32768, (a_in >> b) & 1);
@@ -1026,9 +1232,11 @@ pub struct EllieCodec {
     s1: Stage1,
     s3: Stage3,
     res: Vec<i32>,
+    leaf: Vec<u8>,
     n: usize,
     /// Legacy four-stage profiles apply [`Stage2`] bias correction per plane; `Bc255S11Direct` does not.
     bias: bool,
+    tree: bool,
     pub carry_model: bool,
 }
 
@@ -1043,8 +1251,10 @@ impl EllieCodec {
             s1: Stage1::new(width, height, bits)?,
             s3: Stage3::with_profile(width, height, bits, profile)?,
             res: vec![0; width * height],
+            leaf: if profile == Stage3Profile::Bc255S11Tree { vec![0; width * height] } else { Vec::new() },
             n: width * height,
-            bias: profile != Stage3Profile::Bc255S11Direct,
+            bias: matches!(profile, Stage3Profile::Legacy4 | Stage3Profile::Bc255S11),
+            tree: profile == Stage3Profile::Bc255S11Tree,
             carry_model: false,
         })
     }
@@ -1057,6 +1267,11 @@ impl EllieCodec {
             }
             if i == 0 || !self.carry_model {
                 self.s3.reset();
+            }
+            if self.tree {
+                self.s1.encode_tree(p, &mut self.res, &mut self.leaf)?;
+                self.s3.encode_plane_leaf(&self.res, &self.leaf, enc)?;
+                continue;
             }
             self.s1.encode(p, &mut self.res)?;
             if self.bias {
@@ -1076,6 +1291,10 @@ impl EllieCodec {
             }
             if i == 0 || !self.carry_model {
                 self.s3.reset();
+            }
+            if self.tree {
+                self.s1.decode_tree(&mut self.s3, &mut dec, p)?;
+                continue;
             }
             self.s3.decode_plane(&mut self.res, &mut dec)?;
             if self.bias {

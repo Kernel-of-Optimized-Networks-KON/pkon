@@ -1,0 +1,15 @@
+[1/3] portrait_0     ellie        481178 B enc     560 ms dec     266 ms valid true
+[1/3] portrait_0     jxl-e7-t1    398485 B enc     914 ms dec     472 ms valid true
+[1/3] portrait_0     jxl-e9-t1    390589 B enc    3793 ms dec     489 ms valid true
+[1/3] portrait_0     png-rs       880271 B enc     875 ms dec      11 ms valid true
+== 1/3 images done, elapsed 16s, ETA 31s ==
+[2/3] screen_0       ellie        222580 B enc     665 ms dec     473 ms valid true
+[2/3] screen_0       jxl-e7-t1    121247 B enc     574 ms dec     275 ms valid true
+[2/3] screen_0       jxl-e9-t1    112699 B enc    1755 ms dec     254 ms valid true
+[2/3] screen_0       png-rs       229481 B enc     133 ms dec       5 ms valid true
+== 2/3 images done, elapsed 25s, ETA 13s ==
+[3/3] night_0        ellie       1909182 B enc     994 ms dec     540 ms valid true
+[3/3] night_0        jxl-e7-t1   1881297 B enc    2025 ms dec     726 ms valid true
+[3/3] night_0        jxl-e9-t1   1891057 B enc    9306 ms dec     597 ms valid true
+[3/3] night_0        png-rs      2290163 B enc     285 ms dec      34 ms valid true
+== 3/3 images done, elapsed 58s, ETA 0s ==

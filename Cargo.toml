@@ -184,3 +184,27 @@ path = "benchmarks/ellie-stage2-lift/exp_ellie_stage2_lift.rs"
 [[bin]]
 name = "exp_ellie_stage2_bypass"
 path = "benchmarks/ellie-stage2-lift/exp_ellie_stage2_bypass.rs"
+
+[[bin]]
+name = "bench_ellie_3stage_vs_jxl_png"
+path = "benchmarks/ellie-3stage-vs-jxl-png/bench_ellie_3stage_vs_jxl_png.rs"
+
+[[bin]]
+name = "exp_ellie_structural_tree"
+path = "benchmarks/ellie-structural-tree/exp_ellie_structural_tree.rs"
+
+[[bin]]
+name = "exp_ellie_tree_simplify"
+path = "benchmarks/ellie-structural-tree/simplify/exp_ellie_tree_simplify.rs"
+
+[[bin]]
+name = "exp_ellie_texture_scale"
+path = "benchmarks/ellie-structural-tree/texture-scale/exp_ellie_texture_scale.rs"
+
+[[bin]]
+name = "exp_ellie_expert_diversity"
+path = "benchmarks/ellie-expert-diversity/exp_ellie_expert_diversity.rs"
+
+[[bin]]
+name = "exp_ellie_swarm4"
+path = "benchmarks/ellie-swarm-4expert/exp_ellie_swarm4.rs"

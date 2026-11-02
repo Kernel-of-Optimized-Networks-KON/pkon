@@ -1,0 +1,100 @@
+[portrait_0] production 481178 B, ycocg=true, enc(auto) 576 ms, enc(single) 293 ms, dec 313 ms
+  prod          481178 B  enc    283 ms dec    292 ms exact=true det=true
+  prevbest      468572 B  enc    299 ms dec    329 ms exact=true det=true
+  A:B+T         471469 B  enc    285 ms dec    334 ms exact=true det=true
+  A:C+T         470608 B  enc    294 ms dec    322 ms exact=true det=true
+  A:T           475912 B  enc    273 ms dec    296 ms exact=true det=true
+  A:B+T(mixqs)   471097 B  enc    292 ms dec    307 ms exact=true det=true
+  A0:B          485164 B  enc    248 ms dec    264 ms exact=true det=true
+  A0:C          499032 B  enc    237 ms dec    267 ms exact=true det=true
+  A0:qS-only    487766 B  enc    313 ms dec    335 ms exact=true det=true
+  B:1set        468774 B  enc    338 ms dec    333 ms exact=true det=true
+  B0:1set       481364 B  enc    265 ms dec    297 ms exact=true det=true
+  B:fixedavg+M   476404 B  enc    293 ms dec    301 ms exact=true det=true
+  B:fixedavg+qSsel   476404 B  enc    284 ms dec    305 ms exact=true det=true
+  B0:fixedavg   486550 B  enc    236 ms dec    269 ms exact=true det=true
+  C:limit60     467684 B  enc    298 ms dec    321 ms exact=true det=true
+  C0:limit60    480594 B  enc    263 ms dec    289 ms exact=true det=true
+  C:limit30     468295 B  enc    303 ms dec    319 ms exact=true det=true
+  C0:limit30    481301 B  enc    265 ms dec    283 ms exact=true det=true
+  C:noconf      468634 B  enc    296 ms dec    322 ms exact=true det=true
+  C0:noconf     481718 B  enc    253 ms dec    281 ms exact=true det=true
+[screen_0] production 222580 B, ycocg=true, enc(auto) 558 ms, enc(single) 268 ms, dec 312 ms
+  prod          222580 B  enc    307 ms dec    329 ms exact=true det=true
+  prevbest      210006 B  enc    347 ms dec    368 ms exact=true det=true
+  A:B+T         211857 B  enc    323 ms dec    352 ms exact=true det=true
+  A:C+T         210708 B  enc    332 ms dec    347 ms exact=true det=true
+  A:T           213149 B  enc    310 ms dec    336 ms exact=true det=true
+  A:B+T(mixqs)   211772 B  enc    336 ms dec    353 ms exact=true det=true
+  A0:B          225548 B  enc    287 ms dec    307 ms exact=true det=true
+  A0:C          233130 B  enc    286 ms dec    310 ms exact=true det=true
+  A0:qS-only    226872 B  enc    284 ms dec    313 ms exact=true det=true
+  B:1set        210192 B  enc    351 ms dec    384 ms exact=true det=true
+  B0:1set       222631 B  enc    308 ms dec    327 ms exact=true det=true
+  B:fixedavg+M   216570 B  enc    322 ms dec    352 ms exact=true det=true
+  B:fixedavg+qSsel   216570 B  enc    329 ms dec    349 ms exact=true det=true
+  B0:fixedavg   227105 B  enc    289 ms dec    309 ms exact=true det=true
+  C:limit60     209592 B  enc    346 ms dec    370 ms exact=true det=true
+  C0:limit60    221612 B  enc    307 ms dec    333 ms exact=true det=true
+  C:limit30     209204 B  enc    347 ms dec    374 ms exact=true det=true
+  C0:limit30    221263 B  enc    306 ms dec    332 ms exact=true det=true
+  C:noconf      210203 B  enc    340 ms dec    362 ms exact=true det=true
+  C0:noconf     222764 B  enc    301 ms dec    325 ms exact=true det=true
+[night_0] production 1909182 B, ycocg=true, enc(auto) 876 ms, enc(single) 432 ms, dec 476 ms
+  prod         1909182 B  enc    511 ms dec    587 ms exact=true det=true
+  prevbest     1904010 B  enc    613 ms dec    678 ms exact=true det=true
+  A:B+T        1907833 B  enc    569 ms dec    624 ms exact=true det=true
+  A:C+T        1903747 B  enc    568 ms dec    622 ms exact=true det=true
+  A:T          1908534 B  enc    515 ms dec    699 ms exact=true det=true
+  A:B+T(mixqs)  1907965 B  enc    589 ms dec    608 ms exact=true det=true
+  A0:B         1914048 B  enc    463 ms dec    516 ms exact=true det=true
+  A0:C         1932782 B  enc    470 ms dec    533 ms exact=true det=true
+  A0:qS-only   1914022 B  enc    480 ms dec    523 ms exact=true det=true
+  B:1set       1904681 B  enc    625 ms dec    668 ms exact=true det=true
+  B0:1set      1909797 B  enc    522 ms dec    597 ms exact=true det=true
+  B:fixedavg+M  1904263 B  enc    547 ms dec    601 ms exact=true det=true
+  B:fixedavg+qSsel  1904263 B  enc    559 ms dec    609 ms exact=true det=true
+  B0:fixedavg  1911875 B  enc    463 ms dec    524 ms exact=true det=true
+  C:limit60    1909263 B  enc    611 ms dec    662 ms exact=true det=true
+  C0:limit60   1914904 B  enc    536 ms dec    583 ms exact=true det=true
+  C:limit30    1915288 B  enc    619 ms dec    674 ms exact=true det=true
+  C0:limit30   1921107 B  enc    520 ms dec    583 ms exact=true det=true
+  C:noconf     1903279 B  enc    587 ms dec    645 ms exact=true det=true
+  C0:noconf    1908748 B  enc    516 ms dec    571 ms exact=true det=true
+production baseline total: 2612940 B (portrait_0 481178, screen_0 222580, night_0 1909182)
+
+| config | total B | vs prod | portrait | screen | night | enc ms (sum) | dec ms (sum) |
+|---|---|---|---|---|---|---|---|
+| prod | 2612940 | +0.000% | +0.00% | +0.00% | +0.00% | 1101 | 1209 |
+| prevbest | 2582588 | -1.162% | -2.62% | -5.65% | -0.27% | 1259 | 1375 |
+| A:B+T | 2591159 | -0.834% | -2.02% | -4.82% | -0.07% | 1177 | 1310 |
+| A:C+T | 2585063 | -1.067% | -2.20% | -5.33% | -0.28% | 1193 | 1290 |
+| A:T | 2597595 | -0.587% | -1.09% | -4.24% | -0.03% | 1098 | 1331 |
+| A:B+T(mixqs) | 2590834 | -0.846% | -2.10% | -4.86% | -0.06% | 1217 | 1268 |
+| A0:B | 2624760 | +0.452% | +0.83% | +1.33% | +0.25% | 999 | 1087 |
+| A0:C | 2664944 | +1.990% | +3.71% | +4.74% | +1.24% | 994 | 1110 |
+| A0:qS-only | 2628660 | +0.602% | +1.37% | +1.93% | +0.25% | 1078 | 1171 |
+| B:1set | 2583647 | -1.121% | -2.58% | -5.57% | -0.24% | 1314 | 1384 |
+| B0:1set | 2613792 | +0.033% | +0.04% | +0.02% | +0.03% | 1095 | 1220 |
+| B:fixedavg+M | 2597237 | -0.601% | -0.99% | -2.70% | -0.26% | 1162 | 1254 |
+| B:fixedavg+qSsel | 2597237 | -0.601% | -0.99% | -2.70% | -0.26% | 1172 | 1263 |
+| B0:fixedavg | 2625530 | +0.482% | +1.12% | +2.03% | +0.14% | 987 | 1102 |
+| C:limit60 | 2586539 | -1.010% | -2.80% | -5.84% | +0.00% | 1254 | 1352 |
+| C0:limit60 | 2617110 | +0.160% | -0.12% | -0.43% | +0.30% | 1106 | 1205 |
+| C:limit30 | 2592787 | -0.771% | -2.68% | -6.01% | +0.32% | 1269 | 1368 |
+| C0:limit30 | 2623671 | +0.411% | +0.03% | -0.59% | +0.62% | 1092 | 1199 |
+| C:noconf | 2582116 | -1.180% | -2.61% | -5.56% | -0.31% | 1224 | 1329 |
+| C0:noconf | 2613230 | +0.011% | +0.11% | +0.08% | -0.02% | 1070 | 1177 |
+
+production timing (best of reps, ms): portrait_0: enc(auto,2 repr) 576, enc(1 repr) 293, dec 313; screen_0: enc(auto,2 repr) 558, enc(1 repr) 268, dec 312; night_0: enc(auto,2 repr) 876, enc(1 repr) 432, dec 476; 
+
+leaf histogram (% of pixels, config T, all planes):
+
+| image | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| portrait_0 | 31.3 | 5.6 | 14.4 | 17.2 | 0.0 | 21.6 | 0.3 | 0.7 | 4.5 | 4.1 | 0.2 | 0.1 |
+| screen_0 | 88.6 | 2.4 | 1.4 | 3.8 | 0.0 | 0.5 | 0.1 | 0.5 | 0.7 | 1.4 | 0.2 | 0.5 |
+| night_0 | 0.3 | 0.3 | 0.0 | 5.3 | 0.0 | 15.6 | 0.4 | 1.8 | 35.5 | 24.4 | 10.6 | 5.8 |
+
+all exact+deterministic: true
+

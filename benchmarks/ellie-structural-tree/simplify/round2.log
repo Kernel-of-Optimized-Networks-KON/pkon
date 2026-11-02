@@ -1,0 +1,64 @@
+[portrait_0] production 481178 B, ycocg=true, enc(auto) 529 ms, enc(single) 236 ms, dec 260 ms
+  prod          481178 B  enc    253 ms dec    301 ms exact=true det=true
+  prevbest      468572 B  enc    298 ms dec    316 ms exact=true det=true
+  D1:noconf+1set (B,C,T)   469145 B  enc    310 ms dec    307 ms exact=true det=true
+  D2:noconf+1set (B,T)   471501 B  enc    269 ms dec    291 ms exact=true det=true
+  D3:noconf+1set (C,T)   470661 B  enc    270 ms dec    291 ms exact=true det=true
+  D4:noconf+1set (T)   474052 B  enc    258 ms dec    279 ms exact=true det=true
+  D0:noconf+1set (B,C) no tree   481904 B  enc    245 ms dec    263 ms exact=true det=true
+  D0:noconf+1set (B) no tree   485623 B  enc    231 ms dec    259 ms exact=true det=true
+  D0:noconf+1set (C) no tree   501843 B  enc    251 ms dec    261 ms exact=true det=true
+  D5:noconf (B,T) leaf-mixer   471593 B  enc    286 ms dec    421 ms exact=true det=true
+  D6:noconf+1set+limit127 (B,T)   471522 B  enc   1519 ms dec   1597 ms exact=true det=true
+[screen_0] production 222580 B, ycocg=true, enc(auto) 2231 ms, enc(single) 681 ms, dec 618 ms
+  prod          222580 B  enc    554 ms dec    560 ms exact=true det=true
+  prevbest      210006 B  enc    616 ms dec    603 ms exact=true det=true
+  D1:noconf+1set (B,C,T)   210285 B  enc    564 ms dec    666 ms exact=true det=true
+  D2:noconf+1set (B,T)   211748 B  enc    616 ms dec    545 ms exact=true det=true
+  D3:noconf+1set (C,T)   210529 B  enc    509 ms dec    560 ms exact=true det=true
+  D4:noconf+1set (T)   212329 B  enc    553 ms dec    786 ms exact=true det=true
+  D0:noconf+1set (B,C) no tree   222796 B  enc    706 ms dec    484 ms exact=true det=true
+  D0:noconf+1set (B) no tree   225571 B  enc    706 ms dec    598 ms exact=true det=true
+  D0:noconf+1set (C) no tree   243219 B  enc    667 ms dec    761 ms exact=true det=true
+  D5:noconf (B,T) leaf-mixer   212040 B  enc    654 ms dec    693 ms exact=true det=true
+  D6:noconf+1set+limit127 (B,T)   211363 B  enc    688 ms dec    649 ms exact=true det=true
+[night_0] production 1909182 B, ycocg=true, enc(auto) 1338 ms, enc(single) 959 ms, dec 864 ms
+  prod         1909182 B  enc   1000 ms dec   1126 ms exact=true det=true
+  prevbest     1904010 B  enc   1470 ms dec   1487 ms exact=true det=true
+  D1:noconf+1set (B,C,T)  1903973 B  enc   1282 ms dec   1352 ms exact=true det=true
+  D2:noconf+1set (B,T)  1907439 B  enc   1218 ms dec   1213 ms exact=true det=true
+  D3:noconf+1set (C,T)  1903413 B  enc   1222 ms dec   1392 ms exact=true det=true
+  D4:noconf+1set (T)  1907593 B  enc   1305 ms dec   1119 ms exact=true det=true
+  D0:noconf+1set (B,C) no tree  1909365 B  enc    902 ms dec   1093 ms exact=true det=true
+  D0:noconf+1set (B) no tree  1914054 B  enc    804 ms dec   1041 ms exact=true det=true
+  D0:noconf+1set (C) no tree  1944137 B  enc    910 ms dec   1594 ms exact=true det=true
+  D5:noconf (B,T) leaf-mixer  1907385 B  enc   1429 ms dec   1116 ms exact=true det=true
+  D6:noconf+1set+limit127 (B,T)  1909400 B  enc   1053 ms dec   1084 ms exact=true det=true
+production baseline total: 2612940 B (portrait_0 481178, screen_0 222580, night_0 1909182)
+
+| config | total B | vs prod | portrait | screen | night | enc ms (sum) | dec ms (sum) |
+|---|---|---|---|---|---|---|---|
+| prod | 2612940 | +0.000% | +0.00% | +0.00% | +0.00% | 1807 | 1987 |
+| prevbest | 2582588 | -1.162% | -2.62% | -5.65% | -0.27% | 2384 | 2406 |
+| D1:noconf+1set (B,C,T) | 2583403 | -1.130% | -2.50% | -5.52% | -0.27% | 2156 | 2324 |
+| D2:noconf+1set (B,T) | 2590688 | -0.852% | -2.01% | -4.87% | -0.09% | 2103 | 2049 |
+| D3:noconf+1set (C,T) | 2584603 | -1.084% | -2.19% | -5.41% | -0.30% | 2001 | 2244 |
+| D4:noconf+1set (T) | 2593974 | -0.726% | -1.48% | -4.61% | -0.08% | 2116 | 2184 |
+| D0:noconf+1set (B,C) no tree | 2614065 | +0.043% | +0.15% | +0.10% | +0.01% | 1853 | 1841 |
+| D0:noconf+1set (B) no tree | 2625248 | +0.471% | +0.92% | +1.34% | +0.26% | 1742 | 1898 |
+| D0:noconf+1set (C) no tree | 2689199 | +2.919% | +4.29% | +9.27% | +1.83% | 1828 | 2616 |
+| D5:noconf (B,T) leaf-mixer | 2591018 | -0.839% | -1.99% | -4.74% | -0.09% | 2368 | 2229 |
+| D6:noconf+1set+limit127 (B,T) | 2592285 | -0.790% | -2.01% | -5.04% | +0.01% | 3261 | 3330 |
+
+production timing (best of reps, ms): portrait_0: enc(auto,2 repr) 529, enc(1 repr) 236, dec 260; screen_0: enc(auto,2 repr) 2231, enc(1 repr) 681, dec 618; night_0: enc(auto,2 repr) 1338, enc(1 repr) 959, dec 864; 
+
+leaf histogram (% of pixels, config T, all planes):
+
+| image | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| portrait_0 | 31.3 | 5.6 | 14.4 | 17.2 | 0.0 | 21.6 | 0.3 | 0.7 | 4.5 | 4.1 | 0.2 | 0.1 |
+| screen_0 | 88.6 | 2.4 | 1.4 | 3.8 | 0.0 | 0.5 | 0.1 | 0.5 | 0.7 | 1.4 | 0.2 | 0.5 |
+| night_0 | 0.3 | 0.3 | 0.0 | 5.3 | 0.0 | 15.6 | 0.4 | 1.8 | 35.5 | 24.4 | 10.6 | 5.8 |
+
+all exact+deterministic: true
+

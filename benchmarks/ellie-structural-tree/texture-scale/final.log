@@ -1,0 +1,30 @@
+[portrait_0] production 481178 B, ycocg=true, enc(auto) 528 ms, enc(single) 389 ms, dec 465 ms
+  prod          481178 B  enc    446 ms dec    476 ms exact=true det=true
+  REF-BEST (leaf mixer)   468634 B  enc    524 ms dec    569 ms exact=true det=true
+  REF-D1 (1 mixer set)   469145 B  enc    600 ms dec    762 ms exact=true det=true
+  A:K curvature   469002 B  enc    642 ms dec    653 ms exact=true det=true
+  A:Z+K texture   468987 B  enc    547 ms dec    529 ms exact=true det=true
+  B:DIR med orientation   469097 B  enc    523 ms dec    600 ms exact=true det=true
+  AB:K+DIR      469000 B  enc    720 ms dec    818 ms exact=true det=true
+  OVH: K+DIR computed, unused   481904 B  enc    875 ms dec    609 ms exact=true det=true
+  OVH: tree only, unused   481904 B  enc    472 ms dec    670 ms exact=true det=true
+[screen_0] production 222580 B, ycocg=true, enc(auto) 1019 ms, enc(single) 440 ms, dec 491 ms
+  prod          222580 B  enc    604 ms dec    542 ms exact=true det=true
+  REF-BEST (leaf mixer)   210203 B  enc    634 ms dec    602 ms exact=true det=true
+  REF-D1 (1 mixer set)   210285 B  enc    492 ms dec    684 ms exact=true det=true
+  A:K curvature   209545 B  enc    812 ms dec    826 ms exact=true det=true
+  A:Z+K texture   209293 B  enc    720 ms dec    713 ms exact=true det=true
+  B:DIR med orientation   209663 B  enc    840 ms dec    880 ms exact=true det=true
+  AB:K+DIR      208788 B  enc    792 ms dec    938 ms exact=true det=true
+  OVH: K+DIR computed, unused   222796 B  enc    794 ms dec    753 ms exact=true det=true
+  OVH: tree only, unused   222796 B  enc    569 ms dec    621 ms exact=true det=true
+[night_0] production 1909182 B, ycocg=true, enc(auto) 1534 ms, enc(single) 752 ms, dec 1000 ms
+  prod         1909182 B  enc    960 ms dec    596 ms exact=true det=true
+  REF-BEST (leaf mixer)  1903279 B  enc   1311 ms dec   1362 ms exact=true det=true
+  REF-D1 (1 mixer set)  1903973 B  enc    681 ms dec   1302 ms exact=true det=true
+  A:K curvature  1903960 B  enc   1361 ms dec   1747 ms exact=true det=true
+  A:Z+K texture  1904190 B  enc   1189 ms dec   1345 ms exact=true det=true
+  B:DIR med orientation  1904105 B  enc   1376 ms dec   1942 ms exact=true det=true
+  AB:K+DIR     1904365 B  enc   1520 ms dec   2046 ms exact=true det=true
+  OVH: K+DIR computed, unused  1909365 B  enc   1117 ms dec   1430 ms exact=true det=true
+  OVH: tree only, unused  1909365 B  enc   1053 ms dec   1126 ms exact=true det=true

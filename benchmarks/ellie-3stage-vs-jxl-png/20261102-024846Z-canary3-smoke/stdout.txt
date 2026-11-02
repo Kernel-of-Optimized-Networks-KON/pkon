@@ -1,0 +1,10 @@
+== preflight ==
+portrait_0     full 2034x2717 rgb8 -> crop 1024x1024 rgb8 sha256 97eb1d21e21f5913 notes []
+screen_0       full 2880x1628 rgba8 -> crop 1024x1024 rgba8 sha256 4cdccee62c01b9d2 notes []
+night_0        full 2000x1329 rgb8 -> crop 1024x1024 rgb8 sha256 d2443550d92e5a56 notes []
+ellie        tiny exact, truncation rejected; floor enc 0.5 ms dec 0.3 ms
+jxl-e7-t1    tiny exact, truncation rejected; floor enc 49.2 ms dec 51.8 ms
+jxl-e9-t1    tiny exact, truncation rejected; floor enc 61.4 ms dec 56.5 ms
+png-rs       tiny exact, truncation rejected; floor enc 0.2 ms dec 0.0 ms
+all valid+exact: true
+wrote benchmarks/ellie-full-bench\20261102-024846Z-ellie-paeth-ycocg-vs-bench50

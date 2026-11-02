@@ -1,0 +1,19 @@
+image,config,stream_bytes,total_bytes,enc_ms,dec_ms,exact,deterministic
+portrait_0,prod,481128,481178,524.4,491.1,true,true
+portrait_0,prevbest,468521,468572,469.8,571.3,true,true
+portrait_0,BEST noconf (B,C,T, leaf-mixer),468583,468634,515.0,560.1,true,true
+portrait_0,SIMPLE D3 (C,T) noconf 1-set,470610,470661,488.6,453.6,true,true
+portrait_0,SIMPLE D1 (B,C,T) noconf 1-set,469094,469145,465.6,591.8,true,true
+portrait_0,NOTREE noconf 1-set (B,C),481854,481904,403.3,422.0,true,true
+screen_0,prod,222525,222580,418.5,508.1,true,true
+screen_0,prevbest,209950,210006,748.2,621.1,true,true
+screen_0,BEST noconf (B,C,T, leaf-mixer),210147,210203,631.8,833.8,true,true
+screen_0,SIMPLE D3 (C,T) noconf 1-set,210473,210529,679.8,668.8,true,true
+screen_0,SIMPLE D1 (B,C,T) noconf 1-set,210229,210285,543.9,534.7,true,true
+screen_0,NOTREE noconf 1-set (B,C),222741,222796,533.4,499.0,true,true
+night_0,prod,1909132,1909182,843.8,1018.2,true,true
+night_0,prevbest,1903959,1904010,1098.7,1562.0,true,true
+night_0,BEST noconf (B,C,T, leaf-mixer),1903228,1903279,1023.6,996.2,true,true
+night_0,SIMPLE D3 (C,T) noconf 1-set,1903362,1903413,986.2,1012.9,true,true
+night_0,SIMPLE D1 (B,C,T) noconf 1-set,1903922,1903973,1185.2,1149.0,true,true
+night_0,NOTREE noconf 1-set (B,C),1909315,1909365,888.5,769.9,true,true

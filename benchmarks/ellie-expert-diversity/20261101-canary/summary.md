@@ -1,0 +1,264 @@
+# ELLIE predictor swarm, step 1: expert-diversity analysis (offline, canary only)
+
+Pixels analysed: 9418761 (rows>=1, cols>=1; excludes row 0 and column 0). Copied Stage 1 verified equal to the live production prediction plane on all 9418761 analysed pixels, and H/V/D' + Paeth reproduce production's H4/V4/D4 estimates exactly (asserted per pixel).
+```
+portrait_0: 1024x1024, ycocg=true, planes=3
+screen_0: plane 3 is constant (255); excluded
+screen_0: 1024x1024, ycocg=true, planes=4
+night_0: 1024x1024, ycocg=true, planes=3
+```
+
+Units: errors in 1/4-pixel units; bit proxy per pixel = log2(1+|r|/4). 'vs prod' compares with the live production blend (negative = better). CI = 95% row-block bootstrap (200 reps, 64-row blocks); it reflects evaluation noise only, NOT the uncertainty of the fitted weights (fits are done once).
+
+## 1. Pixel-only tree: leaf population (share of analysed pixels)
+
+| leaf9 | leaf5 | portrait | screen | night | ALL |
+|---|---|---|---|---|---|
+| flat | flat(F=1) | 36.9% | 88.0% | 0.6% | 41.8% |
+| two-level | two-level(F=2) | 31.7% | 7.0% | 5.3% | 14.6% |
+| smooth | smooth | 21.6% | 0.6% | 15.6% | 12.6% |
+| coh/g<64 | cont-coherent | 4.7% | 0.6% | 19.9% | 8.4% |
+| coh/g<256 | cont-coherent | 0.2% | 1.8% | 10.3% | 4.1% |
+| coh/g>=256 | cont-coherent | 0.0% | 0.7% | 1.7% | 0.8% |
+| incoh/g<64 | cont-incoherent | 4.8% | 0.2% | 30.6% | 11.8% |
+| incoh/g<256 | cont-incoherent | 0.1% | 0.6% | 13.3% | 4.7% |
+| incoh/g>=256 | cont-incoherent | 0.0% | 0.6% | 2.7% | 1.1% |
+
+## 2. Individual expert error (aggregate, all leaves)
+
+| expert | MAE px (portrait / screen / night / ALL) | RMSE px ALL | bias px ALL | bit proxy/px ALL | vs prod % [CI] |
+|---|---|---|---|---|---|
+| H | 0.894 / 2.818 / 9.887 / 4.533 | 14.941 | +0.048 | 1.1720 | +17.790 [+15.725, +20.521] |
+| V | 0.809 / 2.379 / 10.520 / 4.569 | 14.942 | +0.050 | 1.1574 | +16.329 [+14.744, +18.428] |
+| D' | 1.009 / 4.163 / 11.769 / 5.647 | 17.284 | -0.023 | 1.2967 | +30.323 [+26.844, +35.305] |
+| Paeth | 0.567 / 1.609 / 8.573 / 3.583 | 11.852 | -0.148 | 1.0118 | +1.695 [+0.096, +2.737] |
+| Smooth | 0.793 / 2.816 / 9.182 / 4.264 | 13.082 | -0.048 | 1.1345 | +14.022 [+11.732, +17.165] |
+| production blend | 0.529 / 1.647 / 7.785 / 3.320 | - | - | 0.9950 | - |
+| Smooth-q4 (precision check, not roster) | 0.817 / 2.819 / 9.189 / 4.275 | - | - | 1.1558 | +16.162 [+13.608, +19.644] |
+
+Per image, expert bit proxy vs production (%):
+
+| expert | portrait | screen | night |
+|---|---|---|---|
+| H | +56.183 [+47.991, +69.057] | +27.345 [+25.229, +29.937] | +10.024 [+9.539, +10.568] |
+| V | +44.284 [+36.923, +54.478] | +9.906 [+4.656, +17.714] | +12.160 [+11.669, +12.830] |
+| D' | +85.207 [+62.488, +118.592] | +73.976 [+69.996, +79.116] | +15.892 [+14.396, +17.795] |
+| Paeth | +0.330 [-5.266, +4.298] | -24.022 [-24.948, -22.707] | +4.788 [+4.103, +5.443] |
+| Smooth | +44.595 [+35.156, +58.222] | +47.584 [+43.750, +51.580] | +4.957 [+3.776, +6.410] |
+
+## 3. Per-leaf expert accuracy (bit proxy vs production, %; plus how often each expert has the smallest |error|)
+
+| leaf5 (pixel share) | H | V | D' | Paeth | Smooth | prod bits/px | winner shares H/V/D'/Paeth/Smooth |
+|---|---|---|---|---|---|---|---|
+| flat(F=1) (41.8%) | +122.68 | +146.61 | -3.75 | -3.75 | -3.75 | 0.019 | 19/19/20/20/20 |
+| two-level(F=2) (14.6%) | +38.71 | +25.79 | +132.32 | -25.63 | +58.47 | 0.614 | 19/21/6/37/17 |
+| smooth (12.6%) | +27.74 | +19.77 | +23.65 | +6.12 | +10.25 | 1.006 | 18/18/21/24/20 |
+| cont-coherent (13.3%) | +17.02 | +13.55 | +24.99 | +3.45 | +14.69 | 2.436 | 21/20/21/21/18 |
+| cont-incoherent (17.6%) | +9.44 | +13.15 | +16.16 | +4.76 | +5.98 | 2.534 | 22/20/21/18/18 |
+
+## 4. Pairwise error correlation
+
+signed error, all leaves pooled:
+
+| | H | V | D' | Paeth | Smooth |
+|---|---|---|---|---|---|
+| H | 1.000 | 0.213 | 0.498 | 0.571 | 0.672 |
+| V | 0.213 | 1.000 | 0.527 | 0.571 | 0.797 |
+| D' | 0.498 | 0.527 | 1.000 | 0.349 | 0.818 |
+| Paeth | 0.571 | 0.571 | 0.349 | 1.000 | 0.610 |
+| Smooth | 0.672 | 0.797 | 0.818 | 0.610 | 1.000 |
+
+|error|, all leaves pooled:
+
+| | H | V | D' | Paeth | Smooth |
+|---|---|---|---|---|---|
+| H | 1.000 | 0.414 | 0.623 | 0.669 | 0.727 |
+| V | 0.414 | 1.000 | 0.624 | 0.675 | 0.825 |
+| D' | 0.623 | 0.624 | 1.000 | 0.485 | 0.833 |
+| Paeth | 0.669 | 0.675 | 0.485 | 1.000 | 0.668 |
+| Smooth | 0.727 | 0.825 | 0.833 | 0.668 | 1.000 |
+
+Signed-error correlation by leaf (upper triangle): pairs with r > 0.95 are flagged with `!`.
+
+| leaf5 | HV | HD' | HP | HS | VD' | VP | VS | D'P | D'S | PS |
+|---|---|---|---|---|---|---|---|---|---|---|
+| flat(F=1) | 0.86 | 0.94 | 0.94 | 0.94 | 0.90 | 0.90 | 0.90 | 1.00! | 1.00! | 1.00! |
+| two-level(F=2) | 0.12 | 0.43 | 0.55 | 0.60 | 0.52 | 0.23 | 0.81 | 0.12 | 0.82 | 0.34 |
+| smooth | 0.54 | 0.66 | 0.79 | 0.81 | 0.68 | 0.79 | 0.87 | 0.62 | 0.86 | 0.83 |
+| cont-coherent | 0.19 | 0.51 | 0.53 | 0.69 | 0.52 | 0.57 | 0.77 | 0.33 | 0.82 | 0.60 |
+| cont-incoherent | 0.25 | 0.52 | 0.62 | 0.67 | 0.53 | 0.63 | 0.82 | 0.44 | 0.83 | 0.67 |
+
+## 5. Oracle and convex-combination bounds (DIAGNOSTIC UPPER BOUNDS, not compression claims)
+
+- **Per-pixel oracle** picks the luckiest expert at every pixel; it rewards noise-picking even for experts with no real information, so treat it as the loosest bound.
+- **Convex held-out**: per-leaf non-negative weights summing to 1, fitted (Cauchy-IRLS, c=1px) on even rows and evaluated on odd rows, and vice versa. Rows interleave spatially, so adjacent-row leakage makes this somewhat optimistic.
+- **Convex in-sample** is shown only to quantify overfit.
+
+| set | per-pixel oracle vs prod % | convex held-out vs prod % | convex in-sample vs prod % |
+|---|---|---|---|
+| H | +17.79 | +17.79 | +17.79 |
+| V | +16.33 | +16.33 | +16.33 |
+| D' | +30.32 | +30.32 | +30.32 |
+| Paeth | +1.70 | +1.70 | +1.70 |
+| Smooth | +14.02 | +14.02 | +14.02 |
+| H+V+D' | -27.42 | +11.15 | +10.74 |
+| H+V+D'+Paeth | -33.36 | +2.81 | +2.94 |
+| H+V+D'+Smooth | -34.29 | +11.15 | +10.74 |
+| H+V+D'+Paeth+Smooth | -38.75 | +2.81 | +2.95 |
+| V+D'+Paeth+Smooth | -33.23 | +3.22 | +3.36 |
+| H+D'+Paeth+Smooth | -33.65 | +2.87 | +2.60 |
+| H+V+Paeth+Smooth | -32.06 | +3.35 | +3.56 |
+| H+V+D'+Smooth | -34.29 | +11.15 | +10.74 |
+| H+V+D'+Paeth | -33.36 | +2.81 | +2.94 |
+
+Static best single expert per leaf (held-out, 5-leaf): full roster +1.70% vs prod; HVD only +15.38% vs prod.
+Production blend itself (adaptive Shrub + activity weights) is the 0% reference; a negative convex number means a *fixed* per-leaf blend of these experts beats production's adaptive blend.
+
+Fitted weights on all rows (in-sample), full roster, per leaf5:
+
+| leaf5 | H | V | D' | Paeth | Smooth |
+|---|---|---|---|---|---|
+| flat(F=1) | 0.00 | 0.00 | 1.00 | 0.00 | 0.00 |
+| two-level(F=2) | 0.00 | 0.06 | 0.00 | 0.94 | 0.00 |
+| smooth | 0.18 | 0.23 | 0.26 | 0.33 | 0.00 |
+| cont-coherent | 0.15 | 0.21 | 0.12 | 0.52 | 0.00 |
+| cont-incoherent | 0.28 | 0.18 | 0.11 | 0.42 | 0.00 |
+
+## 6. Marginal contribution (95% bootstrap CI), all pixels
+
+Leave-one-out = cost increase when the expert is removed from the full roster (positive = the expert helps). Add-to-HVD = cost decrease from adding the expert to {H,V,D'}.
+
+| expert | convex LOO % | oracle LOO % | convex add-to-HVD % | oracle add-to-HVD % |
+|---|---|---|---|---|
+| H | +0.397 [+0.255, +0.600] | +9.010 [+8.699, +9.430] | n/a (in HVD) | n/a (in HVD) |
+| V | +0.056 [-0.078, +0.207] | +8.323 [+8.124, +8.575] | n/a (in HVD) | n/a (in HVD) |
+| D' | +0.527 [+0.325, +0.687] | +10.924 [+10.076, +11.729] | n/a (in HVD) | n/a (in HVD) |
+| Paeth | +8.109 [+6.360, +10.710] | +7.276 [+6.730, +8.090] | +7.504 [+5.982, +9.676] | +8.192 [+7.621, +8.967] |
+| Smooth | -0.004 [-0.007, -0.002] | +8.794 [+8.379, +9.255] | +0.000 [-0.000, +0.000] | +9.473 [+9.013, +10.059] |
+
+Both added: convex +7.501 [+5.980, +9.674] ; oracle +15.614 [+14.956, +16.551].
+
+Per image, convex LOO % (CI) :
+
+| expert | portrait | screen | night |
+|---|---|---|---|
+| H | +1.818 [+1.336, +2.104] | +1.242 [+1.131, +1.345] | +0.057 [-0.065, +0.193] |
+| V | +1.040 [+0.572, +1.431] | +0.011 [-1.120, +0.978] | -0.111 [-0.198, -0.027] |
+| D' | +1.360 [+1.098, +1.775] | -1.820 [-2.048, -1.523] | +0.638 [+0.413, +0.838] |
+| Paeth | +33.365 [+21.032, +51.627] | +26.031 [+24.522, +27.899] | +1.737 [+1.395, +2.148] |
+| Smooth | +0.002 [+0.001, +0.004] | -0.049 [-0.067, -0.031] | +0.000 [+0.000, +0.000] |
+
+Per leaf, convex LOO % of that leaf's cost (CI), all images:
+
+| expert | flat(F=1) (41.8%) | two-level(F=2) (14.6%) | smooth (12.6%) | cont-coherent (13.3%) | cont-incoherent (17.6%) |
+|---|---|---|---|---|---|
+| H | -0.028 [-0.033, -0.023] | -0.087 [-0.109, -0.064] | +0.608 [+0.309, +0.895] | +0.045 [-0.122, +0.231] | +0.686 [+0.513, +0.965] |
+| V | -0.007 [-0.011, -0.005] | -2.759 [-4.121, -1.850] | +0.810 [+0.614, +0.989] | +0.176 [-0.042, +0.501] | +0.192 [+0.101, +0.333] |
+| D' | -0.000 [-0.000, -0.000] | -0.011 [-0.046, +0.028] | +1.941 [+1.637, +2.237] | +0.161 [-0.216, +0.406] | +0.481 [+0.262, +0.632] |
+| Paeth | -0.000 [-0.000, -0.000] | +82.925 [+65.179, +103.481] | +2.608 [+1.744, +3.487] | +4.054 [+3.590, +4.608] | +1.003 [+0.764, +1.289] |
+| Smooth | -0.000 [-0.000, -0.000] | -0.050 [-0.078, -0.023] | +0.000 [+0.000, +0.000] | +0.000 [+0.000, +0.000] | +0.000 [-0.000, +0.000] |
+
+Greedy forward selection (convex held-out total, vs prod %):
+- + Paeth -> Paeth : +1.695%
+- + D' -> D'+Paeth : +2.831%
+- + H -> H+D'+Paeth : +2.517%
+- + V -> H+V+D'+Paeth : +2.809%
+- + Smooth -> H+V+D'+Paeth+Smooth : +2.812%
+
+## 7. Option (b): 9-leaf pixel-only tree (diagnostic, convex held-out; gain vs the 5-leaf tree with the same roster)
+
+| set | 9-leaf held-out vs prod % | 5-leaf held-out vs prod % |
+|---|---|---|
+| H+V+D' | +10.607 | +11.149 |
+| H+V+D'+Paeth | +2.222 | +2.809 |
+| H+V+D'+Smooth | +10.607 | +11.149 |
+| H+V+Paeth+Smooth | +2.715 | +3.355 |
+| H+D'+Paeth+Smooth | +2.276 | +2.870 |
+| V+D'+Paeth+Smooth | +2.656 | +3.221 |
+| H+V+D'+Paeth+Smooth | +2.237 | +2.812 |
+
+9-leaf convex LOO % (relative to the 9-leaf full roster): H +0.410, V +0.038, D' +0.468, Paeth +8.188, Smooth -0.014
+
+## 8. Local-evidence calibration L = (2eW + 2eN + eNW + eNE) >> 1 (UNVALIDATED)
+
+e = each neighbour's own integer-pixel error for that expert, ((|d|+2)>>2). Pixels whose four neighbours are all analysed (rows>=2, cols 2..w-2). S_H/S_V/S_D are the production activity sums (S_D after the `m + (m>>2)` rule). If L is a usable proxy it should (i) sit on a comparable scale to S, (ii) correlate with the expert's own error at the current pixel at least as well as S does (log-log Pearson).
+
+| quantity | mean | median |
+|---|---|---|
+| S_H (production) | 14.39 | 2 |
+| S_V (production) | 14.63 | 2 |
+| S_D (production) | 10.83 | 1 |
+| L_H | 13.62 | 2 |
+| L_V | 13.74 | 2 |
+| L_D' | 17.01 | 3 |
+| L_Paeth | 10.62 | 1 |
+| L_Smooth | 12.64 | 2 |
+
+(histograms are clamped at 4095; means are unclamped.)
+
+| expert | corr(logL, log own err) | corr(logS_own, log own err) | corr(logL, logS_own) |
+|---|---|---|---|
+| H | 0.841 | 0.838 | 0.984 |
+| V | 0.846 | 0.845 | 0.985 |
+| D' | 0.848 | 0.774 | 0.888 |
+| Paeth | 0.809 | n/a; log(S_H+S_V): 0.766 | n/a |
+| Smooth | 0.835 | n/a; log(S_H+S_V): 0.827 | n/a |
+
+Per image corr(logL, log own err) / corr(logS, log own err) for H, V, D':
+
+| expert | portrait | screen | night |
+|---|---|---|---|
+| H | 0.763 / 0.755 | 0.819 / 0.819 | 0.631 / 0.627 |
+| V | 0.748 / 0.744 | 0.809 / 0.818 | 0.651 / 0.646 |
+| D' | 0.703 / 0.555 | 0.844 / 0.678 | 0.693 / 0.610 |
+
+## 10. Supplementary: information beyond the production blend (added after the first run exposed a gap)
+
+Section 5's fixed per-leaf blends cannot use production's per-pixel activity weighting, so they cannot say whether Paeth or Smooth add anything to the *existing* adaptive blend. Here the production blend's own prediction is a candidate: a fixed per-leaf convex mix of production + expert(s) is searched on a simplex grid (step 0.05 for one expert, 0.1 for two), chosen on one row parity and scored on the other. 'Gain' = cost reduction vs production alone (positive = the expert adds information the production blend lacks). Weights are the all-rows choice (production weight / expert weight(s)).
+
+| study | gain all leaves % [CI] | portrait | screen | night | weights per leaf5 (prod/expert...) |
+|---|---|---|---|---|---|
+| prod + H | +0.000 [+0.000, +0.000] | -0.00 | +0.00 | +0.00 | 1.00/0.00 ; 1.00/0.00 ; 1.00/0.00 ; 1.00/0.00 ; 1.00/0.00 |
+| prod + V | +0.000 [+0.000, +0.000] | -0.00 | +0.00 | +0.00 | 1.00/0.00 ; 1.00/0.00 ; 1.00/0.00 ; 1.00/0.00 ; 1.00/0.00 |
+| prod + D' | +0.030 [+0.020, +0.043] | -0.00 | +0.34 | +0.00 | 0.00/1.00 ; 1.00/0.00 ; 1.00/0.00 ; 1.00/0.00 ; 1.00/0.00 |
+| prod + Paeth | +2.343 [+1.650, +3.432] | +6.01 | +18.41 | -0.08 | 0.00/1.00 ; 0.00/1.00 ; 1.00/0.00 ; 1.00/0.00 ; 1.00/0.00 |
+| prod + Smooth | +0.030 [+0.018, +0.045] | -0.00 | +0.34 | +0.00 | 0.00/1.00 ; 1.00/0.00 ; 1.00/0.00 ; 1.00/0.00 ; 1.00/0.00 |
+| prod + Paeth + Smooth | +2.343 [+1.729, +3.417] | +6.01 | +18.41 | -0.08 | 0.00/0.00/1.00 ; 0.00/1.00/0.00 ; 1.00/0.00/0.00 ; 1.00/0.00/0.00 ; 1.00/0.00/0.00 |
+| prod + Paeth | +2.343 [+1.738, +3.199] | +6.01 | +18.41 | -0.08 | 0.00/1.00 ; 0.00/1.00 ; 1.00/0.00 ; 1.00/0.00 ; 1.00/0.00 |
+
+(weights order: flat ; two-level ; smooth ; cont-coherent ; cont-incoherent)
+
+Gain by leaf (%), for the two-expert and triple studies:
+
+| study | flat(F=1) | two-level(F=2) | smooth | cont-coherent | cont-incoherent |
+|---|---|---|---|---|---|
+| prod + H | -0.00 | -0.00 | -0.00 | +0.00 | +0.00 |
+| prod + V | -0.00 | -0.00 | -0.00 | +0.00 | +0.00 |
+| prod + D' | +3.75 | -0.00 | -0.00 | +0.00 | +0.00 |
+| prod + Paeth | +3.75 | +25.63 | -0.00 | +0.00 | +0.00 |
+| prod + Smooth | +3.75 | -0.00 | -0.00 | +0.00 | +0.00 |
+| prod + Paeth + Smooth | +3.75 | +25.63 | -0.00 | +0.00 | +0.00 |
+| prod + Paeth | +3.75 | +25.63 | -0.00 | +0.00 | +0.00 |
+
+Signed-error correlation between the production blend and each expert:
+
+| leaf5 | H | V | D' | Paeth | Smooth |
+|---|---|---|---|---|---|
+| flat(F=1) | 0.944 | 0.905 | 0.998 | 0.998 | 0.998 |
+| two-level(F=2) | 0.361 | 0.414 | 0.529 | 0.699 | 0.522 |
+| smooth | 0.807 | 0.826 | 0.794 | 0.932 | 0.906 |
+| cont-coherent | 0.510 | 0.641 | 0.531 | 0.893 | 0.694 |
+| cont-incoherent | 0.715 | 0.661 | 0.663 | 0.876 | 0.820 |
+| pooled | 0.589 | 0.630 | 0.584 | 0.871 | 0.737 |
+
+## 9. Diagnostic flags (user-specified thresholds; evidence, not deletion rules)
+
+| expert | convex LOO total <0.1%? | all leaves >=5% pixels have LOO <0.5%? | max pair corr >0.95 (pooled) | LOO loss share from leaves <5% pixels |
+|---|---|---|---|---|
+| H | no (+0.397%) | no | no (0.672 with Smooth) | n/a (every leaf >=5%) |
+| V | YES (+0.056%) | no | no (0.797 with Smooth) | n/a (every leaf >=5%) |
+| D' | no (+0.527%) | no | no (0.818 with Smooth) | n/a (every leaf >=5%) |
+| Paeth | no (+8.109%) | no | no (0.610 with Smooth) | n/a (every leaf >=5%) |
+| Smooth | YES (-0.004%) | YES (below 0.5% everywhere) | no (0.818 with D') | n/a (every leaf >=5%) |
+
+Per-leaf pairs above 0.95 are marked `!` in section 4.

@@ -5,6 +5,7 @@ pub mod corpus;
 pub mod envinfo;
 pub mod ext;
 pub mod ellie;
+pub mod ulisa;
 pub mod lisa;
 /// Compatibility alias for the pre-rename module path `nanoscope::praw` (PRAW was the former name of LISA).
 pub use lisa as praw;

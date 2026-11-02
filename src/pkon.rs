@@ -35,7 +35,8 @@ pub const ELLIE_REPR_UNTRANSFORMED: u8 = 0;
 pub const ELLIE_REPR_YCOCG_R: u8 = 1;
 /// Reconstruction-metadata layout version understood for every assigned codec so far.
 pub const META_VERSION_1: u8 = 1;
-/// ELLIE only: version 1 metadata plus one trailing Stage 3 profile byte. Version 1 ELLIE files are `Stage3Profile::Legacy4`.
+/// ELLIE: version 1 metadata plus one trailing Stage 3 profile byte (version 1 ELLIE files are `Stage3Profile::Legacy4`).
+/// LISA: version 1 metadata plus a trailing 5-byte L1 lattice block ([`Lattice`]); version 1 LISA files have no lattice.
 pub const META_VERSION_2: u8 = 2;
 /// Stage 3 profile ids (last metadata byte of an ELLIE version 2 file).
 pub const ELLIE_PROFILE_BC255S11: u8 = 1;
@@ -232,6 +233,67 @@ pub struct LisaParams {
     pub metadata: ImageMetadata,
     pub stage3_rule_version: u8,
     pub stage4_coding_version: u8,
+    /// L1 sample-lattice normalization; `None` for version 1 metadata (samples coded as stored).
+    pub lattice: Option<Lattice>,
+}
+
+/// L1 lattice normalization of a whole RAW mosaic: the coded sample is `(original - origin) / g` at `coding_bit_depth`,
+/// and `original = coded * g + origin`. The header bit depth stays the original sample bit depth.
+/// On disk (LISA metadata version 2, last 5 bytes): `origin u16, g u16, coding_bit_depth u8`.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct Lattice {
+    pub origin: u16,
+    pub g: u16,
+    pub coding_bit_depth: u8,
+}
+
+const LATTICE_BYTES: usize = 5;
+
+impl Lattice {
+    /// Reject parameters that cannot come from an encoder for an image of `bit_depth`.
+    fn validate(&self, bit_depth: u8) -> Result<(), ContainerError> {
+        let bad = |s: &str| ContainerError::InvalidMetadata(format!("lattice: {s}"));
+        if self.g < 2 {
+            return Err(bad("g must be at least 2"));
+        }
+        if !(1..=bit_depth).contains(&self.coding_bit_depth) {
+            return Err(bad("coding bit depth outside 1..=bit depth"));
+        }
+        // The encoder picks the smallest coding depth, so the coded maximum is at least 2^(cd-1).
+        let max_orig = (1u64 << bit_depth) - 1;
+        if u64::from(self.origin) + (1u64 << (self.coding_bit_depth - 1)) * u64::from(self.g) > max_orig {
+            return Err(bad("range exceeds the sample bit depth"));
+        }
+        Ok(())
+    }
+
+    /// Detect the lattice of a mosaic: `Some` only when `g > 1` and every sample is below `1 << bit_depth`.
+    fn detect(samples: &[u16], bit_depth: u8) -> Option<Lattice> {
+        let (mut lo, mut hi) = (u16::MAX, 0u16);
+        for &v in samples {
+            lo = lo.min(v);
+            hi = hi.max(v);
+        }
+        if samples.is_empty() || u32::from(hi) >= 1u32 << bit_depth {
+            return None;
+        }
+        let mut g = 0u32;
+        for &v in samples {
+            let (mut a, mut b) = (g, u32::from(v - lo));
+            while b != 0 {
+                (a, b) = (b, a % b);
+            }
+            g = a;
+            if g == 1 {
+                return None;
+            }
+        }
+        if g < 2 {
+            return None; // constant image
+        }
+        let max_norm = u32::from(hi - lo) / g;
+        Some(Lattice { origin: lo, g: g as u16, coding_bit_depth: (32 - max_norm.leading_zeros()).max(1) as u8 })
+    }
 }
 
 /// Parsed and validated v2 header (everything except the payload).
@@ -302,7 +364,7 @@ pub fn parse_header_with_limit(bytes: &[u8], max_decoded_bytes: u64) -> Result<H
         return Err(ContainerError::UnsupportedCodec(codec));
     }
     let ellie = codec == CODEC_ELLIE;
-    if meta_version != META_VERSION_1 && !(ellie && meta_version == META_VERSION_2) {
+    if meta_version != META_VERSION_1 && meta_version != META_VERSION_2 {
         return Err(ContainerError::UnsupportedMetaVersion { codec, version: meta_version });
     }
     if !(if ellie { bit_depth == 8 || bit_depth == 16 } else { (1..=16).contains(&bit_depth) }) {
@@ -329,7 +391,7 @@ pub fn parse_header_with_limit(bytes: &[u8], max_decoded_bytes: u64) -> Result<H
     let params = if ellie {
         CodecParams::Ellie(parse_ellie_meta(meta, meta_version, bit_depth, channels, payload_len)?)
     } else {
-        CodecParams::Lisa(parse_lisa_meta(meta, width, height, bit_depth)?)
+        CodecParams::Lisa(parse_lisa_meta(meta, meta_version, width, height, bit_depth)?)
     };
     Ok(Header { codec, meta_version, bit_depth, channels, width, height, meta_len, payload_len, pixel_crc32, header_crc32: expected, params })
 }
@@ -366,8 +428,19 @@ fn has_cfa(l: SampleLayout) -> bool {
     matches!(l, SampleLayout::BayerCfa | SampleLayout::OtherCfa)
 }
 
-fn parse_lisa_meta(meta: &[u8], width: u32, height: u32, bit_depth: u8) -> Result<LisaParams, ContainerError> {
-    let bad_len = || ContainerError::InvalidMetaLength { codec: CODEC_LISA, meta_len: meta.len() };
+fn parse_lisa_meta(meta: &[u8], meta_version: u8, width: u32, height: u32, bit_depth: u8) -> Result<LisaParams, ContainerError> {
+    let total_len = meta.len();
+    let bad_len = || ContainerError::InvalidMetaLength { codec: CODEC_LISA, meta_len: total_len };
+    // Version 2 = version 1 plus the trailing lattice block; it is split off before the version 1 layout is parsed.
+    let (meta, lattice_bytes) = if meta_version == META_VERSION_2 {
+        if meta.len() < LISA_META_FIXED + LATTICE_BYTES {
+            return Err(bad_len());
+        }
+        let (m, l) = meta.split_at(meta.len() - LATTICE_BYTES);
+        (m, Some(l))
+    } else {
+        (meta, None)
+    };
     if meta.len() < LISA_META_FIXED {
         return Err(bad_len());
     }
@@ -401,14 +474,20 @@ fn parse_lisa_meta(meta: &[u8], width: u32, height: u32, bit_depth: u8) -> Resul
         }
         None
     };
+    let lattice = lattice_bytes
+        .map(|l| {
+            let lat = Lattice { origin: rd16(l, 0), g: rd16(l, 2), coding_bit_depth: l[4] };
+            lat.validate(bit_depth).map(|()| lat)
+        })
+        .transpose()?;
     let metadata = ImageMetadata { width: width as usize, height: height as usize, layout, cfa };
     // Structural validation (CFA dimensions, origin range, Bayer arrangement) and the geometry/bit-depth limits.
     metadata.validate()?;
-    lisa::validate(metadata.width, metadata.height, bit_depth)?;
+    lisa::validate(metadata.width, metadata.height, lattice.map_or(bit_depth, |l| l.coding_bit_depth))?;
     if stage1 == Stage1Mode::BayerPlanar && layout != SampleLayout::BayerCfa {
         return Err(ContainerError::InvalidMetadata("planar Stage 1 requires a Bayer CFA layout".into()));
     }
-    Ok(LisaParams { stage1, metadata, stage3_rule_version: meta[2], stage4_coding_version: meta[3] })
+    Ok(LisaParams { stage1, metadata, stage3_rule_version: meta[2], stage4_coding_version: meta[3], lattice })
 }
 
 fn serialize_lisa_meta(p: &LisaParams) -> Result<Vec<u8>, ContainerError> {
@@ -434,6 +513,11 @@ fn serialize_lisa_meta(p: &LisaParams) -> Result<Vec<u8>, ContainerError> {
             m.extend_from_slice(&v.to_le_bytes());
         }
         m.extend(cfa.entries.iter().map(|&e| e as u8));
+    }
+    if let Some(l) = &p.lattice {
+        m.extend_from_slice(&l.origin.to_le_bytes());
+        m.extend_from_slice(&l.g.to_le_bytes());
+        m.push(l.coding_bit_depth);
     }
     if m.len() > u16::MAX as usize {
         return Err(ContainerError::UnsupportedImage(format!("codec metadata of {} bytes exceeds the 65535-byte limit", m.len())));
@@ -734,13 +818,20 @@ pub fn encode_raw_with_mode(
     let (Ok(w32), Ok(h32)) = (w32, h32) else {
         return Err(LisaError::DimensionTooLarge.into());
     };
-    let s2 = bayer::encode_stage2_with_mode(samples, width, height, bit_depth, metadata, mode)?;
+    // L1: a whole-mosaic sample lattice (g > 1) is coded as (v - origin) / g; g == 1 streams are exactly the unnormalized ones.
+    let lattice = Lattice::detect(samples, bit_depth);
+    let normalized: Option<Vec<u16>> = lattice.map(|l| samples.iter().map(|&v| (u32::from(v - l.origin) / u32::from(l.g)) as u16).collect());
+    let (coded, coding_depth) = match (&normalized, lattice) {
+        (Some(n), Some(l)) => (n.as_slice(), l.coding_bit_depth),
+        _ => (samples, bit_depth),
+    };
+    let s2 = bayer::encode_stage2_with_mode(coded, width, height, coding_depth, metadata, mode)?;
     let s4 = lisa::encode_stage4(lisa::classify_stage3(s2)?)?;
-    let params = lisa_params_of(&s4)?;
+    let params = LisaParams { lattice, ..lisa_params_of(&s4)? };
     let meta = serialize_lisa_meta(&params)?;
     write_file(FileParts {
         codec: CODEC_LISA,
-        meta_version: META_VERSION_1,
+        meta_version: if lattice.is_some() { META_VERSION_2 } else { META_VERSION_1 },
         bit_depth,
         channels: 1,
         width: w32,
@@ -761,7 +852,7 @@ fn lisa_params_of(s4: &Stage4Output) -> Result<LisaParams, ContainerError> {
         ReconstructionRecord::Stage1Decorrelation { .. } => Stage1Mode::Mosaic,
         _ => return Err(ContainerError::InvalidMetadata("unrecognised Stage 1 record".into())),
     };
-    Ok(LisaParams { stage1, metadata: s4.metadata().clone(), stage3_rule_version: r3.rule_version, stage4_coding_version: r4.coding_version })
+    Ok(LisaParams { stage1, metadata: s4.metadata().clone(), stage3_rule_version: r3.rule_version, stage4_coding_version: r4.coding_version, lattice: None })
 }
 
 // ---------------------------------------------------------------- decoding
@@ -831,7 +922,7 @@ fn decode_v2(bytes: &[u8], max_decoded_bytes: u64) -> Result<Decoded, ContainerE
             let s4 = Stage4Output::from_parts(
                 payload.to_vec(),
                 p.metadata.clone(),
-                hdr.bit_depth,
+                p.lattice.map_or(hdr.bit_depth, |l| l.coding_bit_depth),
                 p.stage1 == Stage1Mode::BayerPlanar,
                 Stage3Rule::Or128,
                 p.stage4_coding_version,
@@ -841,7 +932,17 @@ fn decode_v2(bytes: &[u8], max_decoded_bytes: u64) -> Result<Decoded, ContainerE
             if mode != p.stage1 {
                 return Err(ContainerError::InvalidMetadata("Stage 1 mode disagrees with the stream".into()));
             }
-            let samples = bayer::decode_stage1(&s1, mode)?;
+            let mut samples = bayer::decode_stage1(&s1, mode)?;
+            if let Some(l) = p.lattice {
+                let max = (1u32 << hdr.bit_depth) - 1;
+                for v in samples.iter_mut() {
+                    let o = u32::from(*v) * u32::from(l.g) + u32::from(l.origin);
+                    if o > max {
+                        return Err(ContainerError::CorruptPayload("lattice reconstruction outside the sample range".into()));
+                    }
+                    *v = o as u16;
+                }
+            }
             check(pixel_crc_u16(&samples, hdr.bit_depth))?;
             Ok(Decoded::Raw(RawImage { samples, metadata: p.metadata.clone(), bit_depth: hdr.bit_depth }))
         }

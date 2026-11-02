@@ -193,7 +193,7 @@ fn unknown_mandatory_features_and_codecs_are_rejected() {
     for c in [0u8, 5, 99, 255] {
         assert_eq!(err(&patched_sealed(&f, 6, &[c])), ContainerError::UnsupportedCodec(c));
     }
-    assert_eq!(err(&patched_sealed(&f, 7, &[2])), ContainerError::UnsupportedMetaVersion { codec: CODEC_LISA, version: 2 });
+    assert_eq!(err(&patched_sealed(&f, 7, &[3])), ContainerError::UnsupportedMetaVersion { codec: CODEC_LISA, version: 3 });
     assert_eq!(err(&patched_sealed(&f, 7, &[0])), ContainerError::UnsupportedMetaVersion { codec: CODEC_LISA, version: 0 });
 }
 

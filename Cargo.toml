@@ -172,3 +172,15 @@ path = "benchmarks/ellie-shrub-pow/bench_ellie_shrub_pow.rs"
 [[bin]]
 name = "bench_ellie_pow_prod"
 path = "benchmarks/ellie-pow-prod/bench_ellie_pow_prod.rs"
+
+[[bin]]
+name = "exp_ellie_residual_audit"
+path = "benchmarks/ellie-residual-audit/exp_ellie_residual_audit.rs"
+
+[[bin]]
+name = "exp_ellie_stage2_lift"
+path = "benchmarks/ellie-stage2-lift/exp_ellie_stage2_lift.rs"
+
+[[bin]]
+name = "exp_ellie_stage2_bypass"
+path = "benchmarks/ellie-stage2-lift/exp_ellie_stage2_bypass.rs"

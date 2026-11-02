@@ -1,4 +1,4 @@
-//! ELLIE Stage 3 profiles in the `.pkon` container: new files name `Bc255S11` (metadata version 2), version 1 files keep
+//! ELLIE Stage 3 profiles in the `.pkon` container: new files name `Bc255S11Direct` (three-stage, metadata version 2), version 1 files keep
 //! decoding as `Legacy4`, and damaged profile metadata fails safely.
 use nanoscope::canon::{Canonical, Layout, Spec};
 use nanoscope::ellie::Stage3Profile;
@@ -54,8 +54,8 @@ fn new_files_name_the_bc_profile_in_version_2_metadata() {
         let f = encode_standard(&im).unwrap();
         let h = parse_header(&f).unwrap();
         assert_eq!(h.meta_version, META_VERSION_2);
-        assert_eq!(*f[FIXED_HEADER_LEN..FIXED_HEADER_LEN + h.meta_len as usize].last().unwrap(), ELLIE_PROFILE_BC255S11);
-        assert_eq!(profile_of(&f), Stage3Profile::Bc255S11);
+        assert_eq!(*f[FIXED_HEADER_LEN..FIXED_HEADER_LEN + h.meta_len as usize].last().unwrap(), ELLIE_PROFILE_BC255S11_DIRECT);
+        assert_eq!(profile_of(&f), Stage3Profile::Bc255S11Direct);
         let legacy = encode_standard_profile(&im, EllieRepr::Auto, Stage3Profile::Legacy4).unwrap();
         assert_eq!(&f[..4], &legacy[..4], "magic unchanged");
         assert_eq!(f[4], legacy[4], "container version unchanged");
@@ -79,7 +79,7 @@ fn legacy_profile_writes_version_1_metadata_and_decodes_as_legacy() {
 
 #[test]
 fn both_profiles_round_trip_every_layout_and_depth_and_are_deterministic() {
-    for profile in [Stage3Profile::Legacy4, Stage3Profile::Bc255S11] {
+    for profile in [Stage3Profile::Legacy4, Stage3Profile::Bc255S11, Stage3Profile::Bc255S11Direct] {
         for layout in ALL {
             for depth in [8u8, 16] {
                 let im = img(33, 17, layout, depth, 11);
@@ -104,7 +104,12 @@ fn the_profiles_produce_different_streams_and_decoding_follows_the_metadata() {
     let im = img(64, 48, Layout::Rgb, 8, 7);
     let a = encode_standard_profile(&im, EllieRepr::YCoCgR, Stage3Profile::Legacy4).unwrap();
     let b = encode_standard_profile(&im, EllieRepr::YCoCgR, Stage3Profile::Bc255S11).unwrap();
+    let d = encode_standard_profile(&im, EllieRepr::YCoCgR, Stage3Profile::Bc255S11Direct).unwrap();
     assert_ne!(a, b);
+    assert_ne!(b, d, "bias correction changes the stream");
+    assert_eq!(back(&d).data, im.data);
+    assert_eq!(back(&b).data, im.data);
+    assert_eq!(back(&a).data, im.data);
     // Relabelling a new-profile payload as version 1 (legacy) must not silently decode: the length check rejects it.
     let mut c = b.clone();
     c[7] = META_VERSION_1;
@@ -143,7 +148,7 @@ fn malformed_profile_metadata_and_truncation_fail_safely() {
     let h = parse_header(&f).unwrap();
     let meta_end = FIXED_HEADER_LEN + h.meta_len as usize;
     // Unknown profile ids.
-    for bad in [0u8, 2, 3, 255] {
+    for bad in [0u8, 3, 255] {
         let mut b = f.clone();
         b[meta_end - 1] = bad;
         reseal(&mut b);

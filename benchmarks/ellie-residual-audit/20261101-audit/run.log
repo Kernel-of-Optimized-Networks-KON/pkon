@@ -1,0 +1,10 @@
+portrait_0 plane 0 (8b): n=1048576 model=2501233 interval=2501233 payload=2501232 bits
+portrait_0 plane 1 (9b): n=1048576 model=750366 interval=750366 payload=750368 bits
+portrait_0 plane 2 (9b): n=1048576 model=611805 interval=611805 payload=611808 bits
+screen_0 plane 0 (8b): n=1048576 model=1245390 interval=1245390 payload=1245392 bits
+screen_0 plane 1 (9b): n=1048576 model=576148 interval=576148 payload=576152 bits
+screen_0 plane 2 (9b): n=1048576 model=375636 interval=375636 payload=375640 bits
+screen_0 plane 3 (8b): n=1048576 model=822 interval=822 payload=824 bits
+night_0 plane 0 (8b): n=1048576 model=5137585 interval=5137585 payload=5137584 bits
+night_0 plane 1 (9b): n=1048576 model=5545906 interval=5545906 payload=5545912 bits
+night_0 plane 2 (9b): n=1048576 model=4744044 interval=4744044 payload=4744048 bits

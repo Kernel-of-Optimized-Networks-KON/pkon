@@ -39,6 +39,8 @@ pub const META_VERSION_1: u8 = 1;
 pub const META_VERSION_2: u8 = 2;
 /// Stage 3 profile ids (last metadata byte of an ELLIE version 2 file).
 pub const ELLIE_PROFILE_BC255S11: u8 = 1;
+/// Same model as [`ELLIE_PROFILE_BC255S11`] but without bias correction (three-stage pipeline). Written by default.
+pub const ELLIE_PROFILE_BC255S11_DIRECT: u8 = 2;
 
 /// LISA codec-metadata values accepted on disk (everything else is rejected, never guessed).
 pub const LISA_STAGE3_RULE_OR128: u8 = lisa::STAGE3_RULE_VERSION;
@@ -486,6 +488,7 @@ fn parse_ellie_meta(meta: &[u8], meta_version: u8, bit_depth: u8, channels: u8, 
     let profile = if v2 {
         match meta[meta.len() - 1] {
             ELLIE_PROFILE_BC255S11 => Stage3Profile::Bc255S11,
+            ELLIE_PROFILE_BC255S11_DIRECT => Stage3Profile::Bc255S11Direct,
             p => return Err(unsupported("stage3_profile", p)),
         }
     } else {
@@ -526,6 +529,7 @@ fn serialize_ellie_meta(p: &EllieParams) -> Vec<u8> {
     match p.profile {
         Stage3Profile::Legacy4 => {}
         Stage3Profile::Bc255S11 => m.push(ELLIE_PROFILE_BC255S11),
+        Stage3Profile::Bc255S11Direct => m.push(ELLIE_PROFILE_BC255S11_DIRECT),
     }
     m
 }
@@ -582,7 +586,7 @@ pub fn encode_standard(img: &Canonical) -> Result<Vec<u8>, ContainerError> {
 }
 
 pub fn encode_standard_with(img: &Canonical, repr: EllieRepr) -> Result<Vec<u8>, ContainerError> {
-    encode_standard_profile(img, repr, Stage3Profile::Bc255S11)
+    encode_standard_profile(img, repr, Stage3Profile::Bc255S11Direct)
 }
 
 /// [`encode_standard_with`] with an explicit Stage 3 profile. `Legacy4` writes the original version 1 metadata, so the

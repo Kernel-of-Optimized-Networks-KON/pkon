@@ -1,8 +1,9 @@
-//! ELLIE: lossless image compression, one source file for all four stages.
+//! ELLIE: lossless image compression, one source file, three production stages.
 //!
-//! Stage 1: prediction and residual generation. Stage 2: adaptive bias tracking ([`Stage2`]).
-//! Stage 3: context-mixing probability model for the Stage 2 residuals ([`Stage3`]).
-//! Stage 4: binary range coder fed by the Stage 3 probability stream ([`Stage4Enc`], [`Stage4Dec`], [`EllieCodec`]).
+//! Stage 1: prediction and residual generation. Stage 2: context-mixing probability model for the Stage 1 residuals
+//! ([`Stage3`]). Stage 3: binary range coder fed by the Stage 2 probability stream ([`Stage4Enc`], [`Stage4Dec`],
+//! [`EllieCodec`]). Type names keep their historical numbering (`Stage3`, `Stage4*`). The former adaptive bias-correction
+//! stage ([`Stage2`]) is no longer part of the codec; the type is retained only so historical benchmarks still compile.
 //!
 //! # Stage 1 specification (as approved)
 //!
@@ -363,11 +364,11 @@ impl Stage1 {
 }
 
 // ---------------------------------------------------------------------------------------------------
-// Stage 2: adaptive bias tracking
+// Retired: adaptive bias tracking (not executed by the production codec; kept for historical benchmarks)
 //
 // One fixed-point (S2_FRAC fractional bits) running mean of the signed residual e. With x_i = e_i << F:
 //   B_i       = (S_i + 2^(F-1)) >> F                  (rounded integer bias)
-//   r_i       = e_i - B_i                             (corrected residual, passed to Stage 3)
+//   r_i       = e_i - B_i                             (corrected residual)
 //   S_{i+1}   = S_i + ((x_i - S_i) >> K)              (K = 6)
 // S is a mean of e, so |S| <= M<<F and |B| <= M: no clamp is needed and r = e - B stays in [-2M, 2M].
 // Every update uses e_i, which the decoder recovers as r_i + B_i, so both sides evolve identically with no
@@ -379,7 +380,7 @@ pub const S2_FRAC: u32 = 8;
 /// Adaptation rate: the bias moves by 1/2^S2_SHIFT of its error each sample.
 pub const S2_SHIFT: u32 = 6;
 
-/// Stage 2 adaptive bias state for one plane. Create one per plane (or call [`Stage2::reset`]).
+/// Retired adaptive bias state for one plane; not used by [`EllieCodec`]. Create one per plane (or call [`Stage2::reset`]).
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
 pub struct Stage2 {
     s: i32,
@@ -433,7 +434,7 @@ impl Stage2 {
     // because (T >> F) << F = T - (T & (2^F - 1)) for arithmetic shifts. The decode update therefore depends on r,
     // not on the freshly decoded e, which shortens the loop-carried chain from 7 dependent ops to 4.
 
-    /// In-place encode of a residual plane (Stage 1 output -> Stage 3 input).
+    /// In-place encode of a residual plane (Stage 1 output -> bias-corrected).
     pub fn encode_in_place(&mut self, buf: &mut [i32]) {
         const HALF: i32 = 1 << (S2_FRAC - 1);
         let mut t = self.s + HALF;
@@ -445,7 +446,7 @@ impl Stage2 {
         self.s = t - HALF;
     }
 
-    /// In-place decode of a residual plane (Stage 3 output -> Stage 1 input).
+    /// In-place decode of a residual plane (bias-corrected -> Stage 1 input).
     pub fn decode_in_place(&mut self, buf: &mut [i32]) {
         const HALF: i32 = 1 << (S2_FRAC - 1);
         const MASK: i32 = (1 << S2_FRAC) - 1;
@@ -589,13 +590,17 @@ fn s3_input(s: u32) -> i32 {
     (STRETCH[(s >> 20) as usize] as i32 * CONF[n]) >> 3
 }
 
-/// Stage 3 configuration. Each profile is a distinct bitstream; the container records which one a file was written with.
+/// Stage 3 configuration plus pipeline shape. Each profile is a distinct bitstream; the container records which one a file was written with.
+/// `Legacy4` and `Bc255S11` are the four-stage pipelines (Stage 1, bias correction [`Stage2`], model, coder); `Bc255S11Direct` is the
+/// current three-stage pipeline (Stage 1, model, coder).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Stage3Profile {
     /// Original model: contexts A, B, C, D mixed; count cap 127; mixer shift 10. Used by files written before profiles existed.
     Legacy4,
     /// Contexts B and C only; count cap 255; mixer shift 11 (sign slots use the same cap). Same for every plane.
     Bc255S11,
+    /// The `Bc255S11` model fed directly by Stage 1 residuals, with no bias correction.
+    Bc255S11Direct,
 }
 
 /// Stage 3 model for one plane of `width x height` residuals, coded in raster order.
@@ -673,7 +678,7 @@ impl Stage3 {
         self.model_state_bytes() + (self.prev_m.len() + self.cur_m.len()) * 4 + self.prev_s.len() + self.cur_s.len()
     }
 
-    /// Encode a whole plane of Stage 2 residuals through `io`.
+    /// Encode a whole plane of Stage 1 residuals through `io`.
     pub fn encode_plane<I: BitIo>(&mut self, res: &[i32], io: &mut I) -> Result<(), Stage3Error> {
         if res.len() != self.w * self.h {
             return Err(Stage3Error::BadLength);
@@ -688,7 +693,7 @@ impl Stage3 {
                     self.code_sample_g::<I, false>(io, r);
                 }
             }
-            Stage3Profile::Bc255S11 => {
+            Stage3Profile::Bc255S11 | Stage3Profile::Bc255S11Direct => {
                 for &r in res {
                     self.code_sample_g::<I, true>(io, r);
                 }
@@ -708,7 +713,7 @@ impl Stage3 {
                     *o = self.code_sample_g::<I, false>(io, 0);
                 }
             }
-            Stage3Profile::Bc255S11 => {
+            Stage3Profile::Bc255S11 | Stage3Profile::Bc255S11Direct => {
                 for o in out.iter_mut() {
                     *o = self.code_sample_g::<I, true>(io, 0);
                 }
@@ -762,7 +767,7 @@ impl Stage3 {
     pub fn code_sample<I: BitIo>(&mut self, io: &mut I, r: i32) -> i32 {
         match self.profile {
             Stage3Profile::Legacy4 => self.code_sample_g::<I, false>(io, r),
-            Stage3Profile::Bc255S11 => self.code_sample_g::<I, true>(io, r),
+            Stage3Profile::Bc255S11 | Stage3Profile::Bc255S11Direct => self.code_sample_g::<I, true>(io, r),
         }
     }
 
@@ -1014,14 +1019,16 @@ impl From<Stage3Error> for EllieError {
     }
 }
 
-/// Stages 1-4 for a set of equally sized planes sharing one coder stream. Allocates once; planes are coded in order.
-/// Stage 2 always restarts per plane. Stage 3 restarts per plane unless `carry_model` is set, in which case its
+/// Stage 1 -> probability model -> range coder for a set of equally sized planes sharing one coder stream. Allocates once;
+/// planes are coded in order. The probability model (`Stage3`) restarts per plane unless `carry_model` is set, in which case its
 /// adaptive state (and neighbour rows) simply continue into the next plane; encoder and decoder do the same either way.
 pub struct EllieCodec {
     s1: Stage1,
     s3: Stage3,
     res: Vec<i32>,
     n: usize,
+    /// Legacy four-stage profiles apply [`Stage2`] bias correction per plane; `Bc255S11Direct` does not.
+    bias: bool,
     pub carry_model: bool,
 }
 
@@ -1037,6 +1044,7 @@ impl EllieCodec {
             s3: Stage3::with_profile(width, height, bits, profile)?,
             res: vec![0; width * height],
             n: width * height,
+            bias: profile != Stage3Profile::Bc255S11Direct,
             carry_model: false,
         })
     }
@@ -1051,7 +1059,9 @@ impl EllieCodec {
                 self.s3.reset();
             }
             self.s1.encode(p, &mut self.res)?;
-            Stage2::new().encode_in_place(&mut self.res);
+            if self.bias {
+                Stage2::new().encode_in_place(&mut self.res);
+            }
             self.s3.encode_plane(&self.res, enc)?;
         }
         Ok(())
@@ -1068,7 +1078,9 @@ impl EllieCodec {
                 self.s3.reset();
             }
             self.s3.decode_plane(&mut self.res, &mut dec)?;
-            Stage2::new().decode_in_place(&mut self.res);
+            if self.bias {
+                Stage2::new().decode_in_place(&mut self.res);
+            }
             self.s1.decode(&self.res, p)?;
         }
         Ok(())
@@ -1805,7 +1817,7 @@ mod tests {
         assert!(m3 == Stage3::new(w, h, bits).unwrap());
     }
 
-    /// Q: does the full chain Stage 1 -> 2 -> 3 (real range coder) and back reconstruct exactly?
+    /// Q: does the full chain Stage 1 -> 3 directly (real range coder) and back reconstruct exactly?
     #[test]
     fn stage3_composed_stages_1_to_3() {
         let mut rng = Rng(2024);
@@ -1816,7 +1828,6 @@ mod tests {
                     let mut s1 = Stage1::new(w, h, bits).unwrap();
                     let mut res = vec![0i32; w * h];
                     s1.encode(&src, &mut res).unwrap();
-                    Stage2::new().encode_in_place(&mut res);
                     let mut m = Stage3::new(w, h, bits).unwrap();
                     let mut be = BinEnc::new();
                     m.encode_plane(&res, &mut be).unwrap();
@@ -1826,7 +1837,6 @@ mod tests {
                     let mut bd = BinDec::new(&bytes);
                     let mut back = vec![0i32; w * h];
                     m.decode_plane(&mut back, &mut bd).unwrap();
-                    Stage2::new().decode_in_place(&mut back);
                     let mut out = vec![0u16; w * h];
                     s1.decode(&back, &mut out).unwrap();
                     assert_eq!(out, src, "bits {bits} {w}x{h} kind {kind}");
@@ -2236,7 +2246,7 @@ mod tests {
     /// Full Stage 1-4 chain with a real range coder under both profiles, across bit depths.
     #[test]
     fn ellie_codec_round_trips_under_both_profiles() {
-        for profile in [Stage3Profile::Legacy4, Stage3Profile::Bc255S11] {
+        for profile in [Stage3Profile::Legacy4, Stage3Profile::Bc255S11, Stage3Profile::Bc255S11Direct] {
             for bits in [1u32, 8, 9, 12, 16] {
                 let (w, h) = (23, 17);
                 let mut rng = Rng(bits as u64 * 31 + 1);

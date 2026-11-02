@@ -226,3 +226,8 @@ path = "experiments/bin/exp_ulisa_collab.rs"
 [[bin]]
 name = "exp_ulisa_split"
 path = "experiments/bin/exp_ulisa_split.rs"
+
+# ULISA codec 7 three-image benchmark (real encoded files, exactness-gated).
+[[bin]]
+name = "bench_ulisa_codec7"
+path = "benchmarks/ulisa-codec7/bench_ulisa_codec7.rs"

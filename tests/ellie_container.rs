@@ -218,7 +218,8 @@ fn decode_limit_applies_to_ellie() {
 #[test]
 fn unassigned_and_retired_ids_stay_unassigned() {
     let f = encode_standard(&img(8, 8, Layout::Rgb, 8, true, 1)).unwrap();
-    for c in [0u8, 1, 2, 3, 5, 7, 99, 255] {
+    // Id 7 is assigned to ULISA (see tests/ulisa_codec7.rs); 5 and 8.. stay unassigned.
+    for c in [0u8, 1, 2, 3, 5, 8, 99, 255] {
         let mut b = f.clone();
         b[6] = c;
         reseal(&mut b);

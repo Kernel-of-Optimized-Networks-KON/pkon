@@ -37,10 +37,10 @@ Compatibility rules (normative):
 | 0 | 4 | `magic` | `89 50 4B 32`; else `BadMagic` |
 | 4 | 1 | `version` | `2` |
 | 5 | 1 | `flags` | `0` |
-| 6 | 1 | `codec` | `1`, `2`, `3` (retired ELLIE-X4), `4` (LISA) or `6` (ELLIE) |
-| 7 | 1 | `meta_version` | `1` |
-| 8 | 1 | `bit_depth` | X4: `8`. LISA: `1..=16` |
-| 9 | 1 | `channels` | X4: `1..=4` (layout). LISA: `1` |
+| 6 | 1 | `codec` | `1`, `2`, `3` (retired ELLIE-X4), `4` (LISA), `6` (ELLIE) or `7` (ULISA) |
+| 7 | 1 | `meta_version` | `1` (LISA/ULISA: `1` without lattice, `2` with lattice) |
+| 8 | 1 | `bit_depth` | X4: `8`. LISA, ULISA: `1..=16` |
+| 9 | 1 | `channels` | X4: `1..=4` (layout). LISA, ULISA: `1` |
 | 10 | 2 | `meta_len` | length of the codec metadata block |
 | 12 | 4 | `width` | `>= 1` |
 | 16 | 4 | `height` | `>= 1` |
@@ -68,7 +68,8 @@ counts vs. the limit (`TooLarge`) -> payload bounds (`InvalidPayloadLength`) -> 
 | 4 | LISA RAW, production | `u16` samples + `ImageMetadata` | OR-128 rule 2, Stage 4 coding 1 |
 | 5 | unassigned | | rejected (`UnsupportedCodec`) |
 | 6 | ELLIE (Stages 1-4, `src/ellie.rs`) | 8/16-bit gray, gray+alpha, RGB, RGBA standard image | per-plane streams; explicit colour representation (section 2.3) |
-| 0, 7..=255 | unassigned | | rejected (`UnsupportedCodec`) |
+| 7 | ULISA Bayer RAW (`src/lisa_frame.rs` frame + `ellie::FlankCodec`) | `u16` samples + `ImageMetadata` | 2x2 Bayer only; one payload for four parity planes (section 2.4) |
+| 0, 8..=255 | unassigned | | rejected (`UnsupportedCodec`) |
 
 The codec ids 1..=3 are the same ids, with the same meaning and **byte-identical payloads**, as container v1. The payload
 is the headerless range-coder stream defined in `docs/pkon2-format-v1.md` section 3 and produced by `pkonfile`; it does not
@@ -149,6 +150,38 @@ its domain, or an inverse result outside 0..=255, is `CorruptPayload`. Represent
 The reference encoder (`pkon::encode_standard`) tries both representations for 8-bit RGB/RGBA and writes the smaller complete
 file (ties: untransformed); `encode_standard_with` forces one.
 
+### 2.4 ULISA Bayer RAW (codec 7)
+
+LISA supplies the sensor frame, ELLIE codes it. Header: `bit_depth` is the sample depth (`1..=16`), `channels` 1, `pixel_crc32`
+as for LISA. Metadata version 1, at offset 32:
+
+| Offset | Size | Field | Values |
+|---:|---:|---|---|
+| 0 | 1 | `model_profile` | `1` = ELLIE `Bc255S11Tree` per parity plane plus the cross-plane flank input |
+| 1 | 1 | `cross_plane_context_version` | `1` (`ellie::FLANK_CTX_VERSION`) |
+| 2 | 1 | `sample_layout` | must be `3` BayerCfa |
+| 3 | 8 + w*h | CFA block | identical to LISA's (section 2.2): `width u16, height u16, origin_x u16, origin_y u16`, then colour codes; must be a valid 2x2 RGB Bayer arrangement |
+
+Metadata version 2 appends LISA's 5-byte L1 lattice block (`origin u16, g u16, coding_bit_depth u8`, same validation, `g >= 2`). Width
+and height must both be `>= 2`. Unknown profile/context version/layout, a non-2x2 CFA, or a lattice block that disagrees with the
+metadata version is rejected before any payload work (`UnsupportedCodecVersion`, `InvalidMetaLength`, `InvalidMetadata`).
+
+Coded samples are the mosaic after L1 (when a lattice is present). They are split into the four image-parity planes (plane `k`
+holds `(x, y)` with `x & 1 = k & 1`, `y & 1 = k >> 1`; sizes `((w + 1 - ox) / 2, (h + 1 - oy) / 2)`) and coded in order 0, 1, 2, 3, raster
+order within a plane, as one range-coder stream. Each plane restarts ELLIE's Stage 1/Stage 3 state; the flank state is shared by
+the four planes. The flank context of plane `k` reads only residuals of planes `< k`, at the mosaic-flank sites: plane `k ^ 1`
+(horizontal: columns `x, x+1` if `k` is odd, else `x-1, x`, same row) and plane `k ^ 2` (vertical, likewise); plane `k ^ 3` is not used. Their
+signed sum (stored residuals clamped to `i16`, coordinates clamped to the source plane) gives `(sign * 10 + min(bitlen(|sum|), 9)) * 7 + qa`.
+The model is integer-only; see the `ellie.rs` comment "Cross-plane flank stage" for the exact arithmetic.
+
+Samples-per-payload-byte bound: every sample codes at least its zero-flag decision with `P(bit = 1)` clamped to `[32, 65503] / 65536`
+(`ellie::COD_P_MIN/MAX`), so a decision costs at least `-log2(65503 / 65536)` = 7.27e-4 bits: at most 11,010 samples per byte.
+The header check rejects `samples / 16384 > payload_len + 5` (the 5 bytes absorb the coder's termination, which can drop bytes below
+the information content); `tests/ulisa_codec7.rs` checks flat images from 2x2 to 1024x1024 against it.
+
+Engine selection (`nanoscope::ulisa`): `Engine::Ulisa` encodes with codec 7, or, for a mosaic outside the 2x2 Bayer frame, falls back
+to LISA's RAW path (codec 4) and reports it (`Encoded::fallback`); `Fallback::None` makes that an error.
+
 ## 3. Resource policy
 
 `DEFAULT_MAX_DECODED_BYTES = 1 << 28` bounds the reconstructed sample buffer: `width*height*channels*bytes_per_sample`, with
@@ -178,7 +211,7 @@ own geometry limits (`lisa::MAX_DIM`, sample count). Malformed input returns `Co
 ## 5. API (`nanoscope::pkon`)
 
 `encode_standard(&Canonical)` (codec 3) / `encode_standard_with_codec`; `encode_raw(&[u16], w, h, bit_depth, ImageMetadata)` /
-`encode_raw_with_mode(.., Stage1Mode)`; `decode(&[u8]) -> Result<Decoded, ContainerError>` where
+`encode_raw_with_mode(.., Stage1Mode)`; `encode_ulisa` / `encode_ulisa_report` (codec 7); `decode(&[u8]) -> Result<Decoded, ContainerError>` where
 `Decoded::Standard(Canonical)` or `Decoded::Raw(RawImage { samples, metadata, bit_depth })`; `decode_with_limit`;
 `parse_header` / `parse_header_with_limit` (header + metadata validation, no payload access); `container_version`.
 `decode` reads container v1 (`.pkon2`) through the unchanged `pkonfile::decode_with_limit` and returns it as `Standard`.

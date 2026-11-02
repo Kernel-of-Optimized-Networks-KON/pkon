@@ -58,7 +58,7 @@ pub fn restore_stage1_with_mode(out: &Stage2Output) -> Result<(Stage1Output, Sta
 }
 
 /// `(ox, oy, plane width, plane height)` for the four image-parity planes, index = `oy * 2 + ox`.
-fn plane_geometry(width: usize, height: usize) -> [(usize, usize, usize, usize); 4] {
+pub fn plane_geometry(width: usize, height: usize) -> [(usize, usize, usize, usize); 4] {
     let mut g = [(0, 0, 0, 0); 4];
     for (i, e) in g.iter_mut().enumerate() {
         let (ox, oy) = (i & 1, i >> 1);

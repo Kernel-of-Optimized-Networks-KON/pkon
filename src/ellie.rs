@@ -300,6 +300,27 @@ impl Stage1 {
         if bad { Err(Stage1Error::ResidualOutOfRange) } else { Ok(()) }
     }
 
+    /// [`Stage1::decode_tree`] for a model with the flank stage attached: `bases[i]` is the flank context base of sample `i` (from
+    /// already-decoded planes) and every decoded residual is also written to `res_out` for the planes that follow.
+    pub fn decode_tree_flank<I: BitIo>(&mut self, s3: &mut Stage3, io: &mut I, out: &mut [u16], res_out: &mut [i32], bases: &[u8]) -> Result<(), Stage1Error> {
+        if out.len() != self.w * self.h || res_out.len() != out.len() || bases.len() != out.len() {
+            return Err(Stage1Error::BadLength);
+        }
+        let m = self.m as i32;
+        let mut bad = false;
+        self.scan_tree(|i, p, l| {
+            s3.set_flank_base(bases[i] as usize);
+            let r = s3.code_sample_leaf(io, 0, l);
+            res_out[i] = r;
+            let v = p as i32 + r;
+            bad |= (v as u32) > m as u32;
+            let v = v.clamp(0, m);
+            out[i] = v as u16;
+            v as u32
+        });
+        if bad { Err(Stage1Error::ResidualOutOfRange) } else { Ok(()) }
+    }
+
     fn check_encode(&self, src: &[u16], res_len: usize) -> Result<(), Stage1Error> {
         let n = self.w * self.h;
         if src.len() != n || res_len != n {
@@ -674,6 +695,86 @@ const S3_SLOTS_TREE: usize = S3_SLOTS + TREE_LEAVES * NQ * 64;
 const SLOT_INIT: u32 = 1 << 31; // p = 1/2, n = 0
 const CONF: [i32; 5] = [0, 4, 6, 7, 8];
 
+// ---------------------------------------------------------------------------------------------------
+// Cross-plane flank stage (ULISA, cross-plane context version 1)
+//
+// Adds one input to the `Bc255S11Tree` mixer: the adaptive probability of the decision (`node`, 0..=62) under the flank context, in the
+// input slot (3) that the tree profile otherwise leaves idle. The flank context is the signed level of the sum of already-coded
+// residuals at the mosaic-flank sites of the other parity planes (`FlankTopology`) crossed with the local activity level qa from this
+// plane's W and N residual magnitudes:
+//   ctx = ((sign(sum) * 10 + min(bitlen(|sum|), 9)) * FL_QA + qa),  sign in {0: negative, 1: zero, 2: positive}, qa = min((bitlen(aW + aN) + 1) / 2, FL_QA - 1)
+// The sign bit has no mixer (it is coded from its own adaptive probability), so it gets a two-input refinement instead: the sign model's
+// stretch and the flank slot's stretch (plus a bias) are mixed by per-node weights and squashed (node 63). Everything is integer; the final
+// P(bit = 1) is 16 p + 8 clamped to [COD_P_MIN, COD_P_MAX] exactly like the tree mixer, so the coder's probability clamp is unchanged.
+// The flank state (slots, sign-stage weights) is shared by the four planes of an image and starts fresh for every image.
+// ---------------------------------------------------------------------------------------------------
+
+/// Clamp of the 16-bit probability handed to the range coder by the tree mixer and the flank stage: `P(bit = 1)` is always in
+/// `[COD_P_MIN, COD_P_MAX] / 65536`, so one decision costs at least `-log2(COD_P_MAX / 65536)` bits.
+pub const COD_P_MIN: i32 = 32;
+pub const COD_P_MAX: i32 = 65535 - 32;
+
+/// Cross-plane context version written to and required from ULISA streams.
+pub const FLANK_CTX_VERSION: u8 = 1;
+const FL_QA: usize = 7;
+const FL_SIGNLEVEL: usize = 30;
+/// Flank contexts per node.
+pub const FL_CTX: usize = FL_SIGNLEVEL * FL_QA;
+const FL_NODES: usize = 64;
+/// Decision node of the sign bit (mixer nodes are 0..=62).
+const FL_SIGN_NODE: usize = 63;
+const FL_BIAS: i32 = 77;
+const FL_SHIFT: u32 = 13;
+
+/// Adaptive state of the flank stage.
+#[derive(Clone, PartialEq, Eq, Default)]
+pub struct FlankModel {
+    q: Vec<u32>,
+    w: Vec<[i32; 3]>,
+}
+
+impl FlankModel {
+    fn empty() -> Self {
+        Self { q: Vec::new(), w: Vec::new() }
+    }
+    /// Fresh state: every probability slot at p = 1/2 (unseen), every weight set at (1, 0, 0).
+    pub fn new() -> Self {
+        Self { q: vec![SLOT_INIT; FL_NODES * FL_CTX], w: vec![[1 << 16, 0, 0]; FL_NODES] }
+    }
+
+    /// Forward pass: refine the stretch-domain probability `x` of decision `node` under flank context `fctx`. Returns the refined
+    /// 12-bit probability, the flank slot index and its stretch (both needed by [`FlankModel::update`]).
+    #[inline(always)]
+    fn mix(&self, node: usize, fctx: usize, x: i32) -> (i32, usize, i32) {
+        debug_assert!(node < FL_NODES && fctx < FL_CTX);
+        let fq = node * FL_CTX + fctx;
+        let fs = STRETCH[(self.q[fq] >> 20) as usize] as i32;
+        let fw = self.w[node];
+        let z = ((x as i64 * fw[0] as i64 + fs as i64 * fw[1] as i64 + FL_BIAS as i64 * fw[2] as i64) >> 16).clamp(-2047, 2047) as i32;
+        (SQUASH[(z + 2048) as usize] as i32, fq, fs)
+    }
+
+    #[inline(always)]
+    fn update(&mut self, node: usize, x: i32, fq: usize, fs: i32, p12o: i32, bit: u32) {
+        let err2 = ((bit as i32) << 12) - p12o;
+        let fw = &mut self.w[node];
+        // Round to nearest: a flooring shift leans negative on every small update and drifts the weights.
+        const RND: i32 = 1 << (FL_SHIFT - 1);
+        fw[0] = (fw[0] + ((x * err2 + RND) >> FL_SHIFT)).clamp(-S3_W_CLAMP, S3_W_CLAMP);
+        fw[1] = (fw[1] + ((fs * err2 + RND) >> FL_SHIFT)).clamp(-S3_W_CLAMP, S3_W_CLAMP);
+        fw[2] = (fw[2] + ((FL_BIAS * err2 + RND) >> FL_SHIFT)).clamp(-S3_W_CLAMP, S3_W_CLAMP);
+        s3_update_slot(&mut self.q[fq], bit, S3_LIMIT_BC);
+    }
+}
+
+/// Context base for a flank sum: `(sign * 10 + min(bitlen(|sum|), 9)) * FL_QA`.
+#[inline(always)]
+pub fn flank_base(sum: i32) -> usize {
+    let sg = if sum > 0 { 2 } else if sum < 0 { 0 } else { 1 };
+    let lvl = ((32 - sum.unsigned_abs().leading_zeros()) as usize).min(9);
+    (sg * 10 + lvl) * FL_QA
+}
+
 const RECIP: [u32; 256] = {
     let mut t = [0u32; 256];
     let mut n = 0;
@@ -801,6 +902,13 @@ pub struct Stage3 {
     sg: [u32; 9],
     wt: Vec<[i32; S3_IN]>,
     profile: Stage3Profile,
+    /// Cross-plane flank stage (see [`FlankModel`]); active only when `fl_on`. Not touched by [`Stage3::reset`].
+    fl: FlankModel,
+    fl_on: bool,
+    /// Flank context base (`sign/level * FL_QA`) for the sample about to be coded; set by the caller per sample.
+    fbase: usize,
+    /// Full flank context (`fbase + qa`) of the sample being coded.
+    fctx: usize,
 }
 
 impl Stage3 {
@@ -829,6 +937,10 @@ impl Stage3 {
             sg: [SLOT_INIT; 9],
             wt: vec![[0; S3_IN]; if profile == Stage3Profile::Bc255S11Tree { TREE_LEAVES } else { 4 } * 64],
             profile,
+            fl: FlankModel::empty(),
+            fl_on: false,
+            fbase: 0,
+            fctx: 0,
         };
         s.reset();
         Ok(s)
@@ -869,12 +981,12 @@ impl Stage3 {
         match self.profile {
             Stage3Profile::Legacy4 => {
                 for &r in res {
-                    self.code_sample_g::<I, false, false>(io, r, 0);
+                    self.code_sample_g::<I, false, false, false>(io, r, 0);
                 }
             }
             Stage3Profile::Bc255S11 | Stage3Profile::Bc255S11Direct => {
                 for &r in res {
-                    self.code_sample_g::<I, true, false>(io, r, 0);
+                    self.code_sample_g::<I, true, false, false>(io, r, 0);
                 }
             }
             Stage3Profile::Bc255S11Tree => return Err(Stage3Error::LeafRequired),
@@ -906,12 +1018,12 @@ impl Stage3 {
         match self.profile {
             Stage3Profile::Legacy4 => {
                 for o in out.iter_mut() {
-                    *o = self.code_sample_g::<I, false, false>(io, 0, 0);
+                    *o = self.code_sample_g::<I, false, false, false>(io, 0, 0);
                 }
             }
             Stage3Profile::Bc255S11 | Stage3Profile::Bc255S11Direct => {
                 for o in out.iter_mut() {
-                    *o = self.code_sample_g::<I, true, false>(io, 0, 0);
+                    *o = self.code_sample_g::<I, true, false, false>(io, 0, 0);
                 }
             }
             Stage3Profile::Bc255S11Tree => return Err(Stage3Error::LeafRequired),
@@ -919,8 +1031,57 @@ impl Stage3 {
         Ok(())
     }
 
+    /// Attach the cross-plane flank stage to a `Bc255S11Tree` model. From now on [`Stage3::code_sample_leaf`] runs the flank stage and the
+    /// caller must call [`Stage3::set_flank_base`] before every sample. Panics for any other profile.
+    pub fn attach_flank(&mut self, m: FlankModel) {
+        assert!(self.profile == Stage3Profile::Bc255S11Tree, "the flank stage needs the Bc255S11Tree profile");
+        assert!(m.q.len() == FL_NODES * FL_CTX && m.w.len() == FL_NODES, "flank model not initialised");
+        self.fl = m;
+        self.fl_on = true;
+    }
+
+    /// Detach and return the flank state (to carry it to the next plane's model).
+    pub fn detach_flank(&mut self) -> FlankModel {
+        self.fl_on = false;
+        std::mem::take(&mut self.fl)
+    }
+
+    /// Flank context base ([`flank_base`]) of the next sample.
     #[inline(always)]
-    fn code_bit<I: BitIo, const BC: bool, const TREE: bool>(&mut self, io: &mut I, idx: [usize; 3], wb: usize, node: usize, want: u32) -> u32 {
+    pub fn set_flank_base(&mut self, base: usize) {
+        debug_assert!(base + FL_QA <= FL_CTX);
+        self.fbase = base;
+    }
+
+    /// [`Stage3::encode_plane_leaf`] with the flank stage attached: `bases[i]` is the flank context base ([`flank_base`]) of sample `i`,
+    /// derived from residuals of already-coded planes only.
+    pub fn encode_plane_leaf_flank<I: BitIo>(&mut self, res: &[i32], leaf: &[u8], io: &mut I, bases: &[u8]) -> Result<(), Stage3Error> {
+        if res.len() != self.w * self.h || leaf.len() != res.len() || bases.len() != res.len() {
+            return Err(Stage3Error::BadLength);
+        }
+        if res.iter().any(|&r| r.unsigned_abs() > self.rmax) {
+            return Err(Stage3Error::ResidualOutOfRange);
+        }
+        assert!(self.fl_on, "attach_flank first");
+        for ((&r, &l), &b) in res.iter().zip(leaf).zip(bases) {
+            self.fbase = b as usize;
+            self.code_sample_leaf(io, r, l as usize);
+        }
+        Ok(())
+    }
+
+    /// The sign decision under the flank stage: the sign model's own probability `ps` (16-bit) is the base prediction. Node 63.
+    #[inline(always)]
+    fn code_sign_flank<I: BitIo>(&mut self, io: &mut I, ps: u32, want: u32) -> u32 {
+        let x = STRETCH[(ps >> 4) as usize] as i32;
+        let (p12o, fq, fs) = self.fl.mix(FL_SIGN_NODE, self.fctx, x);
+        let bit = io.code((p12o * 16 + 8).clamp(COD_P_MIN, COD_P_MAX) as u32, want);
+        self.fl.update(FL_SIGN_NODE, x, fq, fs, p12o, bit);
+        bit
+    }
+
+    #[inline(always)]
+    fn code_bit<I: BitIo, const BC: bool, const TREE: bool, const FL: bool>(&mut self, io: &mut I, idx: [usize; 3], wb: usize, node: usize, want: u32) -> u32 {
         let (ia, ib, ic) = (idx[0] + node, idx[1] + node, idx[2] + node);
         let id = OFF_D + node;
         // Bounds: node <= 62; ia/ib/ic/id < S3_SLOTS by the qS/qd/qE/qW caps; wb + node < 256 (wb <= 192).
@@ -936,13 +1097,23 @@ impl Stage3 {
                 if BC { SLOT_INIT } else { *t.get_unchecked(id) },
             )
         };
-        let inp = [if BC && !TREE { 0 } else { s3_input(sa) }, s3_input(sb), s3_input(sc), if BC { 0 } else { s3_input(sd) }, 256];
+        // The flank stage uses the mixer input that the tree profile leaves idle (input 3): the adaptive probability of this decision
+        // under the flank context. Its weight lives in the leaf's weight set like the other inputs.
+        let fq = node * FL_CTX + self.fctx;
+        let sf = if FL { self.fl.q[fq] } else { SLOT_INIT };
+        let inp = [
+            if BC && !TREE { 0 } else { s3_input(sa) },
+            s3_input(sb),
+            s3_input(sc),
+            if FL { s3_input(sf) } else if BC { 0 } else { s3_input(sd) },
+            256,
+        ];
         let ws = unsafe { wt.get_unchecked_mut(wb + node) };
         // |in| <= 2047 and |w| <= 2^20, so each product fits i32 exactly; the sum is taken in i64 as before.
         let dot = (inp[0] * ws[0]) as i64 + (inp[1] * ws[1]) as i64 + (inp[2] * ws[2]) as i64 + (inp[3] * ws[3]) as i64 + (inp[4] * ws[4]) as i64;
         let x = (dot >> 16).clamp(-2047, 2047) as i32;
         let p12 = SQUASH[(x + 2048) as usize] as i32;
-        let p16 = (p12 * 16 + 8).clamp(32, 65535 - 32);
+        let p16 = (p12 * 16 + 8).clamp(COD_P_MIN, COD_P_MAX);
         let bit = io.code(p16 as u32, want);
         let err = ((bit as i32) << 12) - p12;
         for i in 0..S3_IN {
@@ -956,6 +1127,9 @@ impl Stage3 {
         if !BC {
             s3_update_slot(unsafe { t.get_unchecked_mut(id) }, bit, limit);
         }
+        if FL {
+            s3_update_slot(&mut self.fl.q[fq], bit, limit);
+        }
         bit
     }
 
@@ -963,8 +1137,8 @@ impl Stage3 {
     #[inline(always)]
     pub fn code_sample<I: BitIo>(&mut self, io: &mut I, r: i32) -> i32 {
         match self.profile {
-            Stage3Profile::Legacy4 => self.code_sample_g::<I, false, false>(io, r, 0),
-            Stage3Profile::Bc255S11 | Stage3Profile::Bc255S11Direct => self.code_sample_g::<I, true, false>(io, r, 0),
+            Stage3Profile::Legacy4 => self.code_sample_g::<I, false, false, false>(io, r, 0),
+            Stage3Profile::Bc255S11 | Stage3Profile::Bc255S11Direct => self.code_sample_g::<I, true, false, false>(io, r, 0),
             Stage3Profile::Bc255S11Tree => panic!("Stage3Profile::Bc255S11Tree needs code_sample_leaf"),
         }
     }
@@ -973,11 +1147,15 @@ impl Stage3 {
     #[inline(always)]
     pub fn code_sample_leaf<I: BitIo>(&mut self, io: &mut I, r: i32, leaf: usize) -> i32 {
         assert!(self.profile == Stage3Profile::Bc255S11Tree && leaf < TREE_LEAVES);
-        self.code_sample_g::<I, true, true>(io, r, leaf)
+        if self.fl_on {
+            self.code_sample_g::<I, true, true, true>(io, r, leaf)
+        } else {
+            self.code_sample_g::<I, true, true, false>(io, r, leaf)
+        }
     }
 
     #[inline(always)]
-    fn code_sample_g<I: BitIo, const BC: bool, const TREE: bool>(&mut self, io: &mut I, r: i32, leaf: usize) -> i32 {
+    fn code_sample_g<I: BitIo, const BC: bool, const TREE: bool, const FL: bool>(&mut self, io: &mut I, r: i32, leaf: usize) -> i32 {
         let x = self.x;
         let i = x + 1;
         if x == 0 {
@@ -987,6 +1165,9 @@ impl Stage3 {
         }
         let (aw, an, anw, ane) = (self.cur_m[i - 1], self.prev_m[i], self.prev_m[i - 1], self.prev_m[i + 1]);
         let sum = 2 * aw + 2 * an + anw + ane;
+        if FL {
+            self.fctx = self.fbase + (((32 - (aw + an).leading_zeros()) as usize + 1) / 2).min(FL_QA - 1);
+        }
         let qs = s3q(sum).min(NQ - 1);
         let qd = s3q(aw.abs_diff(an)).min(ND - 1);
         let qe = s3q((self.e >> 2) as u32).min(NQ - 1);
@@ -998,23 +1179,23 @@ impl Stage3 {
 
         let a_in = r.unsigned_abs();
         let k_in = 32 - a_in.leading_zeros();
-        let nz = self.code_bit::<I, BC, TREE>(io, idx, wb, 0, (a_in != 0) as u32);
+        let nz = self.code_bit::<I, BC, TREE, FL>(io, idx, wb, 0, (a_in != 0) as u32);
         let mut a = 0u32;
         let mut neg = 0u32;
         if nz != 0 {
             let mut k = 1u32;
             while k < self.kmax {
-                if self.code_bit::<I, BC, TREE>(io, idx, wb, k as usize, (k_in > k) as u32) == 0 {
+                if self.code_bit::<I, BC, TREE, FL>(io, idx, wb, k as usize, (k_in > k) as u32) == 0 {
                     break;
                 }
                 k += 1;
             }
             a = 1;
             if k >= 2 {
-                let t = self.code_bit::<I, BC, TREE>(io, idx, wb, 15 + k as usize, (a_in >> (k - 2)) & 1);
+                let t = self.code_bit::<I, BC, TREE, FL>(io, idx, wb, 15 + k as usize, (a_in >> (k - 2)) & 1);
                 a = 2 + t;
                 if k >= 3 {
-                    let u = self.code_bit::<I, BC, TREE>(io, idx, wb, 33 + 2 * (k as usize - 3) + t as usize, (a_in >> (k - 3)) & 1);
+                    let u = self.code_bit::<I, BC, TREE, FL>(io, idx, wb, 33 + 2 * (k as usize - 3) + t as usize, (a_in >> (k - 3)) & 1);
                     a = 2 * a + u;
                     for b in (0..k - 3).rev() {
                         a = 2 * a + io.code(32768, (a_in >> b) & 1);
@@ -1022,7 +1203,7 @@ impl Stage3 {
                 }
             }
             let ps = (self.sg[sgi] >> 16).clamp(32, 65535 - 32);
-            neg = io.code(ps, (r < 0) as u32);
+            neg = if FL { self.code_sign_flank(io, ps, (r < 0) as u32) } else { io.code(ps, (r < 0) as u32) };
             s3_update_slot(&mut self.sg[sgi], neg, if BC { S3_LIMIT_BC } else { S3_LIMIT });
         }
 
@@ -1211,6 +1392,8 @@ pub enum EllieError {
     Stage3(Stage3Error),
     /// Plane length does not match the codec geometry.
     BadPlanes,
+    /// A flank topology that reads a plane which is not coded before the plane it conditions, or an empty plane.
+    BadTopology,
 }
 
 impl From<Stage1Error> for EllieError {
@@ -1301,6 +1484,155 @@ impl EllieCodec {
                 Stage2::new().decode_in_place(&mut self.res);
             }
             self.s1.decode(&self.res, p)?;
+        }
+        Ok(())
+    }
+}
+
+// ---------------------------------------------------------------- cross-plane flank codec (ULISA)
+
+/// One link of a flank topology: the residuals at `a` and `b` (offsets `(dx, dy)` from the conditioned site's plane coordinates,
+/// clamped to the source plane) of an earlier-coded plane are summed into the flank sum.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct FlankLink {
+    pub plane: u8,
+    pub a: (i8, i8),
+    pub b: (i8, i8),
+}
+
+/// Which already-coded planes condition each of the four planes. Supplied by the sensor frame (the Bayer geometry is not
+/// ELLIE's business); validated so a link can only read a plane that is coded earlier.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct FlankTopology {
+    links: [Vec<FlankLink>; 4],
+}
+
+impl FlankTopology {
+    pub fn new(links: [Vec<FlankLink>; 4]) -> Result<Self, EllieError> {
+        for (k, ls) in links.iter().enumerate() {
+            if ls.iter().any(|l| (l.plane as usize) >= k) {
+                return Err(EllieError::BadTopology);
+            }
+        }
+        Ok(Self { links })
+    }
+    pub fn links(&self, plane: usize) -> &[FlankLink] {
+        &self.links[plane]
+    }
+}
+
+/// How often the flank context was informative, counted while coding.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub struct FlankStats {
+    pub samples: u64,
+    /// Samples whose flank sum was non-zero (the context differed from the neutral one).
+    pub nonzero: u64,
+}
+
+/// Four planes (parity order) in one range-coder stream. Per plane: Stage 1 -> `Bc255S11Tree` model with the flank stage -> coder.
+/// The tree model restarts per plane; the flank state is shared by the planes of the image. Planes may differ in size.
+pub struct FlankCodec {
+    dims: [(usize, usize); 4],
+    bits: u32,
+    topo: FlankTopology,
+    pub stats: FlankStats,
+}
+
+/// Flank context bases of every site of plane `k`, from the stored residuals of earlier planes (one pass over the plane; the encoder
+/// and decoder both run it before the plane is coded, which is possible because the flank only reads planes coded earlier).
+/// Columns whose flank offsets stay inside the source plane (the vast majority) are summed as plain slices; the rest clamp each
+/// coordinate to the source plane.
+fn flank_bases(topo: &FlankTopology, dims: &[(usize, usize); 4], stored: &[Vec<i16>; 4], k: usize, stats: &mut FlankStats) -> Vec<u8> {
+    let (w, h) = dims[k];
+    let mut sums = vec![0i32; w * h];
+    for l in topo.links(k) {
+        let (sw, sh) = (dims[l.plane as usize].0 as isize, dims[l.plane as usize].1 as isize);
+        let src = &stored[l.plane as usize];
+        let (ax, ay, bx, by) = (l.a.0 as isize, l.a.1 as isize, l.b.0 as isize, l.b.1 as isize);
+        let at = |x: isize, y: isize| src[(y.clamp(0, sh - 1) * sw + x.clamp(0, sw - 1)) as usize] as i32;
+        // Columns j with j + ax and j + bx both inside [0, sw).
+        let jlo = 0.max(-ax).max(-bx).min(w as isize);
+        let jhi = (w as isize).min(sw - ax).min(sw - bx).max(jlo);
+        for y in 0..h as isize {
+            let row = &mut sums[y as usize * w..(y as usize + 1) * w];
+            let rows_inside = (0..sh).contains(&(y + ay)) && (0..sh).contains(&(y + by));
+            if rows_inside && jlo < jhi {
+                let (ra, rb) = ((y + ay) * sw, (y + by) * sw);
+                let sa = &src[(ra + jlo + ax) as usize..(ra + jhi + ax) as usize];
+                let sb = &src[(rb + jlo + bx) as usize..(rb + jhi + bx) as usize];
+                for ((o, &va), &vb) in row[jlo as usize..jhi as usize].iter_mut().zip(sa).zip(sb) {
+                    *o += va as i32 + vb as i32;
+                }
+                for j in (0..jlo).chain(jhi..w as isize) {
+                    row[j as usize] += at(j + ax, y + ay) + at(j + bx, y + by);
+                }
+            } else {
+                for j in 0..w as isize {
+                    row[j as usize] += at(j + ax, y + ay) + at(j + bx, y + by);
+                }
+            }
+        }
+    }
+    stats.samples += sums.len() as u64;
+    let mut nonzero = 0u64;
+    let bases = sums
+        .iter()
+        .map(|&v| {
+            nonzero += (v != 0) as u64;
+            flank_base(v) as u8
+        })
+        .collect();
+    stats.nonzero += nonzero;
+    bases
+}
+
+impl FlankCodec {
+    pub fn new(dims: [(usize, usize); 4], bits: u32, topo: FlankTopology) -> Result<Self, EllieError> {
+        if dims.iter().any(|&(w, h)| w == 0 || h == 0) {
+            return Err(EllieError::BadTopology);
+        }
+        Stage1::new(dims[0].0, dims[0].1, bits)?;
+        Ok(Self { dims, bits, topo, stats: FlankStats::default() })
+    }
+
+    pub fn encode_planes<I: BitIo>(&mut self, planes: [&[u16]; 4], enc: &mut I) -> Result<(), EllieError> {
+        let mut stored: [Vec<i16>; 4] = Default::default();
+        let mut fm = FlankModel::new();
+        for k in 0..4 {
+            let (w, h) = self.dims[k];
+            if planes[k].len() != w * h {
+                return Err(EllieError::BadPlanes);
+            }
+            let mut s1 = Stage1::new(w, h, self.bits)?;
+            let (mut res, mut leaf) = (vec![0i32; w * h], vec![0u8; w * h]);
+            s1.encode_tree(planes[k], &mut res, &mut leaf)?;
+            let mut s3 = Stage3::with_profile(w, h, self.bits, Stage3Profile::Bc255S11Tree)?;
+            s3.attach_flank(fm);
+            let bases = flank_bases(&self.topo, &self.dims, &stored, k, &mut self.stats);
+            s3.encode_plane_leaf_flank(&res, &leaf, enc, &bases)?;
+            fm = s3.detach_flank();
+            stored[k] = res.iter().map(|&r| r.clamp(i16::MIN as i32, i16::MAX as i32) as i16).collect();
+        }
+        Ok(())
+    }
+
+    pub fn decode_planes(&mut self, bytes: &[u8], out: [&mut [u16]; 4]) -> Result<(), EllieError> {
+        let mut dec = Stage4Dec::new(bytes);
+        let mut stored: [Vec<i16>; 4] = Default::default();
+        let mut fm = FlankModel::new();
+        for (k, o) in out.into_iter().enumerate() {
+            let (w, h) = self.dims[k];
+            if o.len() != w * h {
+                return Err(EllieError::BadPlanes);
+            }
+            let mut s1 = Stage1::new(w, h, self.bits)?;
+            let mut res = vec![0i32; w * h];
+            let mut s3 = Stage3::with_profile(w, h, self.bits, Stage3Profile::Bc255S11Tree)?;
+            s3.attach_flank(fm);
+            let bases = flank_bases(&self.topo, &self.dims, &stored, k, &mut self.stats);
+            s1.decode_tree_flank(&mut s3, &mut dec, o, &mut res, &bases)?;
+            fm = s3.detach_flank();
+            stored[k] = res.iter().map(|&r| r.clamp(i16::MIN as i32, i16::MAX as i32) as i16).collect();
         }
         Ok(())
     }

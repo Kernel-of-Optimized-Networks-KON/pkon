@@ -26,3 +26,4 @@ pub mod lisa_or128_tree_data;
 pub mod lisa_pcq_table;
 pub mod lisa_or128_tree_small_data;
 pub mod lisa_bayer_plane;
+pub mod lisa_frame;

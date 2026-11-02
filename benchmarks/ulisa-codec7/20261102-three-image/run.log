@@ -1,0 +1,13 @@
+parrot_anafi_dusk: 5344x4016 14-bit
+  lisa done: 12291116 B exact=true
+  ellie done: 11582188 B exact=true
+  ulisa done: 11569302 B exact=true
+bmpcc4k_person: 4128x2176 12-bit
+  lisa done: 7517952 B exact=true
+  ellie done: 7256602 B exact=true
+  ulisa done: 7154499 B exact=true
+pentax_k70_bulb: 6080x4064 14-bit
+  lisa done: 20396919 B exact=true
+  ellie done: 19615755 B exact=true
+  ulisa done: 19626714 B exact=true
+exit 0

@@ -1,0 +1,114 @@
+[
+  {
+    "bit_depth": 14,
+    "ellie_codec6": {
+      "bytes": 11582188,
+      "dec_s": 5.5682655,
+      "enc_bare_s": 5.0510999,
+      "enc_s": 5.3518998,
+      "exact": true,
+      "vs_lisa_pct": -5.767808228317106
+    },
+    "height": 4016,
+    "id": "parrot_anafi_dusk",
+    "lisa_codec4": {
+      "bytes": 12291116,
+      "dec_s": 25.407296,
+      "enc_s": 23.4299807,
+      "exact": true
+    },
+    "ulisa_codec7": {
+      "bytes": 11569302,
+      "codec_id": 7,
+      "coding_depth": 10,
+      "dec_ratio_vs_ellie": 1.520148329852447,
+      "dec_s": 8.4645895,
+      "enc_ratio_vs_ellie": 0.959938095253577,
+      "enc_s": 5.1374925,
+      "exact": true,
+      "flank_nonzero": 14866711,
+      "flank_samples": 21461504,
+      "l1": {
+        "coding_bit_depth": 10,
+        "g": 16,
+        "origin": 816
+      },
+      "l1_active": true,
+      "meta_version": 2,
+      "vs_lisa_pct": -5.872648179384199
+    },
+    "width": 5344
+  },
+  {
+    "bit_depth": 12,
+    "ellie_codec6": {
+      "bytes": 7256602,
+      "dec_s": 3.3416145999999998,
+      "enc_bare_s": 2.7160322,
+      "enc_s": 2.7561201,
+      "exact": true,
+      "vs_lisa_pct": -3.4763456856335306
+    },
+    "height": 2176,
+    "id": "bmpcc4k_person",
+    "lisa_codec4": {
+      "bytes": 7517952,
+      "dec_s": 12.0127777,
+      "enc_s": 15.57873,
+      "exact": true
+    },
+    "ulisa_codec7": {
+      "bytes": 7154499,
+      "codec_id": 7,
+      "coding_depth": 12,
+      "dec_ratio_vs_ellie": 1.1973371495324447,
+      "dec_s": 4.0010393,
+      "enc_ratio_vs_ellie": 1.1869408013097833,
+      "enc_s": 3.2713514,
+      "exact": true,
+      "flank_nonzero": 6628554,
+      "flank_samples": 8982528,
+      "l1": null,
+      "l1_active": false,
+      "meta_version": 1,
+      "vs_lisa_pct": -4.834468216876086
+    },
+    "width": 4128
+  },
+  {
+    "bit_depth": 14,
+    "ellie_codec6": {
+      "bytes": 19615755,
+      "dec_s": 8.1440514,
+      "enc_bare_s": 8.2660846,
+      "enc_s": 8.3714318,
+      "exact": true,
+      "vs_lisa_pct": -3.829813708629226
+    },
+    "height": 4064,
+    "id": "pentax_k70_bulb",
+    "lisa_codec4": {
+      "bytes": 20396919,
+      "dec_s": 39.6601122,
+      "enc_s": 35.1127369,
+      "exact": true
+    },
+    "ulisa_codec7": {
+      "bytes": 19626714,
+      "codec_id": 7,
+      "coding_depth": 14,
+      "dec_ratio_vs_ellie": 1.24711558180981,
+      "dec_s": 10.1565734,
+      "enc_ratio_vs_ellie": 1.1005528468857622,
+      "enc_s": 9.2132031,
+      "exact": true,
+      "flank_nonzero": 18010107,
+      "flank_samples": 24709120,
+      "l1": null,
+      "l1_active": false,
+      "meta_version": 1,
+      "vs_lisa_pct": -3.7760850057795503
+    },
+    "width": 6080
+  }
+]

@@ -12,9 +12,10 @@
 //! Version 1 files (`.pkon2`, `pkonfile`) share magic and version-byte position with version 2, so `decode` recognises both.
 //! All integers are little-endian and read/written byte by byte; nothing depends on struct layout or host endianness.
 use crate::canon::{Canonical, Layout, Spec};
-use crate::ellie::{self, EllieCodec, Stage3Profile, Stage4Enc};
+use crate::ellie::{self, EllieCodec, FlankCodec, FlankStats, Stage3Profile, Stage4Enc};
 use crate::lisa::{self, CfaPattern, ColorFilter, ImageMetadata, LisaError, ReconstructionRecord, SampleLayout, Stage3Rule, Stage4Output};
 use crate::lisa_bayer_plane::{self as bayer, Stage1Mode};
+use crate::lisa_frame::{BayerFrame, FrameError};
 use crate::pkonfile::{self, PkonError};
 use std::fmt;
 
@@ -33,6 +34,11 @@ pub const CODEC_ELLIE: u8 = 6;
 pub const ELLIE_REPR_UNTRANSFORMED: u8 = 0;
 /// RGB planes 0..3 -> reversible YCoCg-R (Y 8-bit, Co/Cg 9-bit with +255 offset); an alpha plane is coded unchanged.
 pub const ELLIE_REPR_YCOCG_R: u8 = 1;
+/// Codec id 7: ULISA Bayer RAW. The sensor frame comes from LISA (frozen L1, CFA, parity planes, mosaic-flank topology, see
+/// `lisa_frame`); prediction, probability model and range coder are ELLIE's (`ellie::FlankCodec`). One payload for all four planes.
+pub const CODEC_ULISA: u8 = 7;
+/// ULISA model-profile id (metadata byte 0): ELLIE `Bc255S11Tree` per parity plane plus the cross-plane flank stage.
+pub const ULISA_PROFILE_TREE_FLANK: u8 = 1;
 /// Reconstruction-metadata layout version understood for every assigned codec so far.
 pub const META_VERSION_1: u8 = 1;
 /// ELLIE: version 1 metadata plus one trailing Stage 3 profile byte (version 1 ELLIE files are `Stage3Profile::Legacy4`).
@@ -54,6 +60,14 @@ pub const LISA_STAGE4_CODING_COUNTED: u8 = lisa::STAGE4_CODING_VERSION;
 /// >= 7.3e-4 bits, i.e. <= ~11,000 samples per byte in theory. LISA uses a 16,384 bound (power-of-two margin).
 /// Measured: a flat 2048x2048 image reaches 11,245 samples/byte (12-bit LISA).
 const LISA_MAX_SAMPLES_PER_PAYLOAD_BYTE: u64 = 16_384;
+
+/// Upper bound on samples per payload byte for ULISA (and the same derivation as above). Every sample costs at least its zero-flag
+/// decision, and the tree mixer / flank stage hand the coder `P(bit = 1)` clamped to `[COD_P_MIN, COD_P_MAX] / 65536`
+/// (`ellie::COD_P_MIN/MAX`), so one decision costs at least `-log2(65503 / 65536)` = 7.27e-4 bits, i.e. at most 11,010 samples per
+/// payload byte in theory. 16,384 keeps a power-of-two margin over that; the termination logic can drop up to
+/// [`ULISA_TERMINATION_SLACK_BYTES`] bytes below the information content, which the header check allows for.
+const ULISA_MAX_SAMPLES_PER_PAYLOAD_BYTE: u64 = 16_384;
+const ULISA_TERMINATION_SLACK_BYTES: u64 = 5;
 
 // ---------------------------------------------------------------- errors
 
@@ -212,6 +226,7 @@ fn crc_of(parts: &[&[u8]]) -> u32 {
 pub enum CodecParams {
     Lisa(LisaParams),
     Ellie(EllieParams),
+    Ulisa(UlisaParams),
 }
 
 /// ELLIE metadata: `layout u8, representation u8`, then per plane `bit_depth u8, stream_len u32`. Version 2 appends
@@ -237,6 +252,15 @@ pub struct LisaParams {
     pub lattice: Option<Lattice>,
 }
 
+/// Everything ULISA's decoder needs besides dimensions, bit depth and payload: the frame (CFA, optional L1 lattice) and the model.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct UlisaParams {
+    pub metadata: ImageMetadata,
+    pub lattice: Option<Lattice>,
+    pub profile: u8,
+    pub flank_ctx_version: u8,
+}
+
 /// L1 lattice normalization of a whole RAW mosaic: the coded sample is `(original - origin) / g` at `coding_bit_depth`,
 /// and `original = coded * g + origin`. The header bit depth stays the original sample bit depth.
 /// On disk (LISA metadata version 2, last 5 bytes): `origin u16, g u16, coding_bit_depth u8`.
@@ -251,7 +275,7 @@ const LATTICE_BYTES: usize = 5;
 
 impl Lattice {
     /// Reject parameters that cannot come from an encoder for an image of `bit_depth`.
-    fn validate(&self, bit_depth: u8) -> Result<(), ContainerError> {
+    pub(crate) fn validate(&self, bit_depth: u8) -> Result<(), ContainerError> {
         let bad = |s: &str| ContainerError::InvalidMetadata(format!("lattice: {s}"));
         if self.g < 2 {
             return Err(bad("g must be at least 2"));
@@ -268,7 +292,7 @@ impl Lattice {
     }
 
     /// Detect the lattice of a mosaic: `Some` only when `g > 1` and every sample is below `1 << bit_depth`.
-    fn detect(samples: &[u16], bit_depth: u8) -> Option<Lattice> {
+    pub(crate) fn detect(samples: &[u16], bit_depth: u8) -> Option<Lattice> {
         let (mut lo, mut hi) = (u16::MAX, 0u16);
         for &v in samples {
             lo = lo.min(v);
@@ -360,10 +384,11 @@ pub fn parse_header_with_limit(bytes: &[u8], max_decoded_bytes: u64) -> Result<H
 
     let (codec, meta_version, bit_depth, channels) = (bytes[6], bytes[7], bytes[8], bytes[9]);
     let (width, height, payload_len, pixel_crc32) = (rd32(bytes, 12), rd32(bytes, 16), rd32(bytes, 20), rd32(bytes, 24));
-    if codec != CODEC_LISA && codec != CODEC_ELLIE {
+    if codec != CODEC_LISA && codec != CODEC_ELLIE && codec != CODEC_ULISA {
         return Err(ContainerError::UnsupportedCodec(codec));
     }
     let ellie = codec == CODEC_ELLIE;
+    let ulisa = codec == CODEC_ULISA;
     if meta_version != META_VERSION_1 && meta_version != META_VERSION_2 {
         return Err(ContainerError::UnsupportedMetaVersion { codec, version: meta_version });
     }
@@ -373,7 +398,8 @@ pub fn parse_header_with_limit(bytes: &[u8], max_decoded_bytes: u64) -> Result<H
     if !(if ellie { (1..=4).contains(&channels) } else { channels == 1 }) {
         return Err(ContainerError::InvalidChannels { codec, channels });
     }
-    let max_per_byte = LISA_MAX_SAMPLES_PER_PAYLOAD_BYTE;
+    let max_per_byte = if ulisa { ULISA_MAX_SAMPLES_PER_PAYLOAD_BYTE } else { LISA_MAX_SAMPLES_PER_PAYLOAD_BYTE };
+    let slack = if ulisa { ULISA_TERMINATION_SLACK_BYTES } else { 0 };
     if width == 0 || height == 0 {
         return Err(ContainerError::InvalidDimensions { width, height });
     }
@@ -384,12 +410,14 @@ pub fn parse_header_with_limit(bytes: &[u8], max_decoded_bytes: u64) -> Result<H
         return Err(too_large);
     }
     // ELLIE has no samples-per-byte bound: the decoded-size limit above already caps its allocation.
-    if payload_len == 0 || (!ellie && samples / max_per_byte > payload_len as u64) {
+    if payload_len == 0 || (!ellie && samples / max_per_byte > payload_len as u64 + slack) {
         return Err(ContainerError::InvalidPayloadLength { payload_len });
     }
 
     let params = if ellie {
         CodecParams::Ellie(parse_ellie_meta(meta, meta_version, bit_depth, channels, payload_len)?)
+    } else if ulisa {
+        CodecParams::Ulisa(parse_ulisa_meta(meta, meta_version, width, height, bit_depth)?)
     } else {
         CodecParams::Lisa(parse_lisa_meta(meta, meta_version, width, height, bit_depth)?)
     };
@@ -428,6 +456,36 @@ fn has_cfa(l: SampleLayout) -> bool {
     matches!(l, SampleLayout::BayerCfa | SampleLayout::OtherCfa)
 }
 
+/// The CFA block shared by LISA and ULISA metadata: `width u16, height u16, origin_x u16, origin_y u16`, then `width * height` colour
+/// codes. `None` when the block length does not match its own dimensions; `Some(Err)` for an unknown colour code.
+fn parse_cfa_block(b: &[u8]) -> Option<Result<CfaPattern, ContainerError>> {
+    if b.len() < LISA_CFA_FIXED {
+        return None;
+    }
+    let (cw, ch, ox, oy) = (rd16(b, 0), rd16(b, 2), rd16(b, 4), rd16(b, 6));
+    let entries = cw as usize * ch as usize;
+    if b.len() != LISA_CFA_FIXED + entries {
+        return None;
+    }
+    Some(
+        b[LISA_CFA_FIXED..]
+            .iter()
+            .map(|&c| ColorFilter::try_from(c))
+            .collect::<Result<Vec<_>, _>>()
+            .map(|entries| CfaPattern { width: cw as usize, height: ch as usize, entries, origin_x: ox as usize, origin_y: oy as usize })
+            .map_err(ContainerError::from),
+    )
+}
+
+fn serialize_cfa_block(cfa: &CfaPattern, m: &mut Vec<u8>) -> Result<(), ContainerError> {
+    let fit = |v: usize, what: &str| u16::try_from(v).map_err(|_| ContainerError::UnsupportedImage(format!("CFA {what} {v} exceeds the 16-bit on-disk field")));
+    for v in [fit(cfa.width, "width")?, fit(cfa.height, "height")?, fit(cfa.origin_x, "origin_x")?, fit(cfa.origin_y, "origin_y")?] {
+        m.extend_from_slice(&v.to_le_bytes());
+    }
+    m.extend(cfa.entries.iter().map(|&e| e as u8));
+    Ok(())
+}
+
 fn parse_lisa_meta(meta: &[u8], meta_version: u8, width: u32, height: u32, bit_depth: u8) -> Result<LisaParams, ContainerError> {
     let total_len = meta.len();
     let bad_len = || ContainerError::InvalidMetaLength { codec: CODEC_LISA, meta_len: total_len };
@@ -461,13 +519,7 @@ fn parse_lisa_meta(meta: &[u8], meta_version: u8, width: u32, height: u32, bit_d
         if meta.len() < LISA_META_FIXED + LISA_CFA_FIXED {
             return Err(bad_len());
         }
-        let (cw, ch, ox, oy) = (rd16(meta, 4), rd16(meta, 6), rd16(meta, 8), rd16(meta, 10));
-        let entries = cw as usize * ch as usize;
-        if meta.len() != LISA_META_FIXED + LISA_CFA_FIXED + entries {
-            return Err(bad_len());
-        }
-        let entries = meta[LISA_META_FIXED + LISA_CFA_FIXED..].iter().map(|&c| ColorFilter::try_from(c)).collect::<Result<Vec<_>, _>>()?;
-        Some(CfaPattern { width: cw as usize, height: ch as usize, entries, origin_x: ox as usize, origin_y: oy as usize })
+        Some(parse_cfa_block(&meta[LISA_META_FIXED..]).ok_or_else(bad_len)??)
     } else {
         if meta.len() != LISA_META_FIXED {
             return Err(bad_len());
@@ -508,11 +560,7 @@ fn serialize_lisa_meta(p: &LisaParams) -> Result<Vec<u8>, ContainerError> {
         p.stage4_coding_version,
     ];
     if let Some(cfa) = &p.metadata.cfa {
-        let fit = |v: usize, what: &str| u16::try_from(v).map_err(|_| ContainerError::UnsupportedImage(format!("CFA {what} {v} exceeds the 16-bit on-disk field")));
-        for v in [fit(cfa.width, "width")?, fit(cfa.height, "height")?, fit(cfa.origin_x, "origin_x")?, fit(cfa.origin_y, "origin_y")?] {
-            m.extend_from_slice(&v.to_le_bytes());
-        }
-        m.extend(cfa.entries.iter().map(|&e| e as u8));
+        serialize_cfa_block(cfa, &mut m)?;
     }
     if let Some(l) = &p.lattice {
         m.extend_from_slice(&l.origin.to_le_bytes());
@@ -523,6 +571,71 @@ fn serialize_lisa_meta(p: &LisaParams) -> Result<Vec<u8>, ContainerError> {
         return Err(ContainerError::UnsupportedImage(format!("codec metadata of {} bytes exceeds the 65535-byte limit", m.len())));
     }
     Ok(m)
+}
+
+// ---------------------------------------------------------------- ULISA metadata, versions 1 and 2
+
+const ULISA_META_FIXED: usize = 2;
+
+/// ULISA metadata: `model_profile u8, cross_plane_context_version u8, layout u8 (Bayer), CFA block` (the LISA CFA block), and for
+/// version 2 the 5-byte L1 lattice block (identical to LISA's). Dimensions, bit depth and payload length come from the header.
+fn parse_ulisa_meta(meta: &[u8], meta_version: u8, width: u32, height: u32, bit_depth: u8) -> Result<UlisaParams, ContainerError> {
+    let total_len = meta.len();
+    let bad_len = || ContainerError::InvalidMetaLength { codec: CODEC_ULISA, meta_len: total_len };
+    let (body, lattice_bytes) = if meta_version == META_VERSION_2 {
+        if meta.len() < ULISA_META_FIXED + 1 + LISA_CFA_FIXED + LATTICE_BYTES {
+            return Err(bad_len());
+        }
+        let (m, l) = meta.split_at(meta.len() - LATTICE_BYTES);
+        (m, Some(l))
+    } else {
+        (meta, None)
+    };
+    if body.len() < ULISA_META_FIXED + 1 + LISA_CFA_FIXED {
+        return Err(bad_len());
+    }
+    let unsupported = |field, value| ContainerError::UnsupportedCodecVersion { codec: CODEC_ULISA, field, value };
+    if body[0] != ULISA_PROFILE_TREE_FLANK {
+        return Err(unsupported("model_profile", body[0]));
+    }
+    if body[1] != ellie::FLANK_CTX_VERSION {
+        return Err(unsupported("cross_plane_context_version", body[1]));
+    }
+    if layout_from_code(body[2]) != Some(SampleLayout::BayerCfa) {
+        return Err(unsupported("sample_layout", body[2]));
+    }
+    let cfa = parse_cfa_block(&body[ULISA_META_FIXED + 1..]).ok_or_else(bad_len)??;
+    let lattice = lattice_bytes
+        .map(|l| {
+            let lat = Lattice { origin: rd16(l, 0), g: rd16(l, 2), coding_bit_depth: l[4] };
+            lat.validate(bit_depth).map(|()| lat)
+        })
+        .transpose()?;
+    let metadata = ImageMetadata { width: width as usize, height: height as usize, layout: SampleLayout::BayerCfa, cfa: Some(cfa) };
+    // The frame owns the full validation (2x2 Bayer, plane sizes, depth limits); building it here rejects bad metadata before any payload work.
+    BayerFrame::with_lattice(metadata.clone(), bit_depth, lattice).map_err(frame_err)?;
+    Ok(UlisaParams { metadata, lattice, profile: body[0], flank_ctx_version: body[1] })
+}
+
+fn serialize_ulisa_meta(p: &UlisaParams) -> Result<Vec<u8>, ContainerError> {
+    let Some(cfa) = &p.metadata.cfa else {
+        return Err(ContainerError::InvalidMetadata("ULISA needs a CFA".into()));
+    };
+    let mut m = vec![p.profile, p.flank_ctx_version, layout_code(SampleLayout::BayerCfa)];
+    serialize_cfa_block(cfa, &mut m)?;
+    if let Some(l) = &p.lattice {
+        m.extend_from_slice(&l.origin.to_le_bytes());
+        m.extend_from_slice(&l.g.to_le_bytes());
+        m.push(l.coding_bit_depth);
+    }
+    Ok(m)
+}
+
+fn frame_err(e: FrameError) -> ContainerError {
+    match e {
+        FrameError::Unsupported(s) => ContainerError::UnsupportedImage(s.to_string()),
+        FrameError::Invalid(s) => ContainerError::InvalidMetadata(s),
+    }
 }
 
 // ---------------------------------------------------------------- ELLIE metadata, versions 1 and 2
@@ -842,6 +955,77 @@ pub fn encode_raw_with_mode(
     })
 }
 
+/// What the ULISA encoder actually did, for callers that report it (the file itself is the product).
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct UlisaEncodeInfo {
+    /// Frozen L1 lattice, when it activated.
+    pub lattice: Option<Lattice>,
+    pub coding_depth: u8,
+    /// How many coded samples had a non-neutral flank context (the cross-plane stage doing work).
+    pub flank: FlankStats,
+}
+
+/// Encode a 2x2 Bayer RAW mosaic with ULISA (codec 7). LISA builds the sensor frame (frozen L1, CFA, parity planes, flank topology);
+/// ELLIE codes the four planes in order 0..3 into one payload. Input the Bayer frame cannot represent is an error
+/// ([`ContainerError::UnsupportedImage`] when the CFA/geometry is unsupported); there is no silent fallback here, see `ulisa::encode`.
+pub fn encode_ulisa(samples: &[u16], width: usize, height: usize, bit_depth: u8, metadata: ImageMetadata) -> Result<Vec<u8>, ContainerError> {
+    encode_ulisa_report(samples, width, height, bit_depth, metadata).map(|(f, _)| f)
+}
+
+pub fn encode_ulisa_report(
+    samples: &[u16],
+    width: usize,
+    height: usize,
+    bit_depth: u8,
+    metadata: ImageMetadata,
+) -> Result<(Vec<u8>, UlisaEncodeInfo), ContainerError> {
+    let (w32, h32) = (u32::try_from(width), u32::try_from(height));
+    let (Ok(w32), Ok(h32)) = (w32, h32) else {
+        return Err(LisaError::DimensionTooLarge.into());
+    };
+    if (metadata.width, metadata.height) != (width, height) {
+        return Err(LisaError::MetadataGeometryMismatch { expected: (width, height), actual: (metadata.width, metadata.height) }.into());
+    }
+    // LISA: the sensor frame.
+    let frame = BayerFrame::build(samples, bit_depth, metadata).map_err(frame_err)?;
+    let coded = frame.normalize(samples);
+    let planes = frame.split(&coded);
+    let topology = frame.topology().map_err(ellie_err)?;
+    // ELLIE: prediction, probability model with the flank stage, range coder.
+    let mut codec = FlankCodec::new(frame.plane_dims(), u32::from(frame.coding_depth()), topology).map_err(ellie_err)?;
+    let mut enc = Stage4Enc::new();
+    codec.encode_planes([&planes[0], &planes[1], &planes[2], &planes[3]], &mut enc).map_err(ellie_err)?;
+    let payload = enc.finish().to_vec();
+    let params = UlisaParams { metadata: frame.metadata().clone(), lattice: frame.lattice(), profile: ULISA_PROFILE_TREE_FLANK, flank_ctx_version: ellie::FLANK_CTX_VERSION };
+    let meta = serialize_ulisa_meta(&params)?;
+    let file = write_file(FileParts {
+        codec: CODEC_ULISA,
+        meta_version: if frame.lattice().is_some() { META_VERSION_2 } else { META_VERSION_1 },
+        bit_depth,
+        channels: 1,
+        width: w32,
+        height: h32,
+        meta: &meta,
+        payload: &payload,
+        pixel_crc32: pixel_crc_u16(samples, bit_depth),
+    })?;
+    Ok((file, UlisaEncodeInfo { lattice: frame.lattice(), coding_depth: frame.coding_depth(), flank: codec.stats }))
+}
+
+fn decode_ulisa(hdr: &Header, p: &UlisaParams, payload: &[u8]) -> Result<Vec<u16>, ContainerError> {
+    let frame = BayerFrame::with_lattice(p.metadata.clone(), hdr.bit_depth, p.lattice).map_err(frame_err)?;
+    let topology = frame.topology().map_err(ellie_err)?;
+    let mut codec = FlankCodec::new(frame.plane_dims(), u32::from(frame.coding_depth()), topology).map_err(ellie_err)?;
+    let mut planes: [Vec<u16>; 4] = std::array::from_fn(|k| vec![0u16; frame.plane_dims()[k].0 * frame.plane_dims()[k].1]);
+    {
+        let [a, b, c, d] = &mut planes;
+        codec.decode_planes(payload, [a, b, c, d]).map_err(ellie_err)?;
+    }
+    let mut samples = frame.merge(&planes);
+    frame.denormalize(&mut samples).map_err(|e| ContainerError::CorruptPayload(e.to_string()))?;
+    Ok(samples)
+}
+
 /// The reconstruction parameters held by a `Stage4Output` history (Stage 1 mode, Stage 3 rule, Stage 4 coding version).
 fn lisa_params_of(s4: &Stage4Output) -> Result<LisaParams, ContainerError> {
     let [s1, ReconstructionRecord::Stage2Organization(_), ReconstructionRecord::Stage3Context(r3), ReconstructionRecord::Stage4Entropy(r4)] = s4.history() else {
@@ -918,6 +1102,11 @@ fn decode_v2(bytes: &[u8], max_decoded_bytes: u64) -> Result<Decoded, ContainerE
     };
     match &hdr.params {
         CodecParams::Ellie(p) => Ok(Decoded::Standard(decode_ellie(&hdr, p, payload)?)),
+        CodecParams::Ulisa(p) => {
+            let samples = decode_ulisa(&hdr, p, payload)?;
+            check(pixel_crc_u16(&samples, hdr.bit_depth))?;
+            Ok(Decoded::Raw(RawImage { samples, metadata: p.metadata.clone(), bit_depth: hdr.bit_depth }))
+        }
         CodecParams::Lisa(p) => {
             let s4 = Stage4Output::from_parts(
                 payload.to_vec(),

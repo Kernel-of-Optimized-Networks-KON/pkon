@@ -1,0 +1,46 @@
+commit: 10d67a87630e3db8a7505fdba322d2bd1544cf68
+branch: main
+dirty tracked files (expect only Cargo.toml bench entry):
+ M Cargo.toml
+?? benchmarks/ulisa-codec7-corpus/
+--- sha256 of src/ (frozen candidate) ---
+b327ecebadd95cbd21fd529b19fe52e35eef09021cd14397eb0746f89811df93 *-
+--- rustc ---
+rustc 1.99.1 (58cf8f9c3 2026-10-13)
+binary: rustc
+commit-hash: 58cf8f9c35b355199727627d07ae34a4e2846d67
+commit-date: 2026-10-13
+host: x86_64-pc-windows-gnu
+release: 1.99.1
+LLVM version: 23.1.1
+cargo 1.99.1 (5f94df478 2026-08-27)
+--- ffmpeg ---
+ffmpeg version 9.0.2-full_build-www.gyan.dev Copyright (c) 2000-2026 the FFmpeg developers
+built with gcc 16.2.0 (Rev3, Built by MSYS2 project)
+configuration: --enable-gpl --enable-version3 --enable-static --disable-w32threads --disable-autodetect --enable-cairo --enable-fontconfig --enable-iconv --enable-gnutls --enable-lcms2 --enable-libxml2 --enable-gmp --enable-bzlib --enable-lzma --enable-libsnappy --enable-zlib --enable-librist --enable-libsrt --enable-libssh --enable-libzmq --enable-avisynth --enable-libbluray --enable-libcaca --enable-libdvdnav --enable-libdvdread --enable-sdl2 --enable-libaribb24 --enable-libaribcaption --enable-libdav1d --enable-libdavs2 --enable-libopenjpeg --enable-libquirc --enable-libuavs3d --enable-libxevd --enable-libzvbi --enable-liboapv --enable-libqrencode --enable-librav1e --enable-libsvtav1 --enable-libvvenc --enable-libwebp --enable-libx264 --enable-libx265 --enable-libxavs2 --enable-libxeve --enable-libxvid --enable-libaom --enable-libjxl --enable-libsvtjpegxs --enable-libvpx --enable-mediafoundation --enable-libass --enable-frei0r --enable-libfreetype --enable-libfribidi --enable-libharfbuzz --enable-liblensfun --enable-libvidstab --enable-libvmaf --enable-libzimg --enable-amf --enable-cuda-llvm --enable-cuvid --enable-dxva2 --enable-d3d11va --enable-d3d12va --enable-ffnvcodec --enable-libvpl --enable-nvdec --enable-nvenc --enable-vaapi --enable-vulkan --enable-libplacebo --enable-opencl --enable-libcdio --enable-openal --enable-libgme --enable-libmodplug --enable-libopenmpt --enable-libopencore-amrwb --enable-libmp3lame --enable-libshine --enable-libtheora --enable-libtwolame --enable-libvo-amrwbenc --enable-libcodec2 --enable-libilbc --enable-libgsm --enable-liblc3 --enable-libopencore-amrnb --enable-libopus --enable-libspeex --enable-libvorbis --enable-ladspa --enable-libbs2b --enable-libflite --enable-libmysofa --enable-librubberband --enable-libsoxr --enable-chromaprint --enable-whisper
+libjxl
+--- png/image ---
+name = "png"
+version = "0.18.1"
+name = "image"
+version = "0.25.10"
+--- machine ---
+
+
+Name                      : 11th Gen Intel(R) Core(TM) i7-1185G7 @ 3.00GHz
+NumberOfCores             : 4
+NumberOfLogicalProcessors : 8
+
+
+
+
+
+
+Caption                : Microsoft Windows 11 Pro
+Version                : 10.0.26200
+TotalVisibleMemorySize : 16476968
+
+
+
+
+9abe9e5c494cb4f69eb8e5ae6ec6e08d524f0cea47cbe3bc00ce3edf33fe46bc *target/release/bench_ulisa_codec7_corpus

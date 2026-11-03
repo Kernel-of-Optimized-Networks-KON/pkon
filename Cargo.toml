@@ -231,3 +231,8 @@ path = "experiments/bin/exp_ulisa_split.rs"
 [[bin]]
 name = "bench_ulisa_codec7"
 path = "benchmarks/ulisa-codec7/bench_ulisa_codec7.rs"
+
+# ULISA codec 7 full-corpus benchmark vs JPEG XL / PNG (benchmark harness only; no codec change).
+[[bin]]
+name = "bench_ulisa_codec7_corpus"
+path = "benchmarks/ulisa-codec7-corpus/bench_ulisa_codec7_corpus.rs"

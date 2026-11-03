@@ -1,0 +1,33 @@
+{
+  "test": [
+    "dji_fc220_dusk",
+    "leica_m10_brick",
+    "leica_x2_lowlight",
+    "nikon_d80_piano",
+    "pentax_k30_frog",
+    "pentax_q7_cat",
+    "ricoh_gr_wood",
+    "sigma_fp_bike8"
+  ],
+  "train": [
+    "bmpcc4k_person",
+    "canon_sx40_snow",
+    "hasselblad_tallinn",
+    "leica_m8_house",
+    "leica_q_canoe",
+    "lg_h815_mountain",
+    "parrot_anafi_dusk",
+    "pentax_k1ii_station",
+    "pentax_k70_bulb",
+    "pixel6pro_valley",
+    "ricoh_gr3_dunes",
+    "samsung_gx20_berries",
+    "x100s_xtrans_chart"
+  ],
+  "val": [
+    "leica_cl_chateau",
+    "nexus6_courtyard",
+    "pentax_kx_lichen",
+    "sigma_fp_bike14"
+  ]
+}

@@ -1,0 +1,1397 @@
+[
+ {
+  "id": "pentax_k1ii_station",
+  "file": "Pentax__K-1_Mark_II___IMG2387.DNG",
+  "url": "Pentax/K-1%20Mark%20II/_IMG2387.DNG",
+  "category": "daylight overcast; architecture + trains; high detail; large (36 MP)",
+  "camera": "RICOH IMAGING COMPANY, LTD. PENTAX K-1 Mark II",
+  "width": 7392,
+  "height": 4950,
+  "declared_bits": 14,
+  "bit_depth": 14,
+  "sample_min": 39,
+  "sample_max": 16382,
+  "white_level": [
+   16318
+  ],
+  "black_level": [
+   64,
+   64,
+   64,
+   64
+  ],
+  "active_area": [
+   18,
+   6,
+   4950,
+   7382
+  ],
+  "cfa_dim": [
+   2,
+   2
+  ],
+  "cfa": [
+   0,
+   1,
+   1,
+   2
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "JPEG",
+  "dng_compression_code": 7,
+  "predictor": 1,
+  "tiled": false,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint16",
+  "photometric": 32803,
+  "dng_bytes": 46069312,
+  "dng_sha256": "190d5878675f4de07d246271ba411b152f3317b2d2a0e27b9c827fe7343b28ea",
+  "canon_bytes": 73180800,
+  "canon_sha256": "a7ff738cf755082eb4196c11535ceeea7029a6030c39d8ff6d565c1f55092a56",
+  "canon_path": "data\\praw1\\canon\\pentax_k1ii_station.u16"
+ },
+ {
+  "id": "pentax_k30_frog",
+  "file": "Pentax__K-30___IGP4042.DNG",
+  "url": "Pentax/K-30/_IGP4042.DNG",
+  "category": "water + wildlife (frog on lily pads); specular water",
+  "camera": "PENTAX PENTAX K-30",
+  "width": 4960,
+  "height": 3300,
+  "declared_bits": 12,
+  "bit_depth": 12,
+  "sample_min": 0,
+  "sample_max": 4078,
+  "white_level": [
+   4078
+  ],
+  "black_level": [
+   0,
+   0,
+   0,
+   0
+  ],
+  "active_area": [
+   20,
+   8,
+   3292,
+   4944
+  ],
+  "cfa_dim": [
+   2,
+   2
+  ],
+  "cfa": [
+   0,
+   1,
+   1,
+   2
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "JPEG",
+  "dng_compression_code": 7,
+  "predictor": 1,
+  "tiled": false,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint16",
+  "photometric": 32803,
+  "dng_bytes": 14234631,
+  "dng_sha256": "63eaa1ff93ad7c89947017332b10f78f17cd3853a5b495adf25410edaefbe618",
+  "canon_bytes": 32736000,
+  "canon_sha256": "48e59f255b492c843ea619d351b478208f122bbb3f2b93b6f38fac9009ad5184",
+  "canon_path": "data\\praw1\\canon\\pentax_k30_frog.u16"
+ },
+ {
+  "id": "pentax_kx_lichen",
+  "file": "Pentax__K-x__IMGP6431.DNG",
+  "url": "Pentax/K-x/IMGP6431.DNG",
+  "category": "fine organic texture (lichen on fabric); daylight",
+  "camera": "PENTAX PENTAX K-x",
+  "width": 4352,
+  "height": 2868,
+  "declared_bits": 12,
+  "bit_depth": 12,
+  "sample_min": 0,
+  "sample_max": 3873,
+  "white_level": [
+   4094
+  ],
+  "black_level": [
+   1,
+   9,
+   9,
+   0
+  ],
+  "active_area": null,
+  "cfa_dim": [
+   2,
+   2
+  ],
+  "cfa": [
+   2,
+   1,
+   1,
+   0
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "JPEG",
+  "dng_compression_code": 7,
+  "predictor": 1,
+  "tiled": false,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint16",
+  "photometric": 32803,
+  "dng_bytes": 14359791,
+  "dng_sha256": "7a594b66b54f99bb5aba4627c78abfc41213d6911ea54e4f5d2dd6c8505f6968",
+  "canon_bytes": 24963072,
+  "canon_sha256": "d759e7b57a563bbcbc2b591bb0ec6ea448d337f9386c18368b5b428339777bb1",
+  "canon_path": "data\\praw1\\canon\\pentax_kx_lichen.u16"
+ },
+ {
+  "id": "pentax_q7_cat",
+  "file": "Pentax__Q7__IMGP1691.DNG",
+  "url": "Pentax/Q7/IMGP1691.DNG",
+  "category": "animal fur (black cat); dark subject, small sensor",
+  "camera": "PENTAX PENTAX Q7",
+  "width": 4064,
+  "height": 3000,
+  "declared_bits": 12,
+  "bit_depth": 12,
+  "sample_min": 0,
+  "sample_max": 4095,
+  "white_level": [
+   3983
+  ],
+  "black_level": [
+   0,
+   0,
+   0,
+   0
+  ],
+  "active_area": [
+   0,
+   0,
+   3000,
+   4000
+  ],
+  "cfa_dim": [
+   2,
+   2
+  ],
+  "cfa": [
+   0,
+   1,
+   1,
+   2
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "NONE",
+  "dng_compression_code": 1,
+  "predictor": 1,
+  "tiled": false,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint16",
+  "photometric": 32803,
+  "dng_bytes": 20880795,
+  "dng_sha256": "577eac8d03419bb82714169dd532d58efc82a0abf928d28e4641f1ed5d56c350",
+  "canon_bytes": 24384000,
+  "canon_sha256": "6dbbb396f865c57b3aa057e762dd036567f34c6bfec45c8672ff092e2283c628",
+  "canon_path": "data\\praw1\\canon\\pentax_q7_cat.u16"
+ },
+ {
+  "id": "pentax_k70_bulb",
+  "file": "Pentax__K-70__IMGP6855.DNG",
+  "url": "Pentax/K-70/IMGP6855.DNG",
+  "category": "night / low-light (lit bulb in dark room); noise-dominated",
+  "camera": "RICOH IMAGING COMPANY, LTD. PENTAX K-70",
+  "width": 6080,
+  "height": 4064,
+  "declared_bits": 14,
+  "bit_depth": 14,
+  "sample_min": 0,
+  "sample_max": 16315,
+  "white_level": [
+   16319
+  ],
+  "black_level": [
+   64,
+   64,
+   64,
+   64
+  ],
+  "active_area": [
+   28,
+   58,
+   4052,
+   6080
+  ],
+  "cfa_dim": [
+   2,
+   2
+  ],
+  "cfa": [
+   0,
+   1,
+   1,
+   2
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "JPEG",
+  "dng_compression_code": 7,
+  "predictor": 1,
+  "tiled": false,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint16",
+  "photometric": 32803,
+  "dng_bytes": 28786390,
+  "dng_sha256": "69a65be065c5e6c41c726d070dc3cf5d99871c1062ed2b8ad853342aec570046",
+  "canon_bytes": 49418240,
+  "canon_sha256": "3bf41ccdd60dce65cfd6f0d4059aaa1a62df720524c0dd09c824ba32657ab88c",
+  "canon_path": "data\\praw1\\canon\\pentax_k70_bulb.u16"
+ },
+ {
+  "id": "leica_cl_chateau",
+  "file": "Leica__CL__L1080510_2018_CL-35-135-Chateau_Thy__Chateau_Ham.DNG",
+  "url": "Leica/CL/L1080510_2018_CL-35-135-Chateau_Thy__Chateau_Ham.DNG",
+  "category": "overcast landscape; chateau, grass, large smooth sky",
+  "camera": "LEICA CAMERA AG LEICA CL",
+  "width": 6120,
+  "height": 4016,
+  "declared_bits": 14,
+  "bit_depth": 14,
+  "sample_min": 0,
+  "sample_max": 16383,
+  "white_level": [
+   16383
+  ],
+  "black_level": [
+   510,
+   511,
+   511,
+   510
+  ],
+  "active_area": [
+   0,
+   0,
+   4016,
+   6016
+  ],
+  "cfa_dim": [
+   2,
+   2
+  ],
+  "cfa": [
+   1,
+   2,
+   0,
+   1
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "NONE",
+  "dng_compression_code": 1,
+  "predictor": 1,
+  "tiled": false,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint16",
+  "photometric": 32803,
+  "dng_bytes": 44546560,
+  "dng_sha256": "1f4cfa565d176d85838d96bd3eb598bbeed719cac8acb9999d5823c527635950",
+  "canon_bytes": 49155840,
+  "canon_sha256": "ad158a1d6615b663c1f7e8ea1b40184460f88e9d70e10f8eb5b3d54586120088",
+  "canon_path": "data\\praw1\\canon\\leica_cl_chateau.u16"
+ },
+ {
+  "id": "leica_m10_brick",
+  "file": "Leica__M10__f5381888.dng",
+  "url": "Leica/M10/f5381888.dng",
+  "category": "daylight architecture (brick building); fine regular structure",
+  "camera": "Leica Camera AG LEICA M10",
+  "width": 5984,
+  "height": 3992,
+  "declared_bits": 16,
+  "bit_depth": 14,
+  "sample_min": 81,
+  "sample_max": 16383,
+  "white_level": [
+   15000
+  ],
+  "black_level": [
+   0
+  ],
+  "active_area": null,
+  "cfa_dim": [
+   2,
+   2
+  ],
+  "cfa": [
+   0,
+   1,
+   1,
+   2
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "JPEG",
+  "dng_compression_code": 7,
+  "predictor": 1,
+  "tiled": false,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint16",
+  "photometric": 32803,
+  "dng_bytes": 34209792,
+  "dng_sha256": "26be5e06dfb53a2938dab3ca8f06024533a9c0dd0c652938f39eb48bc325f95e",
+  "canon_bytes": 47776256,
+  "canon_sha256": "376a178c2f363416510c14217dd1aac4f7a27ca13b88c81ed347a23fb44521de",
+  "canon_path": "data\\praw1\\canon\\leica_m10_brick.u16"
+ },
+ {
+  "id": "leica_q_canoe",
+  "file": "Leica__Q_(Typ_116)__L1070048.DNG",
+  "url": "Leica/Q%20(Typ%20116)/L1070048.DNG",
+  "category": "water + foliage (canoe on swamp channel)",
+  "camera": "LEICA CAMERA AG LEICA Q (Typ 116)",
+  "width": 6120,
+  "height": 4016,
+  "declared_bits": 14,
+  "bit_depth": 14,
+  "sample_min": 0,
+  "sample_max": 16383,
+  "white_level": [
+   16383
+  ],
+  "black_level": [
+   512,
+   512,
+   512,
+   512
+  ],
+  "active_area": [
+   0,
+   0,
+   4016,
+   6016
+  ],
+  "cfa_dim": [
+   2,
+   2
+  ],
+  "cfa": [
+   2,
+   1,
+   1,
+   0
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "NONE",
+  "dng_compression_code": 1,
+  "predictor": 1,
+  "tiled": false,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint16",
+  "photometric": 32803,
+  "dng_bytes": 45100032,
+  "dng_sha256": "f7b2a6b6d7684536511cf2db2e2bfa46fae1ad7e52214093714f35e7ca60acbf",
+  "canon_bytes": 49155840,
+  "canon_sha256": "4c595950c69c167a000634daedd7953c82dd044c2ddd76653b76eeffa119ac66",
+  "canon_path": "data\\praw1\\canon\\leica_q_canoe.u16"
+ },
+ {
+  "id": "leica_x2_lowlight",
+  "file": "Leica__X2__L1021324.DNG",
+  "url": "Leica/X2/L1021324.DNG",
+  "category": "low-light interior; defocused, smooth and noisy",
+  "camera": "LEICA CAMERA AG LEICA X2",
+  "width": 4944,
+  "height": 3272,
+  "declared_bits": 12,
+  "bit_depth": 12,
+  "sample_min": 0,
+  "sample_max": 4095,
+  "white_level": [
+   4095
+  ],
+  "black_level": null,
+  "active_area": null,
+  "cfa_dim": [
+   2,
+   2
+  ],
+  "cfa": [
+   0,
+   1,
+   1,
+   2
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "NONE",
+  "dng_compression_code": 1,
+  "predictor": 1,
+  "tiled": false,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint16",
+  "photometric": 32803,
+  "dng_bytes": 24453726,
+  "dng_sha256": "a67eca6271afb10510ffc9cf998b641d0e8a0ebfa4c779a7bc0bfed5d28b62dd",
+  "canon_bytes": 32353536,
+  "canon_sha256": "790d20d72f63ad65d09c32578a20d86f671ea52181ca6cd86af3439fe567a9c6",
+  "canon_path": "data\\praw1\\canon\\leica_x2_lowlight.u16"
+ },
+ {
+  "id": "leica_m8_house",
+  "file": "Leica__M8__L1030132.DNG",
+  "url": "Leica/M8/L1030132.DNG",
+  "category": "daylight architecture + foliage; 8-bit stored samples",
+  "camera": "Leica Camera AG M8 Digital Camera",
+  "width": 3920,
+  "height": 2638,
+  "declared_bits": 8,
+  "bit_depth": 8,
+  "sample_min": 3,
+  "sample_max": 255,
+  "white_level": [
+   16383
+  ],
+  "black_level": null,
+  "active_area": null,
+  "cfa_dim": [
+   2,
+   2
+  ],
+  "cfa": [
+   0,
+   1,
+   1,
+   2
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "NONE",
+  "dng_compression_code": 1,
+  "predictor": 1,
+  "tiled": false,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint8",
+  "photometric": 32803,
+  "dng_bytes": 10575296,
+  "dng_sha256": "7fdcca2371bb07fbf9483fcb08e3b5ab093eca1ca3924cbc86d6863736c31153",
+  "canon_bytes": 20681920,
+  "canon_sha256": "801c0c254685eb7d27c5c45aa424c5eac503acd2cd22ba1c0fb721f5bc908208",
+  "canon_path": "data\\praw1\\canon\\leica_m8_house.u16"
+ },
+ {
+  "id": "pixel6pro_valley",
+  "file": "Google__Pixel_6_Pro__PXL_20220910_093206982.dng",
+  "url": "Google/Pixel%206%20Pro/PXL_20220910_093206982.dng",
+  "category": "mountain landscape + sky; phone sensor",
+  "camera": "Google Pixel 6 Pro",
+  "width": 4080,
+  "height": 3072,
+  "declared_bits": 16,
+  "bit_depth": 14,
+  "sample_min": 1024,
+  "sample_max": 16368,
+  "white_level": [
+   16368
+  ],
+  "black_level": [
+   261967,
+   256,
+   261962,
+   256,
+   261890,
+   256,
+   261895,
+   256
+  ],
+  "active_area": [
+   0,
+   0,
+   3072,
+   4080
+  ],
+  "cfa_dim": [
+   2,
+   2
+  ],
+  "cfa": [
+   1,
+   2,
+   0,
+   1
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "JPEG",
+  "dng_compression_code": 7,
+  "predictor": 1,
+  "tiled": true,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint16",
+  "photometric": 32803,
+  "dng_bytes": 11932956,
+  "dng_sha256": "3a859e917a91698a3e15ce3b3721a48a1fb1296873e0697d3bf7c2793297200d",
+  "canon_bytes": 25067520,
+  "canon_sha256": "19eb22b33793fa3aceed80d1eef531380d7e90a061308766591be852a06e3309",
+  "canon_path": "data\\praw1\\canon\\pixel6pro_valley.u16"
+ },
+ {
+  "id": "dji_fc220_dusk",
+  "file": "DJI__FC220__DJI_0004.DNG",
+  "url": "DJI/FC220/DJI_0004.DNG",
+  "category": "dusk skyline + water + sky; drone",
+  "camera": "DJI FC220",
+  "width": 4000,
+  "height": 3000,
+  "declared_bits": 16,
+  "bit_depth": 14,
+  "sample_min": 800,
+  "sample_max": 16380,
+  "white_level": [
+   16383
+  ],
+  "black_level": [
+   800,
+   1,
+   800,
+   1,
+   800,
+   1,
+   800,
+   1
+  ],
+  "active_area": [
+   0,
+   0,
+   3000,
+   4000
+  ],
+  "cfa_dim": [
+   2,
+   2
+  ],
+  "cfa": [
+   0,
+   1,
+   1,
+   2
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "NONE",
+  "dng_compression_code": 1,
+  "predictor": 1,
+  "tiled": false,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint16",
+  "photometric": 32803,
+  "dng_bytes": 24331468,
+  "dng_sha256": "85a4fc27cca3c1358abd22898d6426dc3448060ca5143e7bd255cb5fff64392d",
+  "canon_bytes": 24000000,
+  "canon_sha256": "af06459524621d22ee2078b9b3b59e9449a1fd2f58ed4bd789bbb2db5958d769",
+  "canon_path": "data\\praw1\\canon\\dji_fc220_dusk.u16"
+ },
+ {
+  "id": "parrot_anafi_dusk",
+  "file": "Parrot__Anafi__100000190019.DNG",
+  "url": "Parrot/Anafi/100000190019.DNG",
+  "category": "dusk / heavy overcast; town from above; dark",
+  "camera": "None None",
+  "width": 5344,
+  "height": 4016,
+  "declared_bits": 16,
+  "bit_depth": 14,
+  "sample_min": 816,
+  "sample_max": 16368,
+  "white_level": [
+   16383
+  ],
+  "black_level": [
+   262144,
+   256,
+   262144,
+   256,
+   262144,
+   256,
+   262144,
+   256
+  ],
+  "active_area": null,
+  "cfa_dim": [
+   2,
+   2
+  ],
+  "cfa": [
+   2,
+   1,
+   1,
+   0
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "NONE",
+  "dng_compression_code": 1,
+  "predictor": 1,
+  "tiled": false,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint16",
+  "photometric": 32803,
+  "dng_bytes": 43001162,
+  "dng_sha256": "a257a296047ff2d396109fd2e6947fa36aa7986695b6815f83979d59e98a84e6",
+  "canon_bytes": 42923008,
+  "canon_sha256": "1f05c5bb5d37b9396ce9b70a844cf1da6f4444f24a8667b392bc914a74a46dae",
+  "canon_path": "data\\praw1\\canon\\parrot_anafi_dusk.u16"
+ },
+ {
+  "id": "hasselblad_tallinn",
+  "file": "Hasselblad__L1D-20c__DJI_0017.DNG",
+  "url": "Hasselblad/L1D-20c/DJI_0017.DNG",
+  "category": "daylight aerial of dense old town (roofs, many small features); true 16-bit range",
+  "camera": "Hasselblad L1D-20c",
+  "width": 5568,
+  "height": 3648,
+  "declared_bits": 16,
+  "bit_depth": 16,
+  "sample_min": 3905,
+  "sample_max": 65272,
+  "white_level": [
+   65535
+  ],
+  "black_level": [
+   4096,
+   1,
+   4094,
+   1,
+   4094,
+   1,
+   4093,
+   1
+  ],
+  "active_area": [
+   0,
+   96,
+   3648,
+   5568
+  ],
+  "cfa_dim": [
+   2,
+   2
+  ],
+  "cfa": [
+   0,
+   1,
+   1,
+   2
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "NONE",
+  "dng_compression_code": 1,
+  "predictor": 1,
+  "tiled": false,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint16",
+  "photometric": 32803,
+  "dng_bytes": 41369400,
+  "dng_sha256": "7afecae0db80d832941eeeb3c0eb2dc03f5696637b6e78b3c592e8c002dce4ec",
+  "canon_bytes": 40624128,
+  "canon_sha256": "004d8c7bc63629a71763354fa9a442d566a798cd0724c3c660152580be59cf62",
+  "canon_path": "data\\praw1\\canon\\hasselblad_tallinn.u16"
+ },
+ {
+  "id": "sigma_fp_bike14",
+  "file": "Sigma__fp__SDIM4591.DNG",
+  "url": "Sigma/fp/SDIM4591.DNG",
+  "category": "machinery/vehicle detail (bicycle handlebar close-up); shallow depth of field",
+  "camera": "SIGMA SIGMA fp",
+  "width": 6064,
+  "height": 4042,
+  "declared_bits": 14,
+  "bit_depth": 14,
+  "sample_min": 605,
+  "sample_max": 16383,
+  "white_level": [
+   16383
+  ],
+  "black_level": [
+   1048576,
+   1024,
+   1048576,
+   1024,
+   1048576,
+   1024,
+   1048576,
+   1024
+  ],
+  "active_area": [
+   0,
+   0,
+   4042,
+   6064
+  ],
+  "cfa_dim": [
+   2,
+   2
+  ],
+  "cfa": [
+   0,
+   1,
+   1,
+   2
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "JPEG",
+  "dng_compression_code": 7,
+  "predictor": 1,
+  "tiled": true,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint16",
+  "photometric": 32803,
+  "dng_bytes": 34676310,
+  "dng_sha256": "0844bcf23a49e21b5c2f8489de55ce38fb7b594e3ed337d6b9af2dd9341354e9",
+  "canon_bytes": 49021376,
+  "canon_sha256": "6cd6c5b813f52eab6028b49efd8a861ff8129540be9d0c89051abe740dbdd81c",
+  "canon_path": "data\\praw1\\canon\\sigma_fp_bike14.u16"
+ },
+ {
+  "id": "sigma_fp_bike8",
+  "file": "Sigma__fp__A002_650_20240229_000001_4k_8bit.DNG",
+  "url": "Sigma/fp/A002_650_20240229_000001_4k_8bit.DNG",
+  "category": "same bicycle scene, genuine 8-bit uncompressed cinema DNG",
+  "camera": "SIGMA SIGMA fp",
+  "width": 3856,
+  "height": 2170,
+  "declared_bits": 8,
+  "bit_depth": 8,
+  "sample_min": 26,
+  "sample_max": 255,
+  "white_level": [
+   4095
+  ],
+  "black_level": [
+   262147,
+   1024,
+   262147,
+   1024,
+   262147,
+   1024,
+   262147,
+   1024
+  ],
+  "active_area": [
+   0,
+   0,
+   2170,
+   3856
+  ],
+  "cfa_dim": [
+   2,
+   2
+  ],
+  "cfa": [
+   0,
+   1,
+   1,
+   2
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "NONE",
+  "dng_compression_code": 1,
+  "predictor": 1,
+  "tiled": false,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint8",
+  "photometric": 32803,
+  "dng_bytes": 8447488,
+  "dng_sha256": "b7e44ca41c5c5a01324967b2bd86175c7534f3df98cc3724d02edd29adb1942b",
+  "canon_bytes": 16735040,
+  "canon_sha256": "d55cf24b8e4fef3247c91e55d06ae297fa9d00d783736ba5e9354e0b7346ed4e",
+  "canon_path": "data\\praw1\\canon\\sigma_fp_bike8.u16"
+ },
+ {
+  "id": "nexus6_courtyard",
+  "file": "motorola__Nexus_6__DSC_0017.DNG",
+  "url": "motorola/Nexus%206/DSC_0017.DNG",
+  "category": "bright daylight courtyard, sky and clouds; 10-bit phone",
+  "camera": "motorola Nexus 6",
+  "width": 4208,
+  "height": 3120,
+  "declared_bits": 16,
+  "bit_depth": 10,
+  "sample_min": 62,
+  "sample_max": 1023,
+  "white_level": [
+   1023
+  ],
+  "black_level": [
+   64,
+   1,
+   64,
+   1,
+   64,
+   1,
+   64,
+   1
+  ],
+  "active_area": [
+   0,
+   0,
+   3120,
+   4208
+  ],
+  "cfa_dim": [
+   2,
+   2
+  ],
+  "cfa": [
+   2,
+   1,
+   1,
+   0
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "NONE",
+  "dng_compression_code": 1,
+  "predictor": 1,
+  "tiled": false,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint16",
+  "photometric": 32803,
+  "dng_bytes": 26288408,
+  "dng_sha256": "c92496d31742e61918ca9f30148c630a61581db0cff512995d54ae5b473f1d4f",
+  "canon_bytes": 26257920,
+  "canon_sha256": "1b1c9ae471da849fb2734dc8734637596a2f39c0a6f4ce984da4bd2a1a9ea6ec",
+  "canon_path": "data\\praw1\\canon\\nexus6_courtyard.u16"
+ },
+ {
+  "id": "lg_h815_mountain",
+  "file": "LG__H815__20161227_150823.dng",
+  "url": "LG/H815/20161227_150823.dng",
+  "category": "snow mountain landscape + sky; 10-bit phone",
+  "camera": "LG Mobile LG-H815",
+  "width": 5312,
+  "height": 2988,
+  "declared_bits": 10,
+  "bit_depth": 10,
+  "sample_min": 0,
+  "sample_max": 1023,
+  "white_level": [
+   1023
+  ],
+  "black_level": [
+   0,
+   0,
+   0,
+   0
+  ],
+  "active_area": null,
+  "cfa_dim": [
+   2,
+   2
+  ],
+  "cfa": [
+   2,
+   1,
+   1,
+   0
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "NONE",
+  "dng_compression_code": 1,
+  "predictor": 1,
+  "tiled": false,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint16",
+  "photometric": 32803,
+  "dng_bytes": 20027632,
+  "dng_sha256": "6719693cddbbe348781592144cbd2ac375adbb8ed80e9e8753f429e2a89c97c9",
+  "canon_bytes": 31744512,
+  "canon_sha256": "bb0220398640500831e4a7cd0588bfcc05935d98729e0bd5b6c8c18e08398b66",
+  "canon_path": "data\\praw1\\canon\\lg_h815_mountain.u16"
+ },
+ {
+  "id": "ricoh_gr_wood",
+  "file": "Ricoh__GR__R0003611.DNG",
+  "url": "Ricoh/GR/R0003611.DNG",
+  "category": "fine texture (weathered painted wood, dry grass)",
+  "camera": "RICOH IMAGING COMPANY, LTD. GR",
+  "width": 4960,
+  "height": 3280,
+  "declared_bits": 12,
+  "bit_depth": 12,
+  "sample_min": 0,
+  "sample_max": 1284,
+  "white_level": [
+   4095
+  ],
+  "black_level": [
+   0,
+   1
+  ],
+  "active_area": [
+   0,
+   0,
+   3280,
+   4944
+  ],
+  "cfa_dim": [
+   2,
+   2
+  ],
+  "cfa": [
+   0,
+   1,
+   1,
+   2
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "JPEG",
+  "dng_compression_code": 7,
+  "predictor": 1,
+  "tiled": false,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint16",
+  "photometric": 32803,
+  "dng_bytes": 12129815,
+  "dng_sha256": "7ceec1ea31c56b6e0414202504581b915f17818ffe018b4c8bba1393332c405e",
+  "canon_bytes": 32537600,
+  "canon_sha256": "31be2e15b7c5b5f925993932bedb92dc79dcb41cce4bac552b5fba830c76c1fa",
+  "canon_path": "data\\praw1\\canon\\ricoh_gr_wood.u16"
+ },
+ {
+  "id": "ricoh_gr3_dunes",
+  "file": "Ricoh__GR_III__R0000357.DNG",
+  "url": "Ricoh/GR%20III/R0000357.DNG",
+  "category": "daylight beach landscape, dune grass, clouds",
+  "camera": "RICOH IMAGING COMPANY, LTD. RICOH GR III",
+  "width": 6112,
+  "height": 4064,
+  "declared_bits": 14,
+  "bit_depth": 14,
+  "sample_min": 0,
+  "sample_max": 16383,
+  "white_level": [
+   16314
+  ],
+  "black_level": [
+   64,
+   64,
+   64,
+   64
+  ],
+  "active_area": [
+   28,
+   58,
+   4052,
+   6078
+  ],
+  "cfa_dim": [
+   2,
+   2
+  ],
+  "cfa": [
+   0,
+   1,
+   1,
+   2
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "JPEG",
+  "dng_compression_code": 7,
+  "predictor": 1,
+  "tiled": false,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint16",
+  "photometric": 32803,
+  "dng_bytes": 33374940,
+  "dng_sha256": "05513ee72f7cac4165534c9f64995412084f414a033c80c473c79fd94154292e",
+  "canon_bytes": 49678336,
+  "canon_sha256": "a2258ae700047b0aa2a51b94e11f09f19117cc397d883d8b9ed1626fe5cc33c7",
+  "canon_path": "data\\praw1\\canon\\ricoh_gr3_dunes.u16"
+ },
+ {
+  "id": "samsung_gx20_berries",
+  "file": "Samsung__GX20___G205027.DNG",
+  "url": "Samsung/GX20/_G205027.DNG",
+  "category": "foliage + fruit close-up; shallow depth of field",
+  "camera": "SAMSUNG TECHWIN Co. SAMSUNG GX20",
+  "width": 4864,
+  "height": 3136,
+  "declared_bits": 12,
+  "bit_depth": 12,
+  "sample_min": 0,
+  "sample_max": 4095,
+  "white_level": [
+   4095
+  ],
+  "black_level": [
+   0,
+   0,
+   0,
+   0
+  ],
+  "active_area": null,
+  "cfa_dim": [
+   2,
+   2
+  ],
+  "cfa": [
+   2,
+   1,
+   1,
+   0
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "NONE",
+  "dng_compression_code": 1,
+  "predictor": 1,
+  "tiled": false,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint16",
+  "photometric": 32803,
+  "dng_bytes": 24061568,
+  "dng_sha256": "5557016b2712b621befdb05731923562a802beafd13e0f366737390a8f7b3286",
+  "canon_bytes": 30507008,
+  "canon_sha256": "42980549514127914beb41ad0ee9d19a76197599e95ec4ca6eff5a0083c080ac",
+  "canon_path": "data\\praw1\\canon\\samsung_gx20_berries.u16"
+ },
+ {
+  "id": "nikon_d80_piano",
+  "file": "Nikon__D80__DSC_0143.dng",
+  "url": "Nikon/D80/DSC_0143.dng",
+  "category": "indoor, dim-light (piano by a window); converted Nikon DNG",
+  "camera": "NIKON CORPORATION NIKON D80",
+  "width": 3900,
+  "height": 2611,
+  "declared_bits": 16,
+  "bit_depth": 12,
+  "sample_min": 0,
+  "sample_max": 682,
+  "white_level": [
+   3880
+  ],
+  "black_level": [
+   0,
+   256
+  ],
+  "active_area": [
+   0,
+   0,
+   2611,
+   3900
+  ],
+  "cfa_dim": [
+   2,
+   2
+  ],
+  "cfa": [
+   1,
+   2,
+   0,
+   1
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "JPEG",
+  "dng_compression_code": 7,
+  "predictor": 1,
+  "tiled": true,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint16",
+  "photometric": 32803,
+  "dng_bytes": 8283990,
+  "dng_sha256": "5095ca264e763624cd3aa62940286dd1bcff4504eefa1ce61cbb72f50f8426bb",
+  "canon_bytes": 20365800,
+  "canon_sha256": "fca12cc19ff16c821422e9d042f3543ae32c4c63a8a2052e2ead47f4da687d28",
+  "canon_path": "data\\praw1\\canon\\nikon_d80_piano.u16"
+ },
+ {
+  "id": "bmpcc4k_person",
+  "file": "Blackmagic__Blackmagic_Pocket_Cinema_Camera_4k__BMPCC_4k_DCI_lossless.dng",
+  "url": "Blackmagic/Blackmagic%20Pocket%20Cinema%20Camera%204k/BMPCC_4k_DCI_lossless.dng",
+  "category": "individual person (portrait, workshop) indoors; cinema DNG",
+  "camera": "None None",
+  "width": 4128,
+  "height": 2176,
+  "declared_bits": 12,
+  "bit_depth": 12,
+  "sample_min": 0,
+  "sample_max": 4095,
+  "white_level": [
+   65535
+  ],
+  "black_level": [
+   512
+  ],
+  "active_area": null,
+  "cfa_dim": [
+   2,
+   2
+  ],
+  "cfa": [
+   0,
+   1,
+   1,
+   2
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "JPEG",
+  "dng_compression_code": 7,
+  "predictor": 1,
+  "tiled": true,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint16",
+  "photometric": 32803,
+  "dng_bytes": 8069760,
+  "dng_sha256": "a90b542deab594093cdc91211c71ca9c3e451db12d400d5372fcfb6fc4cd27d3",
+  "canon_bytes": 17965056,
+  "canon_sha256": "68172a23634064d4ce97455c9874c39cd22505295f085d9c02755017d72245ae",
+  "canon_path": "data\\praw1\\canon\\bmpcc4k_person.u16"
+ },
+ {
+  "id": "x100s_xtrans_chart",
+  "file": "Fujifilm__X100S__fujifilm-x100s-daylight-DSCF9505.dng",
+  "url": "Fujifilm/X100S/fujifilm-x100s-daylight-DSCF9505.dng",
+  "category": "X-Trans 6x6 CFA (non-Bayer); colour chart on dark ground",
+  "camera": "FUJIFILM X100S",
+  "width": 4936,
+  "height": 3296,
+  "declared_bits": 16,
+  "bit_depth": 14,
+  "sample_min": 28,
+  "sample_max": 16383,
+  "white_level": [
+   16383
+  ],
+  "black_level": [
+   262144,
+   256
+  ],
+  "active_area": [
+   0,
+   0,
+   3296,
+   4936
+  ],
+  "cfa_dim": [
+   6,
+   6
+  ],
+  "cfa": [
+   0,
+   1,
+   0,
+   2,
+   1,
+   2,
+   1,
+   2,
+   1,
+   1,
+   0,
+   1,
+   1,
+   0,
+   1,
+   1,
+   2,
+   1,
+   2,
+   1,
+   2,
+   0,
+   1,
+   0,
+   1,
+   0,
+   1,
+   1,
+   2,
+   1,
+   1,
+   2,
+   1,
+   1,
+   0,
+   1
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "JPEG",
+  "dng_compression_code": 7,
+  "predictor": 1,
+  "tiled": true,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint16",
+  "photometric": 32803,
+  "dng_bytes": 20729906,
+  "dng_sha256": "7adec564bbf74858c70b5a01a2b744000f8057303169fc70d91bde7cb435530f",
+  "canon_bytes": 32538112,
+  "canon_sha256": "e819ba370c8e9bc9f12de24486a3edeeccc59a9c85c22c61d56c0bfe2f3b0f42",
+  "canon_path": "data\\praw1\\canon\\x100s_xtrans_chart.u16"
+ },
+ {
+  "id": "canon_sx40_snow",
+  "file": "Canon__PowerShot_SX40_HS__CRW_6037.DNG",
+  "url": "Canon/PowerShot%20SX40%20HS/CRW_6037.DNG",
+  "category": "overcast winter street (bare trees, parked cars, snow); CHDK uncompressed",
+  "camera": "Canon Canon PowerShot SX40 HS",
+  "width": 4176,
+  "height": 3060,
+  "declared_bits": 12,
+  "bit_depth": 12,
+  "sample_min": 1,
+  "sample_max": 4095,
+  "white_level": [
+   4095
+  ],
+  "black_level": [
+   127
+  ],
+  "active_area": [
+   16,
+   96,
+   3060,
+   4168
+  ],
+  "cfa_dim": [
+   2,
+   2
+  ],
+  "cfa": [
+   0,
+   1,
+   1,
+   2
+  ],
+  "cfa_origin": [
+   0,
+   0
+  ],
+  "dng_compression": "NONE",
+  "dng_compression_code": 1,
+  "predictor": 1,
+  "tiled": false,
+  "sample_format": [
+   1
+  ],
+  "stored_dtype": "uint16",
+  "photometric": 32803,
+  "dng_bytes": 19206240,
+  "dng_sha256": "dab360e60b94a3f011dd154577f3e7305febd3d497d47379cc4a64b383c48e1f",
+  "canon_bytes": 25557120,
+  "canon_sha256": "33f59b01eeccd12889ca498b49b0db33f35cec5ededb9ba88fb0c5695d88a7b7",
+  "canon_path": "data\\praw1\\canon\\canon_sx40_snow.u16"
+ }
+]

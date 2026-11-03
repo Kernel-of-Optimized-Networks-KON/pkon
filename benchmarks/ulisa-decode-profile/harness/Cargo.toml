@@ -1,0 +1,32 @@
+[package]
+name = "ulisa_decode_profile"
+version = "0.1.0"
+edition = "2021"
+
+[workspace]
+
+[[bin]]
+name = "phases"
+path = "src/main.rs"
+
+[[bin]]
+name = "model"
+path = "src/bin/model.rs"
+
+[[bin]]
+name = "predict"
+path = "src/bin/predict.rs"
+
+[[bin]]
+name = "ablate"
+path = "src/bin/ablate.rs"
+
+[dependencies]
+nanoscope = { path = "../../.." }
+
+# Identical to the production release profile so timings match the benchmark build.
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+debug = false

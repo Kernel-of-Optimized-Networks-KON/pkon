@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="300" viewBox="0 0 760 300" role="img" aria-labelledby="t d" font-family="-apple-system, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <title id="t">Average compressed size relative to JPEG XL effort 7</title>
+  <desc id="d">Horizontal bars, lower is better. ULISA 81.65%, JPEG XL effort 9 97.53%, JPEG XL effort 7 100.00%, PNG 134.57%.</desc>
+  <rect x="0.5" y="0.5" width="759" height="299" rx="8" fill="#ffffff" stroke="#d0d7de"/>
+  <text x="24" y="34" font-size="16" font-weight="600" fill="#1f2328">Compressed size relative to JPEG XL effort 7</text>
+  <text x="24" y="54" font-size="12" fill="#59636e">Lower is better. 23-image Bayer RAW corpus, total bytes.</text>
+
+  <!-- 100% baseline: x = 190 + 100 * 3.5714 -->
+  <line x1="547.1" y1="72" x2="547.1" y2="250" stroke="#8c959f" stroke-width="1" stroke-dasharray="4 3"/>
+
+  <g font-size="13" fill="#1f2328" text-anchor="end">
+    <text x="176" y="100" font-weight="600">ULISA</text>
+    <text x="176" y="148">JPEG XL, effort 9</text>
+    <text x="176" y="196">JPEG XL, effort 7</text>
+    <text x="176" y="244">PNG</text>
+  </g>
+
+  <rect x="190" y="82"  width="291.6" height="26" rx="3" fill="#0969da"/>
+  <rect x="190" y="130" width="348.3" height="26" rx="3" fill="#9aa4af"/>
+  <rect x="190" y="178" width="357.1" height="26" rx="3" fill="#9aa4af"/>
+  <rect x="190" y="226" width="480.6" height="26" rx="3" fill="#9aa4af"/>
+
+  <g font-size="13" fill="#1f2328">
+    <text x="489.6" y="100" font-weight="700">81.65%</text>
+    <text x="555.1" y="148">97.53%</text>
+    <text x="555.1" y="196">100.00%</text>
+    <text x="678.6" y="244">134.57%</text>
+  </g>
+
+  <text x="547.1" y="268" font-size="11" fill="#59636e" text-anchor="middle">JPEG XL effort 7 = 100%</text>
+</svg>

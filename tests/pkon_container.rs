@@ -307,7 +307,7 @@ fn payload_bound_holds_for_the_flattest_lisa_images() {
     for bd in [8u8, 12, 16] {
         let (w, h) = (2048usize, 2048usize);
         let meta = ImageMetadata::without_cfa(w, h, SampleLayout::Monochrome);
-        let f = encode_raw(&vec![(1u16 << bd) / 2; w * h], w, h, bd, meta).unwrap();
+        let f = encode_raw(&vec![((1u32 << bd) / 2) as u16; w * h], w, h, bd, meta).unwrap();
         let hdr = parse_header(&f).unwrap();
         let ratio = (w * h) as f64 / hdr.payload_len as f64;
         println!("flat {bd}-bit {w}x{h}: payload {} B, {ratio:.0} samples/byte (bound 16384)", hdr.payload_len);

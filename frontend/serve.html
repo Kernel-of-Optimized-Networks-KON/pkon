@@ -1,6 +1,6 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>PKON converter</title>
+<title>ULISA converter</title>
 <style>
 table{border-collapse:collapse;margin:.4em 0}
 td,th{border:1px solid #ccc;padding:3px 8px;text-align:left;vertical-align:top}
@@ -12,17 +12,17 @@ button.copy{font-size:11px;margin-left:6px}
 #prog{width:100%;display:none}
 </style>
 <body style="font-family:sans-serif;max-width:48em;margin:2em auto">
-<h2>PKON converter (local)</h2>
-<p><b>Image → .pkon</b> (PNG or JPEG, 8-bit &rarr; ELLIE-X4; DNG RAW &rarr; LISA)</p>
+<h2>ULISA converter (local)</h2>
+<p><b>Image → ULISA</b> (DNG, PNG or JPEG; output is a ULISA container, <code>.pkon</code>)</p>
 <input type="file" id="img" accept=".png,.jpg,.jpeg,.dng,image/png,image/jpeg,image/x-adobe-dng" onchange="codecHint()">
-<button onclick="go('convert','img','.pkon')">Convert to PKON</button>
+<button onclick="go('convert','img','.pkon')">Convert to ULISA</button>
 <div id="hint" class="na"></div>
-<p><b>.pkon → image / RAW</b> (standard images restore to PNG; LISA RAW restores to its exact samples)</p>
+<p><b>ULISA → image / RAW</b> (standard images restore to PNG; RAW restores to its exact samples)</p>
 <input type="file" id="pk" accept=".pkon,.pkon2">
-<button onclick="go('restore','pk',null)">Decode PKON</button>
+<button onclick="go('restore','pk',null)">Decode ULISA</button>
 <hr>
-<h3>PKON Viewer</h3>
-<p>View a <b>.pkon</b> standard-image file directly in a new tab (the file is not converted or changed).</p>
+<h3>ULISA Viewer</h3>
+<p>View a <b>ULISA</b> file directly in a new tab (the file is not converted or changed).</p>
 <input type="file" id="vw" accept=".pkon,.pkon2">
 <button onclick="view()">View in New Tab</button>
 <p id="status"></p>
@@ -36,8 +36,8 @@ const isDng = f => /\.dng$/i.test(f.name);
 function codecHint() {
   const f = $('img').files[0];
   $('hint').textContent = !f ? '' : isDng(f)
-    ? 'RAW input: the stored sensor samples are compressed losslessly with LISA (no demosaic, white balance or black-level change).'
-    : 'Standard image: decoded to pixels and compressed with ELLIE-X4 (original file bytes, EXIF and ICC are not kept).';
+    ? 'RAW input: the stored sensor samples are compressed losslessly with ULISA (no demosaic, white balance or black-level change).'
+    : 'Standard image: decoded to pixels and compressed losslessly with ULISA (original file bytes, EXIF and ICC are not kept).';
 }
 
 function esc(t) { return String(t).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -68,25 +68,26 @@ function render(r, ctx) {
   const recon = g.reconstructed_pixel_sha256;
   let cmp;
   if (origSha && recon) { const m = origSha === recon; if (!m) bad.push('pixel SHA-256 mismatch'); cmp = stat(m, 'MATCH', 'MISMATCH'); }
-  else cmp = '<span class="na">not available' + (recon ? ' &mdash; the original pixel hash is not stored in a .pkon file' : '') + '</span>';
+  else cmp = '<span class="na">not available' + (recon ? ' &mdash; the original pixel hash is not stored in a ULISA file' : '') + '</span>';
   const crcOk = g.crc_stored === g.crc_recomputed;
   if (!crcOk) bad.push('pixel CRC-32 mismatch');
   if (ctx.browserSha && ctx.browserSha !== g.file_sha256) bad.push('complete-file SHA-256 differs from the bytes in the browser');
   let h = '';
   if (bad.length) h += '<div id="banner" class="bad">INTEGRITY FAILURE: ' + esc(bad.join('; ')) + '</div>';
   else h += '<div id="banner" class="ok">Verified: ' + (origSha && recon ? 'lossless round trip, pixel SHA-256 and CRC-32 match.' : 'pixel CRC-32 matches the reconstructed pixels.') + '</div>';
-  h += '<table>' + row('Codec', esc(r.codec) + (r.kind === 'raw' ? ' (RAW)' : ' (standard image)') + ', codec id ' + r.codec_id + ', container v' + r.container_version)
+  h += '<table>' + row('Codec', esc(r.codec) + (r.kind === 'raw' ? ' (RAW)' : ' (standard image)') + (r.engine ? ', ' + esc(r.engine) : '') + ', codec id ' + r.codec_id + ', container v' + r.container_version)
     + row('Dimensions', r.width + ' &times; ' + r.height + ', ' + r.bit_depth + '-bit' + (r.layout ? ', ' + esc(r.layout) : ''));
   if (r.cfa) h += row('Sample layout', esc(r.cfa.layout) + (r.cfa.pattern ? ', CFA ' + esc(r.cfa.pattern) + ' (' + r.cfa.rows + '&times;' + r.cfa.cols + '), origin (' + r.cfa.origin_x + ',' + r.cfa.origin_y + ')' : ''));
   if (r.camera) h += row('Camera', esc(r.camera));
-  h += row('.pkon size', bytes(r.pkon_bytes))
+  if (r.fallback) h += row('Note', 'This mosaic is not a 2x2 Bayer layout, so ULISA stored it with its LISA RAW path (' + esc(r.fallback) + ').');
+  h += row('ULISA file size', bytes(r.pkon_bytes))
     + row('Uncompressed samples', bytes(r.uncompressed_bytes) + ' (' + (r.kind === 'raw' ? (r.bit_depth > 8 ? '2 bytes/sample' : '1 byte/sample') : 'decoded 8-bit pixels') + ')')
     + row('Compression ratio', r.ratio.toFixed(3) + ' : 1' + (r.input_bytes ? ' <span class="na">(DNG file ' + bytes(r.input_bytes) + ' = ' + (r.input_bytes / r.pkon_bytes).toFixed(3) + ' : 1)</span>' : '')) + '</table>';
   h += '<h4>File Integrity</h4><table><tr><th>Measurement</th><th>Result</th></tr>'
     + row('Original pixel SHA-256', (origSha ? hashCell(origSha) : '<span class="na">not available</span>') + origNote)
     + row('Reconstructed pixel SHA-256', recon ? hashCell(recon) : '<span class="na">not computed (decode rejected the file)</span>')
     + row('Pixel hash comparison', cmp)
-    + row('Complete .pkon SHA-256', hashCell(g.file_sha256) + (ctx.browserSha ? ' <span class="na">(re-checked in browser: ' + (ctx.browserSha === g.file_sha256 ? 'same' : 'DIFFERENT') + ')</span>' : ''))
+    + row('Complete ULISA file SHA-256', hashCell(g.file_sha256) + (ctx.browserSha ? ' <span class="na">(re-checked in browser: ' + (ctx.browserSha === g.file_sha256 ? 'same' : 'DIFFERENT') + ')</span>' : ''))
     + row('Stored pixel CRC-32', g.crc_stored) + row('Recomputed pixel CRC-32', g.crc_recomputed)
     + row('CRC verification', stat(crcOk, 'MATCH', 'MISMATCH')) + '</table>'
     + (g.pixel_byte_representation ? '<div class="na">Pixel hash is over: ' + esc(g.pixel_byte_representation) + '.</div>' : '');
@@ -125,7 +126,7 @@ async function go(op, id, ext) {
   $('result').innerHTML = '';
   if (!f) { st.textContent = 'Choose a file first.'; return; }
   const raw = op === 'convert' && isDng(f);
-  const stage = (op === 'convert' ? (raw ? 'Reading DNG, compressing with LISA and verifying the round trip' : 'Compressing with ELLIE-X4 and verifying the round trip') : 'Decoding and verifying') + ' ' + f.name + ' (' + f.size.toLocaleString() + ' bytes)';
+  const stage = (op === 'convert' ? (raw ? 'Reading DNG, compressing with ULISA and verifying the round trip' : 'Compressing with ULISA and verifying the round trip') : 'Decoding and verifying') + ' ' + f.name + ' (' + f.size.toLocaleString() + ' bytes)';
   const t0 = Date.now(), tick = setInterval(() => st.textContent = stage + '... ' + Math.round((Date.now() - t0) / 1000) + ' s (large images can take a while)', 500);
   st.textContent = stage + '...'; pr.style.display = 'block'; pr.removeAttribute('value');
   const done = () => { clearInterval(tick); pr.style.display = 'none'; };

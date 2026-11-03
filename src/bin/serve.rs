@@ -1,5 +1,7 @@
-//! Minimal localhost-only converter UI: PNG/JPEG -> .pkon (container v2, ELLIE-X4), DNG -> .pkon (LISA RAW), and
-//! .pkon/.pkon2 -> PNG (standard images) or lossless u16/u8 sample export (LISA RAW), with integrity reporting.
+//! Minimal localhost-only converter UI. The format exposed to the user is ULISA; the `.pkon` v2 container carries it.
+//! DNG -> ULISA Bayer RAW (codec 7; a mosaic the 2x2 Bayer frame cannot represent falls back to LISA's RAW path, codec 4,
+//! and the report says so), PNG/JPEG -> ULISA standard-image stream (codec 6, ELLIE engine), and a ULISA file -> PNG
+//! (standard images) or lossless u16/u8 sample export (RAW), with integrity reporting. JPEG XL input is not supported.
 //!
 //!   cargo run --release --bin serve            # then open http://127.0.0.1:8080/
 //!
@@ -12,6 +14,7 @@ use nanoscope::canon::{Canonical, Layout};
 use nanoscope::dng;
 use nanoscope::integrity::{self, pixel_sha256_standard, pixel_sha256_u16, sha256_hex};
 use nanoscope::lisa::{ColorFilter, ImageMetadata};
+use nanoscope::ulisa::{self, Engine, Source};
 use nanoscope::pkon::{self, bytes_per_sample, decode as decode_any, encode_raw, encode_standard as encode, pixel_crc_u16, ContainerError, Decoded};
 use nanoscope::pkonfile::{self, PkonError};
 use serde_json::{json, Value};
@@ -24,11 +27,11 @@ const MAX_UPLOAD: usize = 64 << 20;
 const PAGE: &str = include_str!("../../frontend/serve.html");
 const VIEWER: &str = include_str!("../../frontend/viewer.html");
 
-/// Decodes a `.pkon` (v2) or legacy `.pkon2` (v1) file; this converter only handles standard images, not LISA RAW.
+/// Decodes a `.pkon` (v2) or legacy `.pkon2` (v1) file; this converter only handles standard images, not ULISA RAW.
 fn decode(input: &[u8]) -> Result<Canonical, String> {
     match decode_any(input).map_err(|e| e.to_string())? {
         Decoded::Standard(img) => Ok(img),
-        Decoded::Raw(_) => Err("this is a RAW (LISA) .pkon file; the viewer only shows standard images".into()),
+        Decoded::Raw(_) => Err("this is a ULISA RAW file; the standard-image converter only shows standard images".into()),
     }
 }
 
@@ -59,6 +62,21 @@ impl From<&str> for Fail {
 
 fn hex32(v: u32) -> String {
     format!("0x{v:08x}")
+}
+
+/// The user-facing codec name is always ULISA; this names the engine that wrote a file, from its codec id.
+fn engine_label(codec_id: u8) -> &'static str {
+    match codec_id {
+        pkon::CODEC_ULISA => "Bayer RAW",
+        pkon::CODEC_LISA => "LISA RAW (non-Bayer fallback)",
+        pkon::CODEC_ELLIE => "ELLIE standard image",
+        _ => "unknown",
+    }
+}
+
+/// JPEG XL signatures: bare codestream (FF 0A) or ISO-BMFF container.
+fn looks_like_jxl(b: &[u8]) -> bool {
+    b.starts_with(&[0xFF, 0x0A]) || b.starts_with(&[0, 0, 0, 0x0C, b'J', b'X', b'L', b' ', 0x0D, 0x0A, 0x87, 0x0A])
 }
 
 /// CRC-32 stored in the header of a v1 or v2 file.
@@ -104,7 +122,7 @@ fn cfa_json(m: &ImageMetadata) -> Value {
 
 #[allow(clippy::too_many_arguments)]
 fn base_report(kind: &str, codec: &str, codec_id: u8, container: u8, w: usize, h: usize, bit_depth: u8, uncompressed: u64, pkon_len: usize) -> Value {
-    json!({ "kind": kind, "codec": codec, "codec_id": codec_id, "container_version": container, "width": w, "height": h,
+    json!({ "kind": kind, "codec": codec, "engine": engine_label(codec_id), "codec_id": codec_id, "container_version": container, "width": w, "height": h,
             "bit_depth": bit_depth, "uncompressed_bytes": uncompressed, "pkon_bytes": pkon_len,
             "ratio": uncompressed as f64 / pkon_len as f64 })
 }
@@ -113,7 +131,10 @@ fn convert_report(input: Vec<u8>) -> Result<Out, Fail> {
     if dng::looks_like_tiff(&input) {
         return convert_dng(&input);
     }
-    let img = Canonical::load_bytes(input).map_err(|e| format!("cannot read image (PNG or JPEG, 8-bit, or DNG): {e}"))?;
+    if looks_like_jxl(&input) {
+        return Err("JPEG XL input is not supported by this converter (no JPEG XL decoder is built in); supported inputs are DNG, PNG and JPEG".into());
+    }
+    let img = Canonical::load_bytes(input).map_err(|e| format!("cannot read image (DNG, PNG or JPEG, 8-bit): {e}"))?;
     let out = encode(&img).map_err(|e| e.to_string())?;
     let (orig, file) = (pixel_sha256_standard(&img), sha256_hex(&out));
     let stored = stored_crc(&out).ok_or("cannot read the CRC of the file just written")?;
@@ -123,7 +144,7 @@ fn convert_report(input: Vec<u8>) -> Result<Out, Fail> {
     let mut crc = pkon::Crc32::new();
     crc.update(&back.data);
     let recomputed = crc.finish();
-    let mut report = base_report("standard", "ELLIE-X4", out[6], out[4], img.spec.width as usize, img.spec.height as usize, 8, img.data.len() as u64, out.len());
+    let mut report = base_report("standard", "ULISA", out[6], out[4], img.spec.width as usize, img.spec.height as usize, 8, img.data.len() as u64, out.len());
     report["layout"] = json!(img.spec.label());
     report["integrity"] = integrity_json(Some(&orig), Some(&recon), &file, stored, recomputed, integrity::STANDARD_BYTE_REPR);
     if orig != recon || back.data != img.data || stored != recomputed {
@@ -134,9 +155,16 @@ fn convert_report(input: Vec<u8>) -> Result<Out, Fail> {
 }
 
 fn convert_dng(input: &[u8]) -> Result<Out, Fail> {
-    let d = dng::ingest_dng(input)?;
+    convert_ingested(dng::ingest_dng(input)?, input.len())
+}
+
+/// ULISA-encode ingested RAW samples and verify the round trip. A 2x2 Bayer mosaic is written as codec 7; any other layout
+/// takes `ulisa::encode_report`'s documented LISA fallback, which the report records in `fallback`.
+fn convert_ingested(d: dng::DngInput, input_len: usize) -> Result<Out, Fail> {
     let (w, h) = (d.metadata.width, d.metadata.height);
-    let out = encode_raw(&d.samples, w, h, d.bit_depth, d.metadata.clone()).map_err(|e| e.to_string())?;
+    let source = Source::Raw { samples: &d.samples, width: w, height: h, bit_depth: d.bit_depth, metadata: d.metadata.clone() };
+    let enc = ulisa::encode_report(Engine::Ulisa, &source).map_err(|e| e.to_string())?;
+    let out = enc.bytes;
     let (orig, file) = (pixel_sha256_u16(&d.samples, d.bit_depth), sha256_hex(&out));
     let stored = stored_crc(&out).ok_or("cannot read the CRC of the file just written")?;
     let back = match decode_any(&out).map_err(|e| format!("integrity failure: the new file does not decode: {e}"))? {
@@ -145,11 +173,12 @@ fn convert_dng(input: &[u8]) -> Result<Out, Fail> {
     };
     let recon = pixel_sha256_u16(&back.samples, back.bit_depth);
     let recomputed = pixel_crc_u16(&back.samples, back.bit_depth);
-    let mut report = base_report("raw", "LISA", out[6], out[4], w, h, d.bit_depth, (w * h * bytes_per_sample(d.bit_depth)) as u64, out.len());
+    let mut report = base_report("raw", "ULISA", out[6], out[4], w, h, d.bit_depth, (w * h * bytes_per_sample(d.bit_depth)) as u64, out.len());
     report["declared_bits"] = json!(d.declared_bits);
     report["cfa"] = cfa_json(&d.metadata);
     report["camera"] = json!(d.camera);
-    report["input_bytes"] = json!(input.len());
+    report["input_bytes"] = json!(input_len);
+    report["fallback"] = json!(enc.fallback);
     report["input_compression"] = json!(d.dng_compression);
     report["integrity"] = integrity_json(Some(&orig), Some(&recon), &file, stored, recomputed, integrity::raw_byte_repr(d.bit_depth));
     if back.samples != d.samples || back.metadata != d.metadata || back.bit_depth != d.bit_depth || orig != recon || stored != recomputed {
@@ -189,7 +218,7 @@ fn restore_report(input: &[u8]) -> Result<Out, Fail> {
             let mut crc = pkon::Crc32::new();
             crc.update(&img.data);
             let recon = pixel_sha256_standard(&img);
-            let mut report = base_report("standard", "ELLIE-X4", codec_id, container, img.spec.width as usize, img.spec.height as usize, 8, img.data.len() as u64, input.len());
+            let mut report = base_report("standard", "ULISA", codec_id, container, img.spec.width as usize, img.spec.height as usize, 8, img.data.len() as u64, input.len());
             report["layout"] = json!(img.spec.label());
             report["integrity"] = integrity_json(None, Some(&recon), &file, stored, crc.finish(), integrity::STANDARD_BYTE_REPR);
             Ok(Out { body: png, ctype: "image/png", info: format!("{}x{} {}", img.spec.width, img.spec.height, img.spec.label()), report })
@@ -199,7 +228,7 @@ fn restore_report(input: &[u8]) -> Result<Out, Fail> {
             let wide = bytes_per_sample(r.bit_depth) == 2;
             let body: Vec<u8> = if wide { r.samples.iter().flat_map(|s| s.to_le_bytes()).collect() } else { r.samples.iter().map(|&s| s as u8).collect() };
             let recon = pixel_sha256_u16(&r.samples, r.bit_depth);
-            let mut report = base_report("raw", "LISA", codec_id, container, w, h, r.bit_depth, body.len() as u64, input.len());
+            let mut report = base_report("raw", "ULISA", codec_id, container, w, h, r.bit_depth, body.len() as u64, input.len());
             report["cfa"] = cfa_json(&r.metadata);
             report["export_ext"] = json!(if wide { ".u16" } else { ".u8" });
             report["integrity"] = integrity_json(None, Some(&recon), &file, stored, pixel_crc_u16(&r.samples, r.bit_depth), integrity::raw_byte_repr(r.bit_depth));
@@ -240,7 +269,7 @@ fn raw_preview(samples: &[u16], w: usize, h: usize, bit_depth: u8) -> Result<(us
 }
 
 /// Raw decoded samples (row-major, interleaved, 8-bit) plus the X-* metadata headers; no re-encoding.
-/// LISA RAW files get a display-only grayscale preview instead (see `raw_preview`).
+/// ULISA RAW files get a display-only grayscale preview instead (see `raw_preview`).
 fn view_data(input: &[u8]) -> Result<(Vec<u8>, String), String> {
     let img = match decode_any(input).map_err(|e| e.to_string())? {
         Decoded::Standard(img) => img,
@@ -340,7 +369,7 @@ fn handle(mut s: TcpStream) {
 fn main() {
     let port = std::env::args().nth(1).and_then(|a| a.parse().ok()).unwrap_or(PORT);
     let listener = TcpListener::bind(("127.0.0.1", port)).unwrap_or_else(|e| panic!("cannot bind 127.0.0.1:{port}: {e}"));
-    println!("PKON converter: http://127.0.0.1:{port}/   (Ctrl+C to stop)");
+    println!("ULISA converter: http://127.0.0.1:{port}/   (Ctrl+C to stop)");
     for s in listener.incoming().flatten() {
         handle(s);
     }
@@ -369,7 +398,7 @@ mod tests {
         assert!(view_data(&pkon).is_err());
     }
 
-    /// LISA RAW through /view-data: a grayscale preview with the dimensions and length the viewer validates (w*h*1).
+    /// A codec-4 RAW file through /view-data: a grayscale preview with the dimensions and length the viewer validates (w*h*1).
     #[test]
     fn view_data_raw_preview_over_http() {
         use nanoscope::lisa::{ImageMetadata, SampleLayout};
@@ -429,23 +458,25 @@ mod tests {
     fn invalid_inputs_rejected() {
         assert!(convert_report(b"plain text".to_vec()).is_err());
         assert!(convert_report(Vec::new()).is_err());
-        // TIFF magic but not a DNG: must fail cleanly through the DNG path, never reach ELLIE-X4
+        // TIFF magic but not a DNG: must fail cleanly through the DNG path, never reach the standard-image path
         let mut tiff = b"II*\0".to_vec();
         tiff.extend_from_slice(&[0u8; 64]);
         assert!(convert_report(tiff).is_err());
     }
 
-    /// Real DNG end to end: ingestion equals the frozen canonical samples; LISA round trip; hashes and CRC agree.
+    /// Real DNG end to end: ingestion equals the frozen canonical samples; ULISA (codec 7) round trip; hashes and CRC agree.
     #[test]
-    fn dng_raw_roundtrip_via_lisa() {
+    fn dng_raw_roundtrip_via_ulisa() {
         let (dng_path, canon_path) = ("data/praw1/dng/nikon_d80_piano.dng", "data/praw1/canon/nikon_d80_piano.u16");
         let (Ok(dng), Ok(canon)) = (std::fs::read(dng_path), std::fs::read(canon_path)) else { return };
         let ing = dng::ingest_dng(&dng).unwrap();
         let flat: Vec<u8> = ing.samples.iter().flat_map(|s| s.to_le_bytes()).collect();
         assert!(flat == canon, "ingested samples differ from the frozen canonical raster");
         let o = convert_report(dng).unwrap();
-        assert_eq!(o.report["codec"], "LISA");
-        assert_eq!(o.report["codec_id"], 4);
+        assert_eq!(o.report["codec"], "ULISA");
+        assert_eq!(o.report["codec_id"], 7);
+        assert_eq!(o.report["container_version"], 2);
+        assert!(o.report["fallback"].is_null());
         let g = &o.report["integrity"];
         assert_eq!(g["pixel_sha256_match"], true);
         assert_eq!(g["crc_match"], true);
@@ -462,5 +493,102 @@ mod tests {
         let n = bad.len();
         bad[n / 2] ^= 0x40;
         assert!(restore_report(&bad).is_err());
+    }
+
+    fn bayer_meta(w: usize, h: usize) -> ImageMetadata {
+        use nanoscope::lisa::{CfaPattern, ColorFilter::*, SampleLayout};
+        ImageMetadata::with_cfa(w, h, SampleLayout::BayerCfa, CfaPattern { width: 2, height: 2, entries: vec![Red, Green, Green, Blue], origin_x: 0, origin_y: 0 })
+    }
+
+    fn ingested(w: usize, h: usize, metadata: ImageMetadata) -> dng::DngInput {
+        let samples = (0..w * h).map(|i| ((i * 37 + i / w * 11) % 4096) as u16).collect();
+        dng::DngInput { samples, bit_depth: 12, declared_bits: 12, metadata, camera: "test".into(), dng_compression: "none".into() }
+    }
+
+    /// Bayer RAW -> ULISA codec 7 in container v2, exact restore, metadata and geometry preserved.
+    #[test]
+    fn bayer_raw_is_written_as_ulisa_codec7() {
+        let d = ingested(48, 32, bayer_meta(48, 32));
+        let (samples, meta) = (d.samples.clone(), d.metadata.clone());
+        let o = convert_ingested(d, 1000).unwrap();
+        assert_eq!((o.body[4], o.body[6]), (2, 7));
+        assert_eq!(o.report["codec"], "ULISA");
+        assert_eq!((o.report["codec_id"].as_u64(), o.report["container_version"].as_u64()), (Some(7), Some(2)));
+        assert!(o.report["fallback"].is_null());
+        assert_eq!(ulisa::engine_of(&o.body).unwrap(), Engine::Ulisa);
+        let r = restore_report(&o.body).unwrap();
+        let flat: Vec<u8> = samples.iter().flat_map(|s| s.to_le_bytes()).collect();
+        assert_eq!(r.body, flat);
+        assert_eq!(r.report["codec"], "ULISA");
+        assert_eq!(r.report["codec_id"], 7);
+        assert_eq!(r.report["cfa"], o.report["cfa"]);
+        match decode_any(&o.body).unwrap() {
+            Decoded::Raw(raw) => assert_eq!((raw.metadata, raw.bit_depth), (meta, 12)),
+            _ => panic!("expected RAW"),
+        }
+    }
+
+    /// A mosaic the Bayer frame cannot represent still converts, visibly: codec 4 and a recorded fallback reason.
+    #[test]
+    fn non_bayer_raw_reports_its_fallback() {
+        use nanoscope::lisa::SampleLayout;
+        let o = convert_ingested(ingested(24, 16, ImageMetadata::without_cfa(24, 16, SampleLayout::Monochrome)), 1000).unwrap();
+        assert_eq!(o.report["codec"], "ULISA");
+        assert_eq!(o.report["codec_id"], 4);
+        assert!(o.report["fallback"].is_string());
+        assert_eq!(restore_report(&o.body).unwrap().report["integrity"]["crc_match"], true);
+    }
+
+    fn standard_png() -> Vec<u8> {
+        let px: Vec<u8> = (0..16 * 12 * 3).map(|i| (i * 7 % 251) as u8).collect();
+        let mut png = Vec::new();
+        PngEncoder::new(&mut png).write_image(&px, 16, 12, ExtendedColorType::Rgb8).unwrap();
+        png
+    }
+
+    #[test]
+    fn png_input_round_trips_exactly() {
+        let png = standard_png();
+        let orig = Canonical::load_bytes(png.clone()).unwrap();
+        let o = convert_report(png).unwrap();
+        assert_eq!((o.report["codec"].as_str(), o.report["codec_id"].as_u64(), o.report["container_version"].as_u64()), (Some("ULISA"), Some(6), Some(2)));
+        assert_eq!(o.report["integrity"]["pixel_sha256_match"], true);
+        let back = Canonical::load_bytes(restore_report(&o.body).unwrap().body).unwrap();
+        assert_eq!(first_mismatch(&orig, &back), None);
+    }
+
+    #[test]
+    fn jpeg_input_round_trips_decoded_pixels() {
+        use image::codecs::jpeg::JpegEncoder;
+        let px: Vec<u8> = (0..32 * 24 * 3).map(|i| (i * 5 % 253) as u8).collect();
+        let mut jpg = Vec::new();
+        JpegEncoder::new_with_quality(&mut jpg, 90).write_image(&px, 32, 24, ExtendedColorType::Rgb8).unwrap();
+        let decoded = Canonical::load_bytes(jpg.clone()).unwrap();
+        let o = convert_report(jpg).unwrap();
+        assert_eq!(o.report["codec"], "ULISA");
+        assert_eq!(o.report["integrity"]["pixel_sha256_match"], true);
+        let back = Canonical::load_bytes(restore_report(&o.body).unwrap().body).unwrap();
+        assert_eq!(first_mismatch(&decoded, &back), None);
+    }
+
+    #[test]
+    fn jpeg_xl_input_is_rejected_cleanly() {
+        for sig in [vec![0xFF, 0x0A, 1, 2, 3, 4], vec![0, 0, 0, 0x0C, b'J', b'X', b'L', b' ', 0x0D, 0x0A, 0x87, 0x0A, 0, 0]] {
+            let e = convert_report(sig).err().expect("must fail").msg;
+            assert!(e.contains("JPEG XL") && e.contains("not supported"), "{e}");
+        }
+    }
+
+    #[test]
+    fn corrupt_and_unknown_codec_files_are_rejected() {
+        let o = convert_ingested(ingested(48, 32, bayer_meta(48, 32)), 1000).unwrap();
+        let mut bad = o.body.clone();
+        let n = bad.len();
+        bad[n - 3] ^= 0x55;
+        assert!(restore_report(&bad).is_err());
+        let mut unk = o.body.clone();
+        unk[6] = 99;
+        assert!(restore_report(&unk).is_err());
+        assert!(restore_report(&o.body[..o.body.len() - 4]).is_err());
     }
 }

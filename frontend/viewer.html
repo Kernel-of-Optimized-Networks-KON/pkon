@@ -1,6 +1,6 @@
 <!doctype html>
 <meta charset="utf-8">
-<title>PKON Viewer</title>
+<title>ULISA Viewer</title>
 <style>
 html,body{margin:0;height:100%;background:#111;color:#ddd;font:14px sans-serif}
 body{display:flex;flex-direction:column}
@@ -13,7 +13,7 @@ canvas{max-width:100%;max-height:100%;object-fit:contain;display:none}
 <div id="stage"><canvas id="c"></canvas><div id="err"></div></div>
 <script>
 const bar = document.getElementById('bar'), err = document.getElementById('err'), cv = document.getElementById('c');
-function fail(t) { bar.textContent = 'PKON Viewer'; cv.style.display = 'none'; err.textContent = 'Cannot display this file: ' + t; }
+function fail(t) { bar.textContent = 'ULISA Viewer'; cv.style.display = 'none'; err.textContent = 'Cannot display this file: ' + t; }
 function show(m) {
   if (!m || m.error) return fail(m ? m.error : 'no data received');
   const {width: w, height: h, channels: c, pixels} = m;
@@ -33,11 +33,11 @@ function show(m) {
   ctx.putImageData(img, 0, 0);
   cv.style.display = 'block'; err.textContent = '';
   bar.textContent = m.preview === 'raw'
-    ? m.name + ' — RAW grayscale preview (' + w + '×' + h + ') — display approximation, not demosaiced image data; ' + m.info + ' — .pkon ' + m.size.toLocaleString() + ' bytes (codec ' + m.codec + ')'
-    : m.name + ' — ' + w + '×' + h + ', ' + m.info.replace(/^\d+ /, '') + ' — .pkon ' + m.size.toLocaleString() + ' bytes (codec ' + m.codec + ')';
-  document.title = m.name + ' – PKON Viewer';
+    ? m.name + ' — RAW grayscale preview (' + w + '×' + h + ') — display approximation, not demosaiced image data; ' + m.info + ' — ULISA file ' + m.size.toLocaleString() + ' bytes (codec ' + m.codec + ')'
+    : m.name + ' — ' + w + '×' + h + ', ' + m.info.replace(/^\d+ /, '') + ' — ULISA file ' + m.size.toLocaleString() + ' bytes (codec ' + m.codec + ')';
+  document.title = m.name + ' – ULISA Viewer';
 }
-if (!window.opener) fail('open this viewer from the PKON converter page (View in New Tab).');
+if (!window.opener) fail('open this viewer from the ULISA converter page (View in New Tab).');
 else {
   window.addEventListener('message', ev => {
     if (ev.origin === location.origin && ev.source === window.opener) show(ev.data);

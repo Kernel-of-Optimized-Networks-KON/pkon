@@ -15,6 +15,10 @@ Total compressed size across 23 Bayer RAW images (816,424,128 bytes uncompressed
 | Smaller than PNG | 39.32% |
 | Smaller than Lisa | 5.00% |
 
+![Average compressed size relative to JPEG XL effort 7: ULISA 81.65%, JPEG XL effort 9 97.53%, JPEG XL effort 7 100.00%, PNG 134.57%](docs/benchmark-size-chart.svg)
+
+*Total compressed size across the 23-image benchmark corpus, shown relative to JPEG XL effort 7 (= 100%). Lower is better.*
+
 ULISA was smaller than JPEG XL (both efforts), PNG and Lisa on **all 23 images**. It also beat ELLIE on 19 of 23 images, with an aggregate size reduction of 1.24%.
 
 | Codec | Total bytes | Compression ratio | ULISA is smaller by |

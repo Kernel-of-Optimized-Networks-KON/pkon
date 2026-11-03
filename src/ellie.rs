@@ -1369,14 +1369,11 @@ impl BitIo for Stage4Dec<'_> {
     #[inline(always)]
     fn code(&mut self, p1: u32, _bit: u32) -> u32 {
         let bound = ((self.range as u64 * p1 as u64) >> 16) as u32;
-        let bit = if self.code < bound {
-            self.range = bound;
-            1
-        } else {
-            self.code -= bound;
-            self.range -= bound;
-            0
-        };
+        // Branch-free resolve: mask arithmetic instead of a data-dependent branch (same arithmetic).
+        let bit = (self.code < bound) as u32;
+        let m = 0u32.wrapping_sub(bit);
+        self.code = self.code.wrapping_sub(bound & !m);
+        self.range = (bound & m) | (self.range.wrapping_sub(bound) & !m);
         while self.range < S4_TOP {
             self.code = (self.code << 8) | self.buf.get(self.pos).copied().unwrap_or(0) as u32;
             self.pos += 1;

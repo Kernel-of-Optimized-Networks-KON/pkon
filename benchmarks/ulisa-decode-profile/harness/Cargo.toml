@@ -10,6 +10,22 @@ name = "phases"
 path = "src/main.rs"
 
 [[bin]]
+name = "rcverify"
+path = "src/bin/rcverify.rs"
+
+[[bin]]
+name = "rctime"
+path = "src/bin/rctime.rs"
+
+[[bin]]
+name = "rcab"
+path = "src/bin/rcab.rs"
+
+[[bin]]
+name = "rcctl"
+path = "src/bin/rcctl.rs"
+
+[[bin]]
 name = "model"
 path = "src/bin/model.rs"
 

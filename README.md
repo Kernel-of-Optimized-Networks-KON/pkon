@@ -1,10 +1,22 @@
-# ULISA v1
+# PKON
+
+**An image-compression tool within the [KON](https://github.com/Kernel-of-Optimized-Networks-KON/kon-app) multimedia ecosystem.**
+
+PKON provides specialized lossless compression for standard images and RAW photographs through the `.pkon` container format. KON is designed to bring specialized compression tools for multiple media types together under one ecosystem, with image compression as its starting point and lossless audio as the next planned expansion. Audio is not implemented yet, and PKON does not support it.
+
+PKON is the compression tool; the KON desktop application is the separate, user-facing application in the ecosystem that provides access to it.
+
+PKON uses three specialized codecs:
+
+- **ELLIE** for standard images (PNG and JPEG).
+- **ULISA** for Bayer RAW DNG.
+- **LISA** for supported RAW data outside ULISA's Bayer path, such as monochrome or X-Trans mosaics.
+
+## ULISA v1
 
 **Lossless compression built specifically for Bayer RAW photography.**
 
 ULISA is a specialized lossless codec for the raw sensor data inside DNG files. On a 23-image Bayer RAW benchmark it produced files **18.35% smaller than JPEG XL (effort 7)** and **16.28% smaller than JPEG XL (effort 9)**. Every image decoded back to exactly the original sensor samples.
-
-PKON is the compression engine behind [KON](https://github.com/Kernel-of-Optimized-Networks-KON/kon-app), a desktop application built around it for compressing and viewing images and RAW photographs.
 
 ## Benchmark results
 
@@ -93,7 +105,7 @@ The prediction, context and coding steps are integer-only, so the decoder reprod
 
 ## Getting started
 
-ULISA v1 ships as a local converter with a web interface. Nothing is uploaded and nothing is stored on disk.
+This repository ships PKON as a local converter with a web interface (ULISA v1). It is separate from the KON desktop application, which is released from the [kon-app repository](https://github.com/Kernel-of-Optimized-Networks-KON/kon-app). Nothing is uploaded and nothing is stored on disk.
 
 **Prerequisites**
 
@@ -116,7 +128,7 @@ There is no separate command-line compressor in v1.
 
 ## Privacy
 
-ULISA runs entirely on your machine. Your images are processed locally and are never uploaded, tracked or collected.
+The PKON converter runs entirely on your machine. Your images are processed locally and are never uploaded, tracked or collected.
 
 ## Build, test and report issues
 

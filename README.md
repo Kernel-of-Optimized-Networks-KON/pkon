@@ -4,6 +4,8 @@
 
 ULISA is a specialized lossless codec for the raw sensor data inside DNG files. On a 23-image Bayer RAW benchmark it produced files **18.35% smaller than JPEG XL (effort 7)** and **16.28% smaller than JPEG XL (effort 9)**. Every image decoded back to exactly the original sensor samples.
 
+PKON is the compression engine behind [KON](https://github.com/Kernel-of-Optimized-Networks-KON/kon-app), a desktop application built around it for compressing and viewing images and RAW photographs.
+
 ## Benchmark results
 
 Total compressed size across 23 Bayer RAW images (816,424,128 bytes uncompressed). Every output was decoded and checked against its source: **23 of 23 images were reconstructed exactly by every codec.**
